@@ -1,0 +1,6 @@
+{
+	"key": "<% NAME %>",
+	"value": <% VALUE %>,
+	"type": "text",
+	"enabled": true
+}

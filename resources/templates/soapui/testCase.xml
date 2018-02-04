@@ -1,0 +1,14 @@
+		<con:testCase id="00000000-0000-0000-0000-000000000001" discardOkResults="true" failOnError="true" failTestCaseOnErrors="true" keepSession="false" name="<% TESTCASE_NAME %>" searchProperties="true" timeout="0" maxResults="0">
+			<con:settings>
+				<con:setting id="00000000-0000-0000-0000-000000000001fileName"><% TESTCASE_NAME %></con:setting>
+			</con:settings>
+			<con:savedRecentRuns>1</con:savedRecentRuns>
+<% TEST_STEPS %>
+<% PROPERTIES %>
+			<con:reportParameters/>
+			<con:breakPoints>
+				<con:testStepId/>
+				<con:status>NONE</con:status>
+				<con:properties/>
+			</con:breakPoints>
+		</con:testCase>

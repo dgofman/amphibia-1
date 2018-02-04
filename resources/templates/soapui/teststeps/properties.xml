@@ -1,0 +1,6 @@
+			<con:testStep type="properties" name="<% TESTSTEP_NAME %>" id="00000000-0000-0000-0000-000000000001">
+				<con:settings/>
+				<con:config xsi:type="con:PropertiesStep" saveFirst="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<% PROPERTIES %>
+				</con:config>
+			</con:testStep>

@@ -1,0 +1,6 @@
+		"<% PARAM %>" : {
+			"in": "<% IN %>",
+			"name": "<% NAME %>",
+			"default": <% VALUE %>,
+			"type": "string"
+		}

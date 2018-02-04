@@ -1,0 +1,16 @@
+			"<% METHOD %>": {
+				"operationId": "<% NAME %>",
+				"summary": "<% SUMMARY %>",
+				"tags": [
+					"<% TAG %>"
+				],
+				"produces": [
+					"<% MEDIATYPE %>"
+				],
+				"parameters": [
+<% PARAMETERS %>
+				],
+				"responses": {
+<% ASSERTIONS %>
+				}
+			}

@@ -1,0 +1,7 @@
+					{
+						"in": "body",
+						"name": "body",
+						"schema": {
+							<% SCHEMA %>
+						}
+					}

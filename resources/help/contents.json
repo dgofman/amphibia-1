@@ -1,0 +1,54 @@
+[
+	{
+		"label": "Using the IDE",
+		"link": "usingIDE.html"
+	},
+	{
+		"label": "Getting Started",
+		"link": "gettingStarted.html"
+	},
+	{
+		"label": "Editor",
+		"link": "editor.html",
+		"children": [
+			{
+				"label": "Project",
+				"link": "editorProject.html"
+			},
+			{
+				"label": "Test Suite",
+				"link": "editorTestSuite.html"
+			},
+			{
+				"label": "Test Case",
+				"link": "editorTestCase.html"
+			},
+			{
+				"label": "Test Step",
+				"link": "editorTestStep.html"
+			}
+		]
+	},
+	{
+		"label": "Testing",
+		"link": "runner.html",
+		"children": [
+			{
+				"label": "Project",
+				"link": "runnerProject.html"
+			},
+			{
+				"label": "Test Suite",
+				"link": "runnerTestSuite.html"
+			},
+			{
+				"label": "Test Case",
+				"link": "runnerTestCase.html"
+			},
+			{
+				"label": "Test Step",
+				"link": "runnerTestStep.html"
+			}
+		]
+	}
+]

@@ -1,0 +1,1330 @@
+{
+	"name": "EquinixOrder",
+	"hosts": [
+		"http://sv2lxampadi01.corp.equinix.com:9005"
+	],
+	"globals": [
+		{
+			"name": "RestEndPoint0",
+			"type": "endpoint",
+			"value": "http://sv2lxampadi01.corp.equinix.com:9005"
+		},
+		{
+			"name": "RestEndPoint1",
+			"type": "endpoint",
+			"value": "http://sv2lxampadi01.corp.equinix.com:9005"
+		}
+	],
+	"interfaces": [
+		{
+			"headers": {
+				"CONTENT-TYPE": "application/json",
+				"X-AUTH-APIKEY": "QemPFlxg8fIbA2KeYA3kX0iPITtVd6GF",
+				"AUTHORIZATION": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJ3ZWJhcHBhdG1fbGFzdG5hbWUiOiJNb29uZXkiLCJ3ZWJhcHBhdG1fZW1haWwiOiIxa21vb25leUBpbmFwLmNvbSIsIndlYmFwcGF0bV9maXJzdG5hbWUiOiJLYXJsIiwid2ViYXBwYXRtX3VzZXJuYW1lIjoia21vb25leUBpbnRlcm5hcC5jb20iLCJ3ZWJhcHBhdG1fb3JnaWQiOiI5MTE1IiwiZXhwIjoxNTAwMjkyMjA3LCJzY29wZSI6W10sImNsaWVudF9pZCI6IkV4dF9yb19jbGllbnQifQ.lo8H_mM7FU99D5fdOwpvkZiETbbaTRlA5YLNZMA-AtxqPFbbF5r3qkes-24T7rwRjqeX8RXe-fFMsS-tOGm2cIPb0AXnZzfe_hJmbIh3k1TXpb6QFPTQihopKeeQNUvxXeBbR6OG7V-qiLYOv2E_MM9WColtrU8zphHUeJuJ0k-ULzoKzvdm98CSGABdpvncYLlkvrrS1kbXYdIFQSKK7DajawEP8hYMlV7mA_XhJxykx7lzEAoUJB3dIYxDkSnCQOFYPCwLIHly6TEtr5xML4bFDuBSCqJIEAcUXl8meMPMneNWkE3Z1iwejD9vVFBB6nE2d5ZmTdZv_HDmLJULfg",
+				"Test": "5"
+			},
+			"basePath": "/v1",
+			"name": "/v1",
+			"type": "rest"
+		},
+		{
+			"headers": {
+				"CONTENT-TYPE": "application/json"
+			},
+			"basePath": "/v1/parse",
+			"name": "/v1/parse",
+			"type": "rest"
+		},
+		{
+			"headers": {
+				"CONTENT-TYPE": "application/json",
+				"X-AUTH-APIKEY": "QemPFlxg8fIbA2KeYA3kX0iPITtVd6GF",
+				"AUTHORIZATION": "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJ3ZWJhcHBhdG1fbGFzdG5hbWUiOiJNb29uZXkiLCJ3ZWJhcHBhdG1fZW1haWwiOiIxa21vb25leUBpbmFwLmNvbSIsIndlYmFwcGF0bV9maXJzdG5hbWUiOiJLYXJsIiwid2ViYXBwYXRtX3VzZXJuYW1lIjoia21vb25leUBpbnRlcm5hcC5jb20iLCJ3ZWJhcHBhdG1fb3JnaWQiOiI5MTE1IiwiZXhwIjoxNTAwMjkyMjA3LCJzY29wZSI6W10sImNsaWVudF9pZCI6IkV4dF9yb19jbGllbnQifQ.lo8H_mM7FU99D5fdOwpvkZiETbbaTRlA5YLNZMA-AtxqPFbbF5r3qkes-24T7rwRjqeX8RXe-fFMsS-tOGm2cIPb0AXnZzfe_hJmbIh3k1TXpb6QFPTQihopKeeQNUvxXeBbR6OG7V-qiLYOv2E_MM9WColtrU8zphHUeJuJ0k-ULzoKzvdm98CSGABdpvncYLlkvrrS1kbXYdIFQSKK7DajawEP8hYMlV7mA_XhJxykx7lzEAoUJB3dIYxDkSnCQOFYPCwLIHly6TEtr5xML4bFDuBSCqJIEAcUXl8meMPMneNWkE3Z1iwejD9vVFBB6nE2d5ZmTdZv_HDmLJULfg"
+			},
+			"basePath": "/v1",
+			"name": "newOrders",
+			"type": "rest"
+		}
+	],
+	"properties": {
+		"userName": "kmooney@internap.com",
+		"DELETE_orders_cartItems_id_ID": "10"
+	},
+	"projectResources": [
+		{
+			"resourceId": "7d4e8380-9f57-4beb-87a0-c324e6e0df4d",
+			"endpoint": "RestEndPoint0",
+			"interface": "/v1",
+			"testsuites": {
+				"Assets": {
+					"testcases": [
+						{
+							"summary": "This operation will return list of Ibx, their address and their operation calendar.",
+							"name": "GET_assets_ibxs",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "getIBXList",
+								"replace": {
+									"path": "v1/assets/ibxs",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						}
+					],
+					"properties": {}
+				},
+				"Event": {
+					"testcases": [
+						{
+							"summary": "Orders Event to reload cache",
+							"name": "POST_orders_event",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "eventListener",
+								"definition": "cacheEvent",
+								"replace": {
+									"path": "v1/orders/event",
+									"method": "POST",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						}
+					],
+					"properties": {}
+				},
+				"Orders": {
+					"testcases": [
+						{
+							"summary": "Smarthands Locate Package",
+							"name": "POST_orders_smarthands_locatePackage",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandLocatePackageOrder",
+								"definition": "locatePackageRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/locatePackage?action=${#POST_orders_smarthands_locatePackage_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.5"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"shipmentOrderNumber": "Ibx",
+											"scopeOfWork": "Scope of work",
+											"trackingNumber": "1-112232233",
+											"possibleLocation": "CG11002",
+											"packageDescription": "Brown bag - 11233"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_locatePackage_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Cage Cleanup",
+							"name": "POST_orders_smarthands_cageCleanup",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandCageCleanupOrder",
+								"definition": "cageCleanupRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/cageCleanup?action=${#POST_orders_smarthands_cageCleanup_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.5"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"permissionToDiscardBoxes": true,
+											"dampMoistMopRequired": false,
+											"scopeOfWork": "Clean Cage & equipment"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_cageCleanup_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Unrack / Uninstall Equipment",
+							"name": "POST_orders_smarthands_unrackUninstall",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmarthandsUninstallUnrackOrder",
+								"definition": "unrackUninstallRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/unrackUninstall?action=${#POST_orders_smarthands_unrackUninstall_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "65"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"deviceName": "Cat-6",
+											"ruLocation": "RJ45",
+											"equipmentStorageLocation": "CS11234",
+											"outboundShipmentOrderNumberRequired": true,
+											"permissionToPowerDown": true,
+											"scopeOfWork": "Uninstall / Unrack equipment "
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_unrackUninstall_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Photos",
+							"name": "POST_orders_smarthands_photos",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandPhotosOrder",
+								"definition": "pictureRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/photos?action=${#POST_orders_smarthands_photos_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "300"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"cameraProvidedBy": "Ibx",
+											"specificDateAndTime": false,
+											"scopeOfWork": "Scope of work",
+											"description": "Cage Photo"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_photos_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Escort to Cage Request",
+							"name": "POST_orders_smarthands_cageEscort",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandCageEscortOrder",
+								"definition": "cageEscortRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/cageEscort?action=${#POST_orders_smarthands_cageEscort_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.5"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"durationVisit": "30 Minutes",
+											"openCabinetForVisitor": false,
+											"scopeOfWork": "Escort to Cage",
+											"supervisionReqForVisitor": false,
+											"workVisitOrderNumber": "1-108050984499"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_cageEscort_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Run Jumper Cable Request",
+							"name": "POST_orders_smarthands_runJumperCable",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandRunJumperCableOrder",
+								"definition": "runJumperCableRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/runJumperCable?action=${#POST_orders_smarthands_runJumperCable_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.00"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"cableId": "1234566",
+											"jumperType": "Jumper",
+											"mediaType": "Cat-6",
+											"connector": "RJ45",
+											"provideTxRxLightLevels": false,
+											"scopeOfWork": "Run Jumper Cable",
+											"deviceDetails": [
+												{
+													"name": "Device Name",
+													"slot": "Device Slot",
+													"ports": "Device Port"
+												}
+											]
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_runJumperCable_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Documents",
+							"name": "POST_orders_smarthands_documents",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandDocumentOrder",
+								"definition": "otherRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/documents?action=${#POST_orders_smarthands_documents_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "65"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										],
+										"serviceDetails": {
+											"scopeOfWork": "Please complete my request 1234"
+										}
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_documents_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Cable Request",
+							"name": "POST_orders_smarthands_cableRequest",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandCableRequestOrder",
+								"definition": "cablerequest",
+								"replace": {
+									"path": "v1/orders/smarthands/cableRequest?action=${#POST_orders_smarthands_cableRequest_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "100"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"quantity": "1",
+											"mediaType": "Cat-6",
+											"connector": "RJ45",
+											"length": "6 ft",
+											"scopeOfWork": "Run Jumper Cable"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_cableRequest_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Equipment Install",
+							"name": "POST_orders_smarthands_equipmentInstall",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandOrder",
+								"definition": "equimentInstallRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/equipmentInstall?action=${#POST_orders_smarthands_equipmentInstall_ACTION}",
+									"method": "POST",
+									"body": {
+										"attachments": [
+											{
+												"id": "22fdf8a3-35b6-46ae-a366-968b9fb166b9",
+												"name": "README.md"
+											}
+										],
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "kmooney@internap.com"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "kmooney@internap.com"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "kmooney@internap.com"
+											}
+										],
+										"customerReferenceNumber": "RQT0036422",
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "100"
+											}
+										},
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"serviceDetails": {
+											"deviceLocation": "test123",
+											"elevationDrawingAttached": false,
+											"installationPoint": "123",
+											"installedEquipmentPhotoRequired": true,
+											"mountHardwareIncluded": true,
+											"patchDevices": true,
+											"patchingInfo": "patch the cables wiht id 120.120",
+											"powerItOn": true,
+											"needSupportFromASubmarineCableStationEngineer": true,
+											"scopeOfWork": "Please install my equipment"
+										}
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_equipmentInstall_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Equipment Install Order retrieval",
+							"name": "GET_orders_smarthands_equipmentInstall_itemId_or_order_number",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandOrderRetrieval",
+								"replace": {
+									"path": "v1/orders/smarthands/equipmentInstall/${#GET_orders_smarthands_equipmentInstall_itemId_or_order_number_ITEMID_OR_ORDER_NUMBER}?action=${#GET_orders_smarthands_equipmentInstall_itemId_or_order_number_ACTION}",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200,
+								"GET_orders_smarthands_equipmentInstall_itemId_or_order_number_ACTION": "GET_CART_ITEM_BY_ID",
+								"GET_orders_smarthands_equipmentInstall_itemId_or_order_number_ITEMID_OR_ORDER_NUMBER": ""
+							}
+						},
+						{
+							"summary": "Smarthands Move Jumper Cable Request",
+							"name": "POST_orders_smarthands_moveJumperCable",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandMoveJumperCableOrder",
+								"definition": "moveJumperCableRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/moveJumperCable?action=${#POST_orders_smarthands_moveJumperCable_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.5"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"cableId": "123456",
+											"currentDeviceDetails": {
+												"name": "Device Name 1",
+												"slot": "Device Slot 1",
+												"ports": "Device Port 1"
+											},
+											"newDeviceDetails": {
+												"name": "Device Name 2",
+												"slot": "Device Slot 2",
+												"ports": "Device Port 2"
+											},
+											"scopeOfWork": "Scope of work"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_moveJumperCable_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Smarthands Shipment Unpack",
+							"name": "POST_orders_smarthands_shipmentUnpack",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandShipmentUnpackOrder",
+								"definition": "shipmentUnpackRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/shipmentUnpack?action=${#POST_orders_smarthands_shipmentUnpack_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-06-19T20:29:25.682Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "12.50"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"serviceDetails": {
+											"inboundShipmentOrderNumber": "1-121211111",
+											"copyOfPackingSlipNeeded": false,
+											"discardShipmentMaterial": false,
+											"scopeOfWork": "Please ship & unpack my equipment"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_shipmentUnpack_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Cart Checkout",
+							"name": "POST_orders_cartItems",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "POST_orders-cartCheckout",
+								"definition": "cartcheckoutrequest",
+								"replace": {
+									"path": "v1/orders/cartItems",
+									"method": "POST",
+									"body": {
+										"cartItemIds": [
+											"itemId1",
+											"itemId2"
+										]
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						},
+						{
+							"summary": "Get Cart Items",
+							"name": "GET_orders_cartItems",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "GET_orders-cartitems",
+								"replace": {
+									"path": "v1/orders/cartItems",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						},
+						{
+							"summary": "Smarthands Others Request",
+							"name": "POST_orders_smarthands_other",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "handleSmartHandOthersOrder",
+								"definition": "otherRequest",
+								"replace": {
+									"path": "v1/orders/smarthands/other?action=${#POST_orders_smarthands_other_ACTION}",
+									"method": "POST",
+									"body": {
+										"customerReferenceNumber": "RQT0036422",
+										"purchaseOrder": {
+											"startDate": "2017-04-09T02:47:42.320Z",
+											"endDate": "2017-10-09T02:47:42.320Z",
+											"number": "1-12121212",
+											"price": {
+												"amount": "65"
+											}
+										},
+										"ibxLocation": {
+											"cages": [
+												{
+													"cage": "LD8:02:02MC2T",
+													"cabinets": [
+														"LD8:02:02MC2T:0306"
+													]
+												}
+											],
+											"ibx": "LD8"
+										},
+										"contacts": [
+											{
+												"contactType": "ORDERING",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "NOTIFICATION",
+												"userName": "dgrampa"
+											},
+											{
+												"contactType": "TECHNICAL",
+												"userName": "dgrampa"
+											}
+										],
+										"schedule": {
+											"scheduleType": "STANDARD"
+										},
+										"attachments": [
+											{
+												"id": "eb9ab7e9-3785-41e4-af24-74b8dc37b254",
+												"name": "uecp-finance-service-api-swagger.yml"
+											}
+										],
+										"serviceDetails": {
+											"scopeOfWork": "Please complete my request 1234"
+										}
+									}
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 201,
+								"POST_orders_smarthands_other_ACTION": "SUBMIT"
+							}
+						},
+						{
+							"summary": "Move-to-Save and vice-a-versa",
+							"name": "POST_orders_cartItems_updateStatus",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "POST_v1-orders-cartItems-updateStatus",
+								"definition": "cart-item-status-update",
+								"replace": {
+									"path": "v1/orders/cartItems/updateStatus",
+									"method": "POST",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						},
+						{
+							"summary": "Move item from Save-For-Later to IN-CART",
+							"name": "POST_orders_smarthands_updateStatus_equipmentInstall",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "POST_v1-orders-smartHands-equipmentInstall-updateStatus",
+								"definition": "cart-item-status-update",
+								"replace": {
+									"path": "v1/orders/smarthands/updateStatus/equipmentInstall",
+									"method": "POST",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200
+							}
+						},
+						{
+							"summary": "Delete Cart Item",
+							"name": "DELETE_orders_cartItems_id",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "deleteCartItem",
+								"replace": {
+									"path": "v1/orders/cartItems/${#DELETE_orders_cartItems_id_ID}",
+									"method": "DELETE",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200,
+								"DELETE_orders_cartItems_id_ID": ""
+							}
+						}
+					],
+					"properties": {
+						"cartItemIds": [
+							"6"
+						],
+						"attachments.id": "d966b70f-e8ee-4488-938c-38b56a7a23a1",
+						"attachments.name": "logback-spring.xml",
+						"contacts": [
+							{
+								"contactType": "NOTIFICATION",
+								"userName": "dgofan@equinix.com"
+							},
+							{
+								"contactType": "TECHNICAL",
+								"userName": "kmo00re@internap.com"
+							}
+						],
+						"schedule.scheduleType": "SCHEDULED_MAINTAINANCE",
+						"schedule.requestedStartDate": "2018-04-05T12:00:00Z",
+						"schedule.requestedCompletionDate": "2018-04-05T12:00:00Z"
+					}
+				},
+				"Products": {
+					"testcases": [
+						{
+							"summary": "Find all Smart Hand types",
+							"name": "GET_products_smarthands_types",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "smartHandTypes",
+								"replace": {
+									"path": "v1/products/smarthands/types?smarthandSubCategory=${#GET_products_smarthands_types_SMARTHANDSUBCATEGORY}&amp;detail=${#GET_products_smarthands_types_DETAIL}",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200,
+								"GET_products_smarthands_types_SMARTHANDSUBCATEGORY": "EQUIPMENT_INSTALL",
+								"GET_products_smarthands_types_DETAIL": false
+							}
+						},
+						{
+							"summary": "User SmartHand Locations",
+							"name": "GET_products_productType_locations",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "getLocation",
+								"replace": {
+									"path": "v1/products/${#GET_products_productType_locations_PRODUCTTYPE}/locations?detail=${#GET_products_productType_locations_DETAIL}&amp;ibxs=${#GET_products_productType_locations_IBXS}&amp;cages=${#GET_products_productType_locations_CAGES}",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200,
+								"GET_products_productType_locations_PRODUCTTYPE": "smarthands",
+								"GET_products_productType_locations_DETAIL": false,
+								"GET_products_productType_locations_IBXS": "AM1",
+								"GET_products_productType_locations_CAGES": "AM1:0G:00EQ36"
+							}
+						}
+					],
+					"properties": {}
+				}
+			}
+		},
+		{
+			"resourceId": "a78736d4-79ca-4146-af76-692a4fb8b5b6",
+			"endpoint": "RestEndPoint1",
+			"interface": "/v1/parse",
+			"testsuites": {
+				"Generate_JWT": {
+					"testcases": [
+						{
+							"summary": "Generate JWT",
+							"name": "GET_token",
+							"type": "restrequest",
+							"config": {
+								"assertions": [
+									{
+										"replace": {
+											"value": "${#HTTPStatusCode}"
+										},
+										"type": "ValidHTTPStatusCodes"
+									}
+								],
+								"operationId": "Generate-JWT",
+								"replace": {
+									"path": "v1/parse/token?username=${#GET_token_USERNAME}&amp;password=${#GET_token_PASSWORD}",
+									"method": "GET",
+									"body": null
+								}
+							},
+							"properties": {
+								"HTTPStatusCode": 200,
+								"GET_token_USERNAME": "kmooney@internap.com",
+								"GET_token_PASSWORD": "welcome1"
+							}
+						}
+					],
+					"properties": {}
+				}
+			}
+		}
+	]
+}

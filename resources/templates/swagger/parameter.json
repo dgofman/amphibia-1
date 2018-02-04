@@ -1,0 +1,7 @@
+					{
+						"in": "<% IN %>",
+						"name": "<% NAME %>",
+						"default": <% VALUE %>,
+						"type": "<% TYPE %>",
+						"required": <% REQUIRED %>
+					}

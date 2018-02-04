@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="00000000-0000-0000-0000-000000000001" name="<% PROJECT_NAME %>" resourceRoot="" soapui-version="<% VERSION %>" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config">
+	<con:settings/>
+<% INTERFACES %>
+<% TESTSUITES %>
+	<con:savedRecentRuns>1</con:savedRecentRuns>
+	<con:requirements/>
+<% PROPERTIES %>
+	<con:afterLoadScript/><con:wssContainer/>
+	<con:databaseConnectionContainer/>
+	<con:oAuth2ProfileContainer/>
+	<con:oAuth1ProfileContainer/>
+	<con:reporting>
+		<con:xmlTemplates/>
+		<con:parameters/>
+	</con:reporting>
+	<con:beforeRunScript>import groovy.util.GroovyScriptEngine;
+import com.eviware.soapui.SoapUI;
+import com.eviware.soapui.support.UISupport;
+import com.eviware.soapui.support.ClasspathHacker;
+
+if (SoapUI.logMonitor != null) {
+	if (SoapUI.logMonitor.getCurrentLog()) {
+		SoapUI.logMonitor.getCurrentLog().model.clear(); //Pro
+	} else {
+		SoapUI.logMonitor.getLogArea("script log").clear();  //Community
+	}
+}
+
+String path = project.getPath().replaceAll("\\\\", "/"); //Fixed Bug WinOS in GroovyUtils::getProjectPath
+int ix = path.lastIndexOf("/");
+String projectPath = (ix == -1 ? "" : path.substring(0, ix));
+
+ix = projectPath.lastIndexOf("/projects");
+if (ix != -1) {
+	projectPath = projectPath.substring(0, ix);
+}
+
+try {
+	GroovyScriptEngine gse = new GroovyScriptEngine(projectPath + "/src");
+	Class externalScript = gse.loadScriptByName("Bridge.groovy");
+	externalScript.newInstance(this, project, log, projectPath);
+} catch (Exception ex1) {
+	try {
+		ClasspathHacker classpathHacker = new ClasspathHacker();
+		classpathHacker.addFile(new java.io.File(projectPath + "/ext/amphibia.jar"));
+		Class.forName("Bridge").getConstructor(Script.class, com.eviware.soapui.impl.wsdl.WsdlProject.class, org.apache.log4j.Logger.class, String.class).newInstance(this, project, log, projectPath);
+	} catch (Exception ex2) {
+		log.error(ex2);
+		UISupport.showInfoMessage("Some error occurred, Please review in script log.", "Script Error");
+	}
+}</con:beforeRunScript>
+	<con:sensitiveInformation/>
+	<con:authRepository/>
+	<con:environmentSpec/>
+	<con:tags/>
+</con:soapui-project>

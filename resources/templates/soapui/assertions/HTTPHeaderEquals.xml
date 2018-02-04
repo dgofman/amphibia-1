@@ -1,0 +1,8 @@
+						<con:assertion type="HTTP Header Equals" id="00000000-0000-0000-0000-000000000001" name="HTTP Header Equals">
+							<con:configuration>
+								<Header><% NAME %></Header>
+								<Value><% VALUE %></Value>
+								<ignoreCase>false</ignoreCase>
+								<useRegEx>false</useRegEx>
+							</con:configuration>
+						</con:assertion>

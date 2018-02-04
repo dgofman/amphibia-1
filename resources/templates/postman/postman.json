@@ -1,0 +1,37 @@
+{
+	"version": 1,
+	"collections": [
+		{
+			"id": "10000000-0000-0000-0000-000000000000",
+			"name": "<% PROJECT_NAME %>",
+			"order": [],
+			"folders_order": [
+				<% TESTSUITE_IDS %>
+			],
+			"folders": [
+<% FOLDERS %>
+			],
+			"synced": true,
+			"sharedWithTeam": false,
+			"subscribed": false,
+			"public": false,
+			"write": true,
+			"published": false,
+			"favorite": false,
+			"permissions": {},
+			"syncedPermissions": {},
+			"requests": [
+<% REQUESTS %>
+			]
+		}
+	],
+	"environments": [
+<% ENVIRONMENTS %>
+	],
+	"headerPresets": [
+<% HEADER_PRESETS %>
+	],
+	"globals": [
+<% GLOBALS %>
+	]
+}

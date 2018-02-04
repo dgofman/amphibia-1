@@ -1,0 +1,8 @@
+		{
+			"id": <% ID %>,
+			"name": "<% NAME %>",
+			"timestamp": <% TIMESTAMP %>,
+			"headers": [
+<% PARAMETERS %>
+			]
+		}

@@ -1,0 +1,29 @@
+REM compile resources
+
+CALL mvn clean compile assembly:single
+
+REM compile project json
+
+SET IN1={FILE or URL PATH TO Swagger.json}
+SET IN2={FILE or URL PATH TO Swagger.json}
+
+SET PROP1={FILE PATH TO RulesAndProperties.json (Optional)}
+SET PROP2={FILE PATH TO RulesAndProperties.json (Optional)}
+
+SET INTERFACE1={Override default interface name (Optional)}
+SET INTERFACE2={Override default interface name (Optional)}
+
+SET PROJECT_NAME=
+
+com.equinix.amphibia.agent.converter.Converter -i=%IN1%,%IN2% -p=%PROP1%,%PROP2% -f=%INTERFACE1%,%INTERFACE2% -n=%PROJECT_NAME% -j=true -d=true
+
+REM build/export project
+
+SET ARTIFACT_ID={POM Artifact Id/Project Name}
+SET GROUP_ID={POM Group Id/Domain name}
+
+SET EXPORT_TYPE=POSTMAN, JUNIT, JSON, MOCHA, SOAPUI, READYAPI, SWAGGER
+
+SET PROJECT_FILE=Path to project JSON file
+
+com.equinix.amphibia.agent.builder.Builder artifactId=%ARTIFACT_ID% groupId=%GROUP_ID% -f=%EXPORT_TYPE% -i=%PROJECT_FILE% -j=true -r=true 

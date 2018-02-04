@@ -1,0 +1,20 @@
+{
+	"name": "<% PROJECT_NAME %>",
+	"version": "0.0.1",
+	"main": "tests.js",
+	"config": {
+<% GLOBALS %>
+	},
+	"scripts": {
+		"start": "npm run-script test",
+		"test": "./node_modules/.bin/mocha --timeout 10000 --reporter spec --check-leaks <% PROJECT_NAME %>-tests.js"
+	},
+	"private": true,
+	"dependencies": {
+		"mocha": "latest",
+		"superagent": "latest",
+		"debug": "latest"
+	},
+	"devDependencies": {
+	}
+}

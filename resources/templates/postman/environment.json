@@ -1,0 +1,6 @@
+		{
+			"name": "<% NAME %>",
+			"values": [
+<% PARAMETERS %>
+			]
+		}

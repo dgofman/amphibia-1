@@ -1,0 +1,21 @@
+{
+	"swagger": "2.0",
+	"info": {
+		"version": "0.0.0",
+		"title": "<% PROJECT_NAME %>",
+		"description": ""
+	},
+	"host": "localhost",
+	"schemes": [
+		"http"
+	],
+	"paths": {
+<% PATHS %>
+	},
+	"parameters": {
+<% PARAMETERS %>
+	},
+	"definitions": {
+<% DEFINITIONS %>
+	}
+}

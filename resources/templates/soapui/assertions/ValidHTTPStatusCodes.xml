@@ -1,0 +1,6 @@
+						<con:assertion type="Valid HTTP Status Codes" name="Valid HTTP Status Codes" id="00000000-0000-0000-0000-000000000001">
+							<con:settings/>
+							<con:configuration>
+								<codes><% VALUE %></codes>
+							</con:configuration>
+						</con:assertion>

@@ -1,0 +1,16 @@
+			<con:testStep type="transfer" name="<% TESTSTEP_NAME %>" id="00000000-0000-0000-0000-000000000001">
+				<con:settings/>
+				<con:config xsi:type="con:PropertyTransfersStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+					<con:transfers setNullOnMissingSource="true" transferTextContent="true" failOnError="true" entitize="false" transferToAll="false" ignoreEmpty="false" transferChildNodes="false">
+						<con:name><% NAME %></con:name>
+						<con:sourceType><% SOURCETYPE %></con:sourceType>
+						<con:sourceStep><% SOURCESTEP %></con:sourceStep>
+						<con:sourcePath><% SOURCEPATH %></con:sourcePath>
+						<con:targetType><% TARGETTYPE %></con:targetType>
+						<con:targetStep><% TARGETSTEP %></con:targetStep>
+						<con:targetPath/>
+						<con:type>JSONPATH</con:type>
+						<con:upgraded>true</con:upgraded>
+					</con:transfers>
+				</con:config>
+			</con:testStep>

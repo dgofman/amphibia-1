@@ -1,0 +1,4 @@
+<con:property>
+	<con:name><% NAME %></con:name>
+	<con:value><% VALUE %></con:value>
+</con:property>

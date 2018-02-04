@@ -1,0 +1,9 @@
+	<con:interface xsi:type="con:RestService" id="00000000-0000-0000-0000-000000000001" wadlVersion="http://wadl.dev.java.net/2009/02" name="<% INTERFACE_NAME %>" type="<% INTERFACE_TYPE %>" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<con:settings/>
+		<con:definitionCache type="TEXT" rootPart=""/>
+		<con:endpoints>
+			<con:endpoint><% ENDPOINT %></con:endpoint>
+		</con:endpoints>
+		<con:environmentSpec/>
+<% RESOURCES %>
+	</con:interface>

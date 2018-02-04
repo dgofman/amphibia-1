@@ -1,0 +1,6 @@
+				<con:parameter>
+					<con:name><% NAME %></con:name>
+					<con:style><% STYLE %></con:style>
+					<con:value></con:value>
+					<con:default><% VALUE %></con:default>
+				</con:parameter>

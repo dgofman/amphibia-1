@@ -1,0 +1,14 @@
+{
+	"project": {
+		"version": "1.0.0",
+		"id": "<% PROJECT_ID %>",
+		"name": "<% PROJECT_NAME %>",
+		"appendLogs": false,
+		"continueOnError": true,
+		"testCaseTimeout": 15000
+	},
+	"resources": [
+	],
+	"testsuites": [
+	]
+}

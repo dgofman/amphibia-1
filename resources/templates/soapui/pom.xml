@@ -1,0 +1,124 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId><% GROUP_ID %></groupId>
+	<artifactId><% PROJECT_NAME %></artifactId>
+	<packaging>pom</packaging>
+	<version>1.0-SNAPSHOT</version>
+
+	<properties>
+		<version.soapui>5.3.0</version.soapui>
+		<name><% PROJECT_NAME %></name>
+		<outputFolder>Reports</outputFolder>
+
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<directory>ext</directory>
+
+		<plugins>
+			<plugin>
+				<groupId>com.smartbear.soapui</groupId>
+				<artifactId>soapui-maven-plugin</artifactId>
+				<version>${version.soapui}</version>
+				<dependencies>
+					<dependency>
+						<groupId>com.smartbear.soapui</groupId>
+						<artifactId>soapui</artifactId>
+						<version>${version.soapui}</version>
+						<exclusions>
+							<exclusion>
+								<groupId>javafx</groupId>
+								<artifactId>jfxrt</artifactId>
+							</exclusion>
+						</exclusions>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>SoapUI Tests</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<projectFile>${basedir}/${name}-soap-${version.soapui}.xml</projectFile>
+							<environment>Default</environment>
+							<outputFolder>${outputFolder}</outputFolder>
+							<globalProperties>
+								<% GLOBAL_PROPERTIES %>
+							</globalProperties>
+							<projectProperties>
+								<% PROJECT_PROPERTIES %>
+							</projectProperties>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<dependencies>
+					<dependency>
+						<groupId>ant</groupId>
+						<artifactId>ant-junit</artifactId>
+						<version>1.6.5</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>html-reports</id>
+						<phase>test</phase>
+						<configuration>
+							<tasks>
+								<junitreport todir="${outputFolder}" tofile="testsuites.xml">
+									<fileset dir="${outputFolder}">
+										<include name="TEST-*.xml" />
+									</fileset>
+									<report styledir="." todir="${outputFolder}" format="noframes" />
+								</junitreport>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>javafx</groupId>
+			<artifactId>jfxrt</artifactId>
+			<version>2.2</version>
+			<scope>system</scope>
+			<systemPath>${JAVA_HOME}/jre/lib/ext/jfxrt.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>com.smartbear.soapui</groupId>
+			<artifactId>soapui</artifactId>
+			<version>${version.soapui}</version>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>eviwareRepository</id>
+			<url>http://www.soapui.org/repository/maven2</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>eviwarePluginRepository</id>
+			<url>http://www.soapui.org/repository/maven2/</url>
+		</pluginRepository>
+	</pluginRepositories>
+</project>

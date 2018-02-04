@@ -1,0 +1,10 @@
+	<con:testSuite id="00000000-0000-0000-0000-000000000001" name="<% TESTSUITE_NAME %>">
+		<con:settings>
+			<con:setting id="00000000-0000-0000-0000-000000000001fileName"><% TESTSUITE_NAME %></con:setting>
+		</con:settings>
+		<con:savedRecentRuns>1</con:savedRecentRuns>
+		<con:runType>SEQUENTIAL</con:runType>
+<% TESTCASES %>
+<% PROPERTIES %>
+		<con:reportParameters/>
+	</con:testSuite>

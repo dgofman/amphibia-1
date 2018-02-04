@@ -1,0 +1,40 @@
+		<con:resource name="METHODS" path="/${path}" id="00000000-0000-0000-0000-000000000001">
+			<con:settings>
+				<con:setting id="00000000-0000-0000-0000-000000000001fileName">METHODS</con:setting>
+			</con:settings>
+			<con:parameters>
+				<con:parameter>
+					<con:name>PATH</con:name>
+					<con:style>TEMPLATE</con:style>
+					<con:value>PATH</con:value>
+					<con:default>PATH</con:default>
+				</con:parameter>
+<% PARAMETERS %>
+			</con:parameters>
+			<con:method name="GET" id="00000000-0000-0000-0000-000000000001" method="GET">
+				<con:settings/>
+				<con:parameters/>
+				<con:environmentSpec/>
+			</con:method>
+			<con:method name="POST" id="00000000-0000-0000-0000-000000000001" method="POST">
+				<con:settings/>
+				<con:parameters/>
+				<con:environmentSpec/>
+			</con:method>
+			<con:method name="PUT" id="00000000-0000-0000-0000-000000000001" method="PUT">
+				<con:settings/>
+				<con:parameters/>
+				<con:environmentSpec/>
+			</con:method>
+			<con:method name="PATCH" id="00000000-0000-0000-0000-000000000001" method="PATCH">
+				<con:settings/>
+				<con:parameters/>
+				<con:environmentSpec/>
+			</con:method>
+			<con:method name="DELETE" id="00000000-0000-0000-0000-000000000001" method="DELETE">
+				<con:settings/>
+				<con:parameters/>
+				<con:environmentSpec/>
+			</con:method>
+			<con:environmentSpec/>
+		</con:resource>
