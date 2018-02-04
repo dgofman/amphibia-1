@@ -94,11 +94,6 @@ public class Converter {
             throw e;
         }
 
-        File outputDir = new File(new File(Profile.PROJECT_DIR).getAbsolutePath());
-        if (!outputDir.exists()) {
-            outputDir.mkdirs();
-        }
-
         String json = cmd.getOptionValue(JSON);
         if ("true".equals(json)) {
             results = new LinkedHashMap<>();
@@ -121,6 +116,12 @@ public class Converter {
             projectFile = new File(projectPath);
             Profile.PROJECT_DIR = projectFile.getParentFile().getAbsolutePath();
         }
+
+        File outputDir = new File(new File(Profile.PROJECT_DIR).getAbsolutePath());
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        
         try {
             FileUtils.deleteDirectory(new File(Profile.PROJECT_DIR, Profile.DATA_DIR));
         } catch (IOException ex) {

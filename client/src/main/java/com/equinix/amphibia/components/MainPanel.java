@@ -836,9 +836,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             testcaseJSON.element("transfer", transferProps);
                         }
 
-                        JSONObject config = info.testCaseInfo.getJSONObject("config");
-                        JSONObject replace = config.getJSONObject("replace");
-                        String url = "${#Global#" + resource.getString("endpoint") + "}" + interfaceJSON.getString("basePath") + replace.getString("path");
+                        String url = "${#Global#" + resource.getString("endpoint") + "}" + interfaceJSON.getString("basePath") + info.testCaseInfo.getString("path");
 
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
                         testCaseInfo.properties.setTestCase(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
@@ -850,10 +848,10 @@ public final class MainPanel extends javax.swing.JPanel {
                         testcaseJSON.element("file", path);
                         testcaseJSON.element("headers", testCaseHeaders);
                         testcaseJSON.element("properties", testCaseProperties);
-                        testcaseJSON.element("method", replace.getString("method"));
+                        testcaseJSON.element("method", info.testCaseInfo.getString("method"));
                         testcaseJSON.element("url", url);
                         testcaseJSON.element("interface", interfaceJSON.getString("name"));
-                        testcaseJSON.element("reqPath", properties.replace(replace.getString("path")).replaceAll("&amp;", "&"));
+                        testcaseJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
                         String tooltipURL = properties.replace(url).replaceAll("&amp;", "&");
                         TreeIconNode testcaseNode = collection.addTreeNode(testsuiteNode, testcase.getString("name"), TESTCASE, false)
                                 .addProperties(TESTCASE_PROPERTIES)
@@ -885,7 +883,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             teststeps.add(step.getString("name"));
                             JSONObject testStepJSON = IO.toJSONObject(testcaseNode.info.testStepInfo);
                             testStepJSON.element("file", path);
-                            testStepJSON.element("method", replace.getString("method"));
+                            testStepJSON.element("method", info.testCaseInfo.getString("method"));
                             testStepJSON.element("url", url);
 
                             step.keySet().forEach((key) -> {
@@ -945,7 +943,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 });
                             }
                             testStepJSON.element("headers", testStepHeader);
-                            testStepJSON.element("reqPath", properties.replace(replace.getString("path")).replaceAll("&amp;", "&"));
+                            testStepJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
 
                             if (step.containsKey("transfer")) {
                                 JSONObject transferProps = step.getJSONObject("transfer");

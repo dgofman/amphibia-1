@@ -178,60 +178,58 @@ public class Mocha extends ProjectAbstract {
                 testcase = replace(testcase, "<% SUMMARY %>", testCaseItem.getString("summary"));
                 testcase = replace(testcase, "<% TESTCASE_NAME %>", testCaseItem.getString("name"));
 
-                if (testCaseItem.containsKey("config")) {
-                    JSONObject config = testCaseItem.getJSONObject("config");
-                    JSONObject replace = config.getJSONObject("replace");
-                    if (replace != null) {
-                        testcase = replace(testcase, "<% ENDPOINT %>", replace.containsKey("endpoint") ? "headers['" + replace.get("endpoint") + "']" : "${endpoint}");
-                        testcase = replace(testcase, "<% METHOD %>", replace.getString("method"));
-                        testcase = replace(testcase, "<% METHOD_NAME %>", replace.getString("method").toLowerCase());
+                if (testCaseItem != null) {
+                    testcase = replace(testcase, "<% ENDPOINT %>", testCaseItem.containsKey("endpoint") ? "headers['" + testCaseItem.get("endpoint") + "']" : "${endpoint}");
+                    testcase = replace(testcase, "<% METHOD %>", testCaseItem.getString("method"));
+                    testcase = replace(testcase, "<% METHOD_NAME %>", testCaseItem.getString("method").toLowerCase());
 
-                        Object path = replace.get("path");
-                        if (path != null) {
-                            path = properties.replace(path.toString()).replaceAll("&amp;", "&");
-                            testcase = replace(testcase, "<% PATH %>", path);
-                        }
+                    Object path = testCaseItem.get("path");
+                    if (path != null) {
+                        path = properties.replace(path.toString()).replaceAll("&amp;", "&");
+                        testcase = replace(testcase, "<% PATH %>", path);
+                    }
 
-                        Object body = replace.get("body");
-                        if (!isNULL(body)) {
-                            body = "JSON.parse(`" + properties.replace(prettyJson(body)) + "`)";
-                        }
+                    Object body = testCaseItem.get("body");
+                    if (!isNULL(body)) {
+                        body = "JSON.parse(`" + properties.replace(prettyJson(body)) + "`)";
+                    }
 
-                        testcase = replace(testcase, "<% BODY %>", body);
+                    testcase = replace(testcase, "<% BODY %>", body);
 
-                        for (Object key : replace.keySet()) {
-                            Object value = replace.get(key);
+                    for (Object key : testCaseItem.keySet()) {
+                        if (!"assertions".equals(key)) {
+                            Object value = testCaseItem.get(key);
                             testcase = replace(testcase, "<% " + key.toString().toUpperCase() + " %>", value instanceof String ? value : toJson(value));
                         }
+                    }
 
-                        testcase = replace(testcase, "<% MEDIATYPE %>", replace.containsKey("mediatype") ? replace.getString("mediatype") : "application/json");
+                    testcase = replace(testcase, "<% MEDIATYPE %>", testCaseItem.containsKey("mediatype") ? testCaseItem.getString("mediatype") : "application/json");
 
-                        if (config.containsKey("assertions")) {
-                            List<String> assertionList = new ArrayList<>();
-                            for (Object assertion : config.getJSONArray("assertions")) {
-                                JSONObject assertionItem = (JSONObject) assertion;
-                                String type = assertionItem.getString("type");
-                                String line = "";
-                                replace = assertionItem.getJSONObject("replace");
+                    if (testCaseItem.containsKey("assertions")) {
+                        List<String> assertionList = new ArrayList<>();
+                        for (Object assertion : testCaseItem.getJSONArray("assertions")) {
+                            JSONObject assertionItem = (JSONObject) assertion;
+                            String type = assertionItem.getString("type");
+                            String line = "";
+                            JSONObject replace = assertionItem.getJSONObject("replace");
 
-                                switch (type) {
-                                    case "HTTPHeaderEquals":
-                                        line = "assert.equal(res.header['<% NAME %>'], '<% VALUE %>');";
-                                        break;
-                                    case "InvalidHTTPStatusCodes":
-                                        line = "assert.notEqual(res.statusCode, <% VALUE %>);";
-                                        break;
-                                    case "ValidHTTPStatusCodes":
-                                        line = "assert.equal(res.statusCode, <% VALUE %>);";
-                                        break;
-                                }
-                                for (Object key : replace.keySet()) {
-                                    line = replace(line, "<% " + key.toString().toUpperCase() + " %>", replace.get(key).toString());
-                                }
-                                assertionList.add(line);
+                            switch (type) {
+                                case "HTTPHeaderEquals":
+                                    line = "assert.equal(res.header['<% NAME %>'], '<% VALUE %>');";
+                                    break;
+                                case "InvalidHTTPStatusCodes":
+                                    line = "assert.notEqual(res.statusCode, <% VALUE %>);";
+                                    break;
+                                case "ValidHTTPStatusCodes":
+                                    line = "assert.equal(res.statusCode, <% VALUE %>);";
+                                    break;
                             }
-                            testcase = replace(testcase, "<% ASSERTIONS %>", String.join(",\n", assertionList));
+                            for (Object key : replace.keySet()) {
+                                line = replace(line, "<% " + key.toString().toUpperCase() + " %>", replace.get(key).toString());
+                            }
+                            assertionList.add(line);
                         }
+                        testcase = replace(testcase, "<% ASSERTIONS %>", String.join(",\n", assertionList));
                     }
                 }
                 testCaseList.add(testcase);

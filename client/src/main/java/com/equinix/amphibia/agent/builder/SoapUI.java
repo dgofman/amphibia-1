@@ -253,32 +253,32 @@ public class SoapUI extends ProjectAbstract {
     protected void buildTestSteps(List<String> testStepList, JSONObject resourceItem, JSONObject headers, JSONObject testCaseItem) throws Exception {
         String type = (String) testCaseItem.get("type");
         String testStepXML = this.getFileContent(getTemplateFile("soapui/teststeps/" + type + ".xml"));
-        JSONObject config = testCaseItem.getJSONObject("config");
 
-        testStepXML = replace(testStepXML, "<% TESTSTEP_NAME %>", config.containsKey("operationId") ? config.get("operationId") : testCaseItem.get("name"));
-        if (config.containsKey("replace")) {
-            JSONObject replace = config.getJSONObject("replace");
-            for (Object key : replace.keySet()) {
-                Object value = replace.get(key);
+        testStepXML = replace(testStepXML, "<% TESTSTEP_NAME %>", testCaseItem.containsKey("operationId") ? testCaseItem.get("operationId") : testCaseItem.get("name"));
+
+        for (Object key : testCaseItem.keySet()) {
+            if (!"assertions".equals(key)) {
+                Object value = testCaseItem.get(key);
                 testStepXML = replace(testStepXML, "<% " + key.toString().toUpperCase() + " %>", value instanceof String ? value : prettyJson(value));
             }
-            testStepXML = replace(testStepXML, "<% ENDPOINT %>", "${#Global#" + (replace.containsKey("endpoint") ? replace.get("endpoint") : resourceItem.get("endpoint")) + "}");
-            testStepXML = replace(testStepXML, "<% INTERFACE %>", headers.getString("basePath"));
-            testStepXML = replace(testStepXML, "<% MEDIATYPE %>", "application/json");
-
-            JSONArray assertions = config.getJSONArray("assertions");
-            List<String> assertionList = new ArrayList<>();
-            for (Object assertion : assertions) {
-                JSONObject assertionItem = (JSONObject) assertion;
-                String assertionXML = this.getFileContent(getTemplateFile("soapui/assertions/" + assertionItem.get("type") + ".xml"));
-                replace = (JSONObject) assertionItem.get("replace");
-                for (Object key : replace.keySet()) {
-                    assertionXML = replace(assertionXML, "<% " + key.toString().toUpperCase() + " %>", replace.get(key));
-                }
-                assertionList.add(assertionXML);
-            }
-            testStepXML = replace(testStepXML, "<% ASSERTIONS %>", String.join("\n", assertionList));
         }
+        testStepXML = replace(testStepXML, "<% ENDPOINT %>", "${#Global#" + (testCaseItem.containsKey("endpoint") ? testCaseItem.get("endpoint") : resourceItem.get("endpoint")) + "}");
+        testStepXML = replace(testStepXML, "<% INTERFACE %>", headers.getString("basePath"));
+        testStepXML = replace(testStepXML, "<% MEDIATYPE %>", "application/json");
+
+        JSONArray assertions = testCaseItem.getJSONArray("assertions");
+        List<String> assertionList = new ArrayList<>();
+        for (Object assertion : assertions) {
+            JSONObject assertionItem = (JSONObject) assertion;
+            String assertionXML = this.getFileContent(getTemplateFile("soapui/assertions/" + assertionItem.get("type") + ".xml"));
+            JSONObject replace = assertionItem.getJSONObject("replace");
+            for (Object key : replace.keySet()) {
+                assertionXML = replace(assertionXML, "<% " + key.toString().toUpperCase() + " %>", replace.get(key));
+            }
+            assertionList.add(assertionXML);
+        }
+        testStepXML = replace(testStepXML, "<% ASSERTIONS %>", String.join("\n", assertionList));
+
         testStepList.add(testStepXML);
     }
 

@@ -24,7 +24,8 @@ public class Postman extends ProjectAbstract {
 
     protected String jsonContent;
     protected File outputFile;
-
+    protected Map<String, String> headerMap;
+    
     protected List<String> collectionIds;
 
     public Postman(CommandLine cmd) throws Exception {
@@ -34,6 +35,7 @@ public class Postman extends ProjectAbstract {
     @Override
     protected void init() throws Exception {
         collectionIds = new ArrayList<>();
+        headerMap = new LinkedHashMap<>();
         super.init();
     }
 
@@ -124,7 +126,8 @@ public class Postman extends ProjectAbstract {
                     addProperty(headerPropertyList, name, getValue(headersJSON.get(name)));
                     headersList.add(name + ": " + headersJSON.get(name));
                 }
-                interfacesJson.put(index, String.join("\\n", headersList));
+                headerMap.put(interfaceItem.getString("id"), String.join("\\n", headersList));
+                interfacesJson.put(interfaceItem.getString("id"), interfaceItem);
 
                 headerJSON = replace(headerJSON, "<% PARAMETERS %>", String.join(",\n", headerPropertyList));
                 headers.add(headerJSON);
@@ -144,14 +147,15 @@ public class Postman extends ProjectAbstract {
 
         for (int index = 0; index < resources.size(); index++) {
             JSONObject resource = resources.getJSONObject(index);
-            String headers = interfacesJson.getString(String.valueOf(index));
+            String iId = resource.getString("interfaceId");
+            String headers = headerMap.get(iId);
             JSONObject testsuites = resource.getJSONObject("testsuites");
             for (Object name : testsuites.keySet()) {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
 
                 Map<String, String> testSuiteRequests = new LinkedHashMap<>();
-                buildTestCases(testSuiteRequests, resource, testSuiteItem, properties, headers);
+                buildTestCases(testSuiteRequests, resource, testSuiteItem, properties, interfacesJson.getJSONObject(iId).getString("basePath"), headers);
                 requestList.putAll(testSuiteRequests);
 
                 String testSuiteJSON = this.getFileContent(getTemplateFile("postman/folder.json"));
@@ -168,7 +172,7 @@ public class Postman extends ProjectAbstract {
         jsonContent = replace(jsonContent, "<% REQUESTS %>", String.join(",\n", requestList.values()));
     }
 
-    protected void buildTestCases(Map<String, String> testSuiteRequests, JSONObject resource, JSONObject testSuiteItem, Properties properties, String headers) throws Exception {
+    protected void buildTestCases(Map<String, String> testSuiteRequests, JSONObject resource, JSONObject testSuiteItem, Properties properties, String basePath, String headers) throws Exception {
         JSONArray testcases = testSuiteItem.getJSONArray("testcases");
         String endpoint = "{{" + resource.getString("endpoint") + "}}";
         for (Object item : testcases) {
@@ -184,29 +188,26 @@ public class Postman extends ProjectAbstract {
                 testcase = replace(testcase, "<% HEADERS %>", headers);
                 testcase = replace(testcase, "<% ENDPOINT %>", endpoint);
 
-                if (testCaseItem.containsKey("config")) {
-                    JSONObject config = testCaseItem.getJSONObject("config");
-                    JSONObject replace = config.getJSONObject("replace");
-                    if (replace != null) {
-                        Object path = replace.get("path");
-                        if (path != null) {
-                            path = properties.replace(path.toString()).replaceAll("&amp;", "&");
-                            testcase = replace(testcase, "<% PATH %>", path);
-                        }
+                Object path = testCaseItem.get("path");
+                if (path != null) {
+                    path = properties.replace(path.toString()).replaceAll("&amp;", "&");
+                    testcase = replace(testcase, "<% PATH %>", basePath + path);
+                }
 
-                        Object body = replace.get("body");
-                        if (!isNULL(body)) {
-                            body = getValue(properties.replace(prettyJson(body).replaceAll("\\n", "\\\\n").replaceAll("\\t", "\\\\t").replaceAll("\\\"", "\\\\\"")));
-                        }
+                Object body = testCaseItem.get("body");
+                if (!isNULL(body)) {
+                    body = getValue(properties.replace(prettyJson(body).replaceAll("\\n", "\\\\n").replaceAll("\\t", "\\\\t").replaceAll("\\\"", "\\\\\"")));
+                }
 
-                        testcase = replace(testcase, "<% BODY %>", body);
+                testcase = replace(testcase, "<% BODY %>", body);
 
-                        for (Object key : replace.keySet()) {
-                            Object value = replace.get(key);
-                            testcase = replace(testcase, "<% " + key.toString().toUpperCase() + " %>", value instanceof String ? value : toJson(value));
-                        }
+                for (Object key : testCaseItem.keySet()) {
+                    if (!"assertions".equals(key)) {
+                        Object value = testCaseItem.get(key);
+                        testcase = replace(testcase, "<% " + key.toString().toUpperCase() + " %>", value instanceof String ? value : toJson(value));
                     }
                 }
+
                 testSuiteRequests.put(id, testcase);
             }
         }

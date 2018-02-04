@@ -111,32 +111,28 @@ public class JsonScript extends ProjectAbstract {
             if ("restrequest".equals(testcase.get("type"))) {
                 properties.setTestCase(testcase.getJSONObject("properties"));
 
-                JSONObject config = testcase.getJSONObject("config");
-                JSONObject replace = config.getJSONObject("replace");
-                if (replace != null) {
-                    for (Object key : replace.keySet()) {
-                        testCaseJson.element(key.toString(), replace.get(key));
-                    }
-                    Object path = replace.get("path");
-                    if (path != null) {
-                        path = properties.replace(path.toString()).replaceAll("&amp;", "&");
-                        testCaseJson.element("path", path);
-                    }
-
-                    Object body = replace.get("body");
-                    if (!isNULL(body)) {
-                        body = properties.replace(prettyJson(body));
-                    }
-                    testCaseJson.element("body", body);
+                for (Object key : testcase.keySet()) {
+                    testCaseJson.element(key.toString(), testcase.get(key));
+                }
+                Object path = testcase.get("path");
+                if (path != null) {
+                    path = properties.replace(path.toString()).replaceAll("&amp;", "&");
+                    testCaseJson.element("path", path);
                 }
 
-                List<?> assertions = (List<?>) config.get("assertions");
+                Object body = testcase.get("body");
+                if (!isNULL(body)) {
+                    body = properties.replace(prettyJson(body));
+                }
+                testCaseJson.element("body", body);
+
+                List<?> assertions = (List<?>) testcase.get("assertions");
                 if (assertions != null) {
                     JSONObject assertionsJSON = new JSONObject();
                     for (Object assertion : assertions) {
                         JSONObject assertionItem = (JSONObject) assertion;
                         JSONObject assertionJSON = new JSONObject();
-                        replace = assertionItem.getJSONObject("replace");
+                        JSONObject replace = assertionItem.getJSONObject("replace");
                         for (Object key : replace.keySet()) {
                             assertionJSON.element(key.toString(), replace.get(key));
                         }

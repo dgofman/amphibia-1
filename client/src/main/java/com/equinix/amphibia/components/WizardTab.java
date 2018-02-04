@@ -261,16 +261,19 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             }
             if (testcase == null) {
                 testcase = new JSONObject();
-                testcase.element("summary", "");
-                testcase.element("name", testCaseName);
-                testcase.element("type", "restrequest");
-                testcase.element("config", IO.toJSONObject("{\"replace\": {}}"));
+                testcase.put("type", "restrequest");
+                testcase.put("name", testCaseName);
+                testcase.put("summary", "");
+                testcase.put("method", null);
+                testcase.put("path", null);
+                testcase.put("body", null);
+                testcase.put("operationId", null);
+                testcase.put("assertions", null);
                 testcase.element("properties", new JSONObject());
                 addTestCase = true;
             }
             testcase.element("summary", txtSummary.getText());
 
-            JSONObject config = testcase.getJSONObject("config");
             if (ckbStatusAssert.isEnabled() && ckbStatusAssert.isSelected()) {
                 int code;
                 try {
@@ -279,16 +282,15 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                     code = 0;
                 }
                 testcase.getJSONObject("properties").element("HTTPStatusCode", code);
-                config.element("assertions", IO.toJSONArray("[{\"replace\": {\"value\": \"${#HTTPStatusCode}\"},\"type\": \"ValidHTTPStatusCodes\"}]"));
+                testcase.element("assertions", IO.toJSONArray("[{\"replace\": {\"value\": \"${#HTTPStatusCode}\"},\"type\": \"ValidHTTPStatusCodes\"}]"));
             }
-            config.element("operationId", txtTestCaseFuncName.getText());
+            testcase.element("operationId", txtTestCaseFuncName.getText());
 
-            JSONObject replace = config.getJSONObject("replace");
-            replace.element("path", txtPath.getText());
-            replace.element("method", cmdMethod.getSelectedItem().toString());
+            testcase.element("path", txtPath.getText());
+            testcase.element("method", cmdMethod.getSelectedItem().toString());
             if (ckbSaveExample.isEnabled() && ckbSaveExample.isSelected()) {
                 try {
-                    replace.element("body", IO.prettyJson(txtResBody.getText()));
+                    testcase.element("body", IO.prettyJson(txtResBody.getText()));
                 } catch (Exception ex) {
                 }
             }

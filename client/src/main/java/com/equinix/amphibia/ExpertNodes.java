@@ -73,15 +73,13 @@ public class ExpertNodes {
                     testcases.add(testCase.getString("name"));
 
                     JSONObject testcaseJSON = new JSONObject();
-                    JSONObject config = testCase.getJSONObject("config");
-                    JSONObject replace = config.getJSONObject("replace");
                     testcaseJSON.element("name", testCase.getString("name"));
                     testcaseJSON.element("type", testCase.getString("type"));
                     testcaseJSON.element("summary", testCase.getString("summary"));
-                    testcaseJSON.element("operationId", config.getString("operationId"));
-                    testcaseJSON.element("method", replace.getString("method"));
-                    testcaseJSON.element("url path", replace.getString("path"));
-                    testcaseJSON.element("example", replace.get("body"));
+                    testcaseJSON.element("operationId", testCase.getString("operationId"));
+                    testcaseJSON.element("method", testCase.getString("method"));
+                    testcaseJSON.element("url path", testCase.getString("path"));
+                    testcaseJSON.element("example", testCase.get("body"));
                     testcaseJSON.element("headers", JSONNull.getInstance());
                     testcaseJSON.element("properties", new JSONObject());
 
@@ -93,7 +91,7 @@ public class ExpertNodes {
 
                     TreeIconNode testcaseNode = collection.addTreeNode(node, testCase.getString("name"), TESTCASE, false)
                             .addProperties(TEST_TESTCASE_PROPERTIES)
-                            .addTooltip(replace.getString("path"))
+                            .addTooltip(testCase.getString("path"))
                             .addJSON(testcaseJSON);
                     testcaseNode.info = info;
 

@@ -148,52 +148,48 @@ public class Swagger extends ProjectAbstract {
                 test = replace(test, "<% TAG %>", testSuiteName);
                 test = replace(test, "<% SUMMARY %>", testcase.getString("summary"));
 
-                JSONObject config = testcase.getJSONObject("config");
-                test = replace(test, "<% NAME %>", config.containsKey("operationId") ? config.getString("operationId") : config.getString("name"));
+                test = replace(test, "<% NAME %>", testcase.containsKey("operationId") ? testcase.getString("operationId") : testcase.getString("name"));
 
-                JSONObject replace = config.getJSONObject("replace");
-                if (replace != null) {
-                    test = replace(test, "<% METHOD %>", replace.getString("method").toLowerCase());
-                    test = replace(test, "<% MEDIATYPE %>", replace.containsKey("mediatype") ? replace.getString("mediatype") : "application/json");
+                test = replace(test, "<% METHOD %>", testcase.getString("method").toLowerCase());
+                test = replace(test, "<% MEDIATYPE %>", testcase.containsKey("mediatype") ? testcase.getString("mediatype") : "application/json");
 
-                    path = replace.get("path");
-                    if (path != null) {
-                        String[] values = path.toString().replaceAll("&amp;", "&").split("\\?");
-                        for (int i = 0; i < values.length; i++) {
-                            StringBuilder sb = new StringBuilder(values[i]);
-                            Matcher m = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(values[i]);
-                            while (m.find()) {
-                                JSONObject source = properties.getProperty(m.group(1));
-                                if (source == null) {
-                                    continue;
-                                }
-                                String key = m.group(2);
-                                Matcher m2 = Pattern.compile("_[A-Z][A-Z0-9_]+", Pattern.DOTALL).matcher(key);
-                                if (m2.find()) {
-                                    String param = m2.group(0).substring(1).toLowerCase();
-                                    String parameterJSON = this.getFileContent(getTemplateFile("swagger/parameter.json"));
-                                    parameterJSON = replace(parameterJSON, "<% REQUIRED %>", i == 0);
-                                    parameterJSON = replace(parameterJSON, "<% IN %>", i == 0 ? "path" : "query");
-                                    parameterJSON = replace(parameterJSON, "<% NAME %>", param);
-                                    parameterJSON = replace(parameterJSON, "<% VALUE %>", getValue(source.get(key)));
-                                    parameterJSON = replace(parameterJSON, "<% TYPE %>", typeof(source.get(key)));
-                                    params.add(parameterJSON);
-
-                                    int offset = values[i].length() - sb.length();
-                                    sb.replace(m.start(0) - offset, m.end(2) - offset + 1, "{" + param + "}");
-                                }
+                path = testcase.get("path");
+                if (path != null) {
+                    String[] values = path.toString().replaceAll("&amp;", "&").split("\\?");
+                    for (int i = 0; i < values.length; i++) {
+                        StringBuilder sb = new StringBuilder(values[i]);
+                        Matcher m = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(values[i]);
+                        while (m.find()) {
+                            JSONObject source = properties.getProperty(m.group(1));
+                            if (source == null) {
+                                continue;
                             }
-                            values[i] = sb.toString();
-                        }
-                        path = values[0];
-                    }
+                            String key = m.group(2);
+                            Matcher m2 = Pattern.compile("_[A-Z][A-Z0-9_]+", Pattern.DOTALL).matcher(key);
+                            if (m2.find()) {
+                                String param = m2.group(0).substring(1).toLowerCase();
+                                String parameterJSON = this.getFileContent(getTemplateFile("swagger/parameter.json"));
+                                parameterJSON = replace(parameterJSON, "<% REQUIRED %>", i == 0);
+                                parameterJSON = replace(parameterJSON, "<% IN %>", i == 0 ? "path" : "query");
+                                parameterJSON = replace(parameterJSON, "<% NAME %>", param);
+                                parameterJSON = replace(parameterJSON, "<% VALUE %>", getValue(source.get(key)));
+                                parameterJSON = replace(parameterJSON, "<% TYPE %>", typeof(source.get(key)));
+                                params.add(parameterJSON);
 
-                    Object body = replace.get("body");
+                                int offset = values[i].length() - sb.length();
+                                sb.replace(m.start(0) - offset, m.end(2) - offset + 1, "{" + param + "}");
+                            }
+                        }
+                        values[i] = sb.toString();
+                    }
+                    path = values[0];
+  
+                    Object body = testcase.get("body");
                     if (!isNULL(body)) {
                         body = properties.replace(prettyJson(body));
                         String bodyJSON = this.getFileContent(getTemplateFile("swagger/body.json"));
-                        if (config.containsKey("definition")) {
-                            String defName = config.getString("definition");
+                        if (testcase.containsKey("definition")) {
+                            String defName = testcase.getString("definition");
                             params.add(bodyJSON.replace("<% SCHEMA %>", "\"$ref\": \"#/definitions/" + defName + "\""));
                             if (!definitions.containsKey(defName)) {
                                 definitions.put(defName, this.getFileContent(getTemplateFile("swagger/definition.json"))
@@ -208,8 +204,8 @@ public class Swagger extends ProjectAbstract {
                 test = replace(test, "<% PARAMETERS %>", String.join(",\n", params));
 
                 List<String> assertionList = new ArrayList<>();
-                if (config.containsKey("assertions")) {
-                    for (Object assertion : config.getJSONArray("assertions")) {
+                if (testcase.containsKey("assertions")) {
+                    for (Object assertion : testcase.getJSONArray("assertions")) {
                         JSONObject assertionItem = (JSONObject) assertion;
                         String assertionJSON = this.getFileContent(getTemplateFile("swagger/assertion.json"));
                         Object value = ((Map<?, ?>) assertionItem.get("replace")).get("value");

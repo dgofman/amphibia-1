@@ -4,7 +4,7 @@
 					"description": "<% SUMMARY %>",
 					"method": "<% METHOD %>",
 					"headers": "<% HEADERS %>",
-					"url": "<% ENDPOINT %>/<% PATH %>",
+					"url": "<% ENDPOINT %><% PATH %>",
 					"data": <% BODY %>,
 					"collectionId": "10000000-0000-0000-0000-000000000000",
 					"preRequestScript": null,

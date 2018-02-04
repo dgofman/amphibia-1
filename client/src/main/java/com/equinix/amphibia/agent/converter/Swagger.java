@@ -49,6 +49,7 @@ public final class Swagger {
     }
 
     public String init(String name, int index, String inputParam, boolean isURL, String propertiesFile) throws Exception {
+        output.put("version", "1.0.0");
         if (name == null) {
             JSONObject info = doc.getJSONObject("info");
             if (!info.isNullObject()) {
@@ -59,7 +60,7 @@ public final class Swagger {
             name = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         }
         if (!output.containsKey("name")) {
-            output.accumulate("name", name);
+            output.put("name", name);
         }
         profile.setDefinition(doc);
         parse(index, inputParam, isURL, propertiesFile);
@@ -128,7 +129,7 @@ public final class Swagger {
                     boolean newProp = true;
                     for (int i = 0; i < globals.size(); i++) {
                         if (key.equals(globals.getJSONObject(i).getString("name"))) {
-                            globals.getJSONObject(i).accumulate("value", propertyGlobals.get(key));
+                            globals.getJSONObject(i).put("value", propertyGlobals.get(key));
                             newProp = false;
                             break;
                         }
@@ -166,7 +167,7 @@ public final class Swagger {
         if (!hosts.contains(host)) {
             hosts.add(host);
         }
-        output.element("hosts", hosts);
+        output.put("hosts", hosts);
         
         JSONArray interfaces = output.containsKey("interfaces") ? output.getJSONArray("interfaces") : new JSONArray();
         String interfaceBasePath = doc.getString("basePath");
@@ -184,7 +185,7 @@ public final class Swagger {
         if (swaggerProperties != null) {
             headers = swaggerProperties.getJSONObject("headers");
         } else {
-            headers.element("CONTENT-TYPE", "application/json");
+            headers.put("CONTENT-TYPE", "application/json");
         }
         
         final String name = interfaceName;
@@ -218,8 +219,8 @@ public final class Swagger {
                 put("headers", hs);
             }
         });
-        output.element("interfaces", interfaces);
-        output.element("globals", globals);
+        output.put("interfaces", interfaces);
+        output.put("globals", globals);
 
         profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile);
 
@@ -244,7 +245,7 @@ public final class Swagger {
                         Converter.addResult(RESOURCE_TYPE.warnings, "conflicting/ambiguous property name - " + key);
                     }
                 }
-                properties.element(key.toString(), value);
+                properties.put(key.toString(), value);
             });
         }
         output.put("properties", properties);
@@ -257,7 +258,7 @@ public final class Swagger {
                 put("testsuites", testsuites);
             }
         });
-        output.element("projectResources", projectResources);
+        output.put("projectResources", projectResources);
     }
 
     protected void addTestSuite(int index, String resourceId, String interfaceName, String interfaceBasePath, JSONObject testsuites) throws Exception {
@@ -321,24 +322,20 @@ public final class Swagger {
             info.testCaseName = info.methodName + "_" + info.apiName;
             Map<String, Object> properties = new LinkedHashMap<>();
             String summary = summaryInfo;
-            testcases
-                    .add(new LinkedHashMap<String, Object>() {
-                        {
-                            put("type", "restrequest");
-                            put("name", info.testCaseName);
-                            put("summary", summary);
-                            put("properties", properties);
-                            put("config", getConfig(index, properties, info));
-                        }
-                    });
+            JSONObject config = new JSONObject();
+            config.put("type", "restrequest");
+            config.put("name", info.testCaseName);
+            config.put("summary", summary);
+            parseConfig(config, index, properties, info);
+            config.put("properties", properties);
+            testcases.add(config);
         }
     }
 
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
-    protected JSONObject getConfig(int index, Map<String, Object> properties, ApiInfo info) throws Exception {
+    protected JSONObject parseConfig(JSONObject config, int index, Map<String, Object> properties, ApiInfo info) throws Exception {
         JSONObject api = info.api;
-        JSONObject config = new JSONObject();
-
+        
         JSONArray assertions = new JSONArray();
         JSONObject responses = api.getJSONObject("responses");
         for (Object httpCode : responses.keySet()) {
@@ -355,7 +352,34 @@ public final class Swagger {
             });
             break;
         }
-        config.accumulate("assertions", assertions);
+        
+        Definition definition = new Definition(doc, this);
+        parseDefinition(info, definition, info.apis, properties);
+        parseDefinition(info, definition, api, properties);
+        JSONObject body = api.getJSONObject("example");
+        if (body.isNullObject()) {
+            body = definition.getExample();
+        }
+
+        String path = info.path;
+        for (String name : definition.getParameters().keySet()) {
+            String paramValue = definition.getParameters().get(name);
+            if (paramValue != null) {
+                path = path.replaceAll("\\{" + name + "\\}", paramValue);
+            }
+        }
+
+        final String replacePath = path + definition.getQueries();
+        final Object replaceBody = body == null ? NULL : body;
+        config.put("method", info.methodName);
+        config.put("path", replacePath);
+        config.put("body", replaceBody);
+        config.put("operationId", api.getString("operationId"));
+        if (definition.ref != null) {
+            config.put("definition", definition.ref.split("#/definitions/")[1]);
+        }
+        
+        config.put("assertions", assertions);
 
         JSONArray statuses = null;
         if (swaggerProperties != null && swaggerProperties.containsKey("asserts")) {
@@ -394,37 +418,6 @@ public final class Swagger {
             }
         }
 
-        Definition definition = new Definition(doc, this);
-        parseDefinition(info, definition, info.apis, properties);
-        parseDefinition(info, definition, api, properties);
-        JSONObject body = api.getJSONObject("example");
-        if (body.isNullObject()) {
-            body = definition.getExample();
-        }
-
-        String path = info.path;
-        for (String name : definition.getParameters().keySet()) {
-            String paramValue = definition.getParameters().get(name);
-            if (paramValue != null) {
-                path = path.replaceAll("\\{" + name + "\\}", paramValue);
-            }
-        }
-
-        config.accumulate("operationId", api.getString("operationId"));
-        if (definition.ref != null) {
-            config.accumulate("definition", definition.ref.split("#/definitions/")[1]);
-        }
-
-        final String replacePath = path + definition.getQueries();
-        final Object replaceBody = body == null ? NULL : body;
-        config.accumulate("replace",
-                new LinkedHashMap<String, Object>() {
-            {
-                put("method", info.methodName);
-                put("path", replacePath);
-                put("body", replaceBody);
-            }
-        });
         return config;
     }
 
