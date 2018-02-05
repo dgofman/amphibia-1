@@ -199,6 +199,7 @@ public final class Amphibia extends JFrame {
      * Creates new form NewJFrame
      */
     public void init() {
+        logger.info("Init Begin");
         String[] arr = userPreferences.get(P_LOCALE, "").split("_");
         if (arr.length == 2) {
             Locale.setDefault(new Locale(arr[0], arr[1]));
@@ -218,7 +219,9 @@ public final class Amphibia extends JFrame {
             logger.log(Level.SEVERE, ex.toString(), ex);
         }
 
+        logger.info("initComponents Begin");
         initComponents();
+        logger.info("initComponents End");
 
         addComponentListener(new ComponentAdapter() {
             Timer timer = new Timer();
@@ -276,6 +279,7 @@ public final class Amphibia extends JFrame {
 
         mainPanel.saveDialog.validateAndSave(bundle.getString("restore"), true);
 
+        logger.info("Load APP");
         JSONArray recentProjects = IO.toJSONArray(userPreferences.get(P_RECENT_PROJECTS, "[]"));
         JSONArray list = IO.toJSONArray(userPreferences.get(P_PROJECT_UUIDS, "[]"));
         TreeCollection collection = null;
@@ -290,14 +294,17 @@ public final class Amphibia extends JFrame {
                 mainPanel.loadProject(collection);
             }
         }
+        logger.info("Register APP");
         userPreferences.put(Amphibia.P_PROJECT_UUIDS, list.toString());
         createRecentProjectMenu(collection);
         mainPanel.treeModel.reload();
         resetEnvironmentModel();
 
+        logger.info("Reload APP");
         mainPanel.profile.openReport();
         mainPanel.reloadAll();
         mainPanel.wizard.openTabs();
+        logger.info("Init End");
     }
 
     public void showHideTab(int index, boolean b) {

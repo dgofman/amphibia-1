@@ -27,7 +27,7 @@
   <splash>
     <file>..\client\src\main\java\com\equinix\amphibia\icons\splash.bmp</file>
     <waitForWindow>true</waitForWindow>
-    <timeout>10</timeout>
+    <timeout>30</timeout>
     <timeoutErr>true</timeoutErr>
   </splash>
   <versionInfo>

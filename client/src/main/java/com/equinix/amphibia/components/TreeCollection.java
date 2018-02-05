@@ -373,7 +373,6 @@ public final class TreeCollection {
     public void setProjectProfile(JSONObject json) {
         projectProfile = json;
         project.getTreeIconUserObject().setLabel(getProjectName());
-        profile.getTreeIconUserObject().setLabel(getProjectName());
     }
 
     public boolean isOpen() {
