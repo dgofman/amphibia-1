@@ -629,6 +629,7 @@ public final class MainPanel extends javax.swing.JPanel {
         });
         
         Map<Object, JSONObject> interfacesMap = new HashMap<>();
+        JSONArray interfaceList = new JSONArray();
         interfacesJSON.forEach((item) -> {
             JSONObject interfaceJSON = IO.toJSONObject(item);
             String interfaceId = interfaceJSON.getString("id");
@@ -652,10 +653,11 @@ public final class MainPanel extends javax.swing.JPanel {
                             .addJSON(interfaceJSON);
                     iNode.info = new TreeIconNode.ResourceInfo(profileFile);
                     iNode.info.resource = resource;
+                    interfaceList.add(interfaceJSON);
                 }
             });
         });
-        collection.interfaces.addJSON(interfacesJSON);
+        collection.interfaces.addJSON(interfaceList);
 
         testsuites.forEach((item) -> {
             JSONObject testsuite = (JSONObject) item;

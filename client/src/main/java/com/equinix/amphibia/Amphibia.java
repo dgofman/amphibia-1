@@ -178,6 +178,12 @@ public final class Amphibia extends JFrame {
             instance.requestFocus();
             instance.setAlwaysOnTop(false);
             instance.setVisible(true);
+            new Thread() {
+                @Override
+                public void run() {
+                    instance.mainPanel.editor.loadHistory();
+                }
+            }.start();
         });
     }
 

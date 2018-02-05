@@ -110,46 +110,6 @@ public final class Editor extends BaseTaskPane {
         defaultDividerLocation = 300;
         loadMaxLastHistory = userPreferences.getInt(Amphibia.P_HISTORY, 50);
         
-        File history = IO.newFile(Amphibia.AMPHIBIA_HOME, ".history");
-        try {
-            historyIndex = 0;
-            if (history.exists()) {
-                int counter = 0;
-                historyWriter = new RandomAccessFile(history, "rw");
-                long length = historyWriter.length() - 1;
-                while (length > 0 && counter++ < loadMaxLastHistory) {
-                    byte b = 0;
-                    StringBuilder sb = new StringBuilder();
-                    while (b != LINE_SEPARATOR && length > 0) {
-                        length -= 1;
-                        historyWriter.seek(length);
-                        b = historyWriter.readByte();
-                        if (b != LINE_SEPARATOR) {
-                            sb.append((char) b);
-                        }
-                    }
-                    String line = "";
-                    try {
-                        line = sb.reverse().toString();
-                        int idx1 = line.indexOf("\t");
-                        String time = line.substring(0, idx1);
-                        Date date = new Date(Long.valueOf(time));
-                        int idx2 = line.indexOf("\t", idx1 + 1);
-                        String file = line.substring(idx1 + 1, idx2);
-                        historyModel.addRow(new Object[]{dateFormat.print(date.getTime()), file, line.substring(idx2 + 1)});
-                    } catch (NullPointerException | NumberFormatException | StringIndexOutOfBoundsException e) {
-                        logger.log(Level.SEVERE, "Line number: " + counter + "::" + line, e);
-                    }
-                }
-                historyWriter.close();
-            }
-
-            historyWriter = new RandomAccessFile(history, "rw");
-            historyWriter.seek(history.length());
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, ex.toString() + "::" + history.getAbsolutePath(), ex);
-        }
-
         initComponents();
         
         WizardTab.ExtendedStyledEditorKit editorKit = new WizardTab.ExtendedStyledEditorKit();
@@ -290,6 +250,48 @@ public final class Editor extends BaseTaskPane {
         });
 
         setComponents(tbpOutput, treeProblems);
+    }
+    
+    public void loadHistory() {
+        File history = IO.newFile(Amphibia.AMPHIBIA_HOME, ".history");
+        try {
+            historyIndex = 0;
+            if (history.exists()) {
+                int counter = 0;
+                historyWriter = new RandomAccessFile(history, "rw");
+                long length = historyWriter.length() - 1;
+                while (length > 0 && counter++ < loadMaxLastHistory) {
+                    byte b = 0;
+                    StringBuilder sb = new StringBuilder();
+                    while (b != LINE_SEPARATOR && length > 0) {
+                        length -= 1;
+                        historyWriter.seek(length);
+                        b = historyWriter.readByte();
+                        if (b != LINE_SEPARATOR) {
+                            sb.append((char) b);
+                        }
+                    }
+                    String line = "";
+                    try {
+                        line = sb.reverse().toString();
+                        int idx1 = line.indexOf("\t");
+                        String time = line.substring(0, idx1);
+                        Date date = new Date(Long.valueOf(time));
+                        int idx2 = line.indexOf("\t", idx1 + 1);
+                        String file = line.substring(idx1 + 1, idx2);
+                        historyModel.addRow(new Object[]{dateFormat.print(date.getTime()), file, line.substring(idx2 + 1)});
+                    } catch (NullPointerException | NumberFormatException | StringIndexOutOfBoundsException e) {
+                        logger.log(Level.SEVERE, "Line number: " + counter + "::" + line, e);
+                    }
+                }
+                historyWriter.close();
+            }
+
+            historyWriter = new RandomAccessFile(history, "rw");
+            historyWriter.seek(history.length());
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, ex.toString() + "::" + history.getAbsolutePath(), ex);
+        }
     }
     
     public boolean addHistory(Date date, String filePath, String oldContent, String newContent) {
