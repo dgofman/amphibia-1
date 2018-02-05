@@ -21,6 +21,7 @@ import net.sf.json.JSON;
 public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
 
     private final Editor.Entry rootEntry;
+    private TreeIconNode node;
     private JSON json;
     private Object[][] properties;
 
@@ -35,7 +36,7 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
     }
 
     private JSONTableModel(ResourceBundle bundle) {
-        super(new Editor.Entry("root"));
+        super(new Editor.Entry(null, "root"));
         this.rootEntry = (Editor.Entry) root;
         this.bundle = bundle;
         this.columns = new String[]{
@@ -45,7 +46,8 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
         };
     }
 
-    public JSONTableModel updateModel(JSON json, Object[][] properties) {
+    public JSONTableModel updateModel(TreeIconNode node, JSON json, Object[][] properties) {
+        this.node = node;
         this.json = json;
         this.properties = properties;
 
@@ -60,11 +62,11 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
                     if (!isInherit && "inherited-properties".equals(name)) {
                         continue;
                     }
-                    rootEntry.add(json, name.toString(), element, prop[1], prop, name);
+                    rootEntry.add(node, json, name.toString(), element, prop[1], prop, name);
                 } else if (prop.length == 2) {
                     JSONObject j = (JSONObject) json;
                     j.keySet().forEach((key) -> {
-                        rootEntry.add(json, key.toString(), j.get(key), prop[1], prop, key.toString());
+                        rootEntry.add(node, json, key.toString(), j.get(key), prop[1], prop, key.toString());
                     });
                 }
             }
@@ -72,16 +74,16 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
             JSONArray array = (JSONArray) json;
             for (int i = 0; i < array.size(); i++) {
                 Object value = array.get(i);
-                Editor.Entry node = new Editor.Entry(value instanceof String ? value.toString() : " ");
-                node.type = null;
-                rootEntry.children.add(node);
+                Editor.Entry entry = new Editor.Entry(node, value instanceof String ? value.toString() : " ");
+                entry.setType(null);
+                rootEntry.children.add(entry);
                 for (Object[] prop : properties) {
                     Object name = prop[0];
                     if (name != null) {
                         Object element = array.getJSONObject(i).get(name.toString());
-                        node.add(json, name.toString(), element, prop[1], prop, name);
+                        entry.add(node, json, name.toString(), element, prop[1], prop, name);
                     } else {
-                        node.add(json, String.valueOf(i), array.getJSONObject(i), prop[1], prop, name);
+                        entry.add(node, json, String.valueOf(i), array.getJSONObject(i), prop[1], prop, name);
                     }
                 }
             }
@@ -91,7 +93,7 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
 
     public static JSONTableModel cloneModel(JSONTableModel model) {
         JSONTableModel clone = createModel(model.bundle);
-        return clone.updateModel(model.json, model.properties);
+        return clone.updateModel(model.node, model.json, model.properties);
     }
 
     public static JSONTableModel createModel(ResourceBundle bundle) {
@@ -127,7 +129,7 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
                 case 1:
                     return entry.isLeaf ? entry.value : null;
                 case 2:
-                    return entry.type;
+                    return entry.getType();
             }
         }
         return null;

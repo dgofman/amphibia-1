@@ -140,7 +140,7 @@ public class Swagger extends ProjectAbstract {
             JSONObject testcase = (JSONObject) item;
             if ("restrequest".equals(testcase.get("type"))) {
                 properties.setTestCase(testcase.getJSONObject("properties"));
-                Object path = "unknown";
+                Object path;
                 List<String> params = new ArrayList<>();
                 params.addAll(headerParams);
 

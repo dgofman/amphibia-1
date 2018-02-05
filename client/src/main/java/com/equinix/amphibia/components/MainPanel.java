@@ -547,23 +547,18 @@ public final class MainPanel extends javax.swing.JPanel {
 
     public boolean loadProject(TreeCollection collection) {
         File projectFile = collection.getProjectFile();
-        try {
-            IO.copy(projectFile, IO.getBackupFile(projectFile));
-            collection.profile.load(projectFile.getParentFile());
-        } catch (Exception e) {
-            addError(e);
-        }
-
-        JSONObject projectJson = (JSONObject) IO.getBackupJSON(projectFile, editor);
+        JSONObject projectJson = (JSONObject)IO.getJSON(projectFile, editor);
         collection.project.addJSON(projectJson);
         collection.project.addTooltip(projectFile.getAbsolutePath());
-
         globalVarsDialog.mergeVariables(projectJson.getJSONArray("globals"));
         
-        File profileFile = IO.getFile(collection, "data/profile.json");
-        JSONObject json = IO.getBackupJSON(profileFile, editor);
-        collection.setProjectProfile(json);
-        globalVarsDialog.mergeVariables(json.getJSONArray("globals"));
+        try {
+            collection.profile.load(collection.getProjectDir());
+            JSONObject json = collection.profile.profileJSON;
+            collection.setProjectProfile(json);
+        } catch (Exception ex) {
+            addError(ex);
+        }
         
         wizard.updateEndPoints();
 
@@ -577,9 +572,8 @@ public final class MainPanel extends javax.swing.JPanel {
 
         TreeIconNode debugProjectNode = new TreeIconNode(collection.project);
         JSONObject projectJson = collection.project.jsonObject();
-        Properties projectProperties;
+        JSONArray globals = new JSONArray();
         try {
-            JSONArray globals = new JSONArray();
             Object[][] vars = GlobalVariableDialog.getGlobalVarData();
             int columnIndex = Amphibia.instance.getSelectedEnvDataIndex();
             for (Object[] data : vars) {
@@ -590,23 +584,30 @@ public final class MainPanel extends javax.swing.JPanel {
                     }
                 });
             }
-            projectProperties = new Properties(globals, projectJson.getJSONObject("properties"));
         } catch (Exception e) {
             editor.addError(e, Amphibia.getBundle().getString("error_open_json"));
             return false;
         }
-        collection.setProjectProperties(projectProperties);
-
+        
         File profileFile = IO.getFile(collection, "data/profile.json");
         JSONObject json = IO.getBackupJSON(profileFile, editor);
         collection.setProjectProfile(json);
         
+        JSONObject projectProps = JSONObject.fromObject(projectJson.getJSONObject("projectProperties"));
+        JSONObject profileProps = json.getJSONObject("properties");
+        profileProps.keySet().forEach((key) -> {
+            projectProps.put(key, profileProps.get(key));
+        });
+        collection.project.jsonObject().element("properties", projectProps);
+        
+        Properties projectProperties = new Properties(globals, projectProps);
+
         projectProperties.setTestCase(json.getJSONObject("properties"));
+        collection.setProjectProperties(projectProperties);
 
         collection.profile.addJSON(json)
                 .addTooltip(profileFile.getAbsolutePath());
-        collection.project.getTreeIconUserObject().setLabel(collection.getProjectName());
-
+        
         collection.project.add(collection.resources);
         collection.project.add(collection.interfaces);
         collection.project.add(collection.profile);
@@ -626,15 +627,33 @@ public final class MainPanel extends javax.swing.JPanel {
             JSONObject resource = (JSONObject) item;
             resourceMap.put(resource.getString("resourceId"), resource);
         });
-
+        
         Map<Object, JSONObject> interfacesMap = new HashMap<>();
         interfacesJSON.forEach((item) -> {
-            JSONObject interfaceJSON = (JSONObject) item;
-            interfacesMap.put(interfaceJSON.getString("id"), interfaceJSON);
-            collection.addTreeNode(collection.interfaces, interfaceJSON.getString("name"), INTERFACE, false)
-                    .addProperties(INTERFACE_PROPERTIES)
-                    .addTooltip(interfaceJSON.getString("basePath"))
-                    .addJSON(interfaceJSON);
+            JSONObject interfaceJSON = IO.toJSONObject(item);
+            String interfaceId = interfaceJSON.getString("id");
+            resources.forEach((r) -> {
+                JSONObject resource = (JSONObject) r;
+                if (interfaceId.equals(resource.getString("interface"))) {
+                    if (resource.containsKey("name")) {
+                        interfaceJSON.element("name", resource.getString("name"));
+                    }
+                    if (resource.containsKey("basePath")) {
+                        interfaceJSON.element("basePath", resource.getString("basePath"));
+                    }
+                    JSONObject headers = resource.getJSONObject("headers");
+                    headers.keySet().forEach((key) -> {
+                        interfaceJSON.getJSONObject("headers").put(key, headers.get(key));
+                    });
+                    interfacesMap.put(interfaceJSON.getString("id"), interfaceJSON);
+                    TreeIconNode iNode = collection.addTreeNode(collection.interfaces, interfaceJSON.getString("name"), INTERFACE, false)
+                            .addProperties(INTERFACE_PROPERTIES)
+                            .addTooltip(interfaceJSON.getString("basePath"))
+                            .addJSON(interfaceJSON);
+                    iNode.info = new TreeIconNode.ResourceInfo(profileFile);
+                    iNode.info.resource = resource;
+                }
+            });
         });
         collection.interfaces.addJSON(interfacesJSON);
 
@@ -708,10 +727,12 @@ public final class MainPanel extends javax.swing.JPanel {
             if (resource.containsKey("interface")) {
                 JSONObject interfaceJSON = interfacesMap.get(resource.getString("interface"));
                 if (interfaceJSON != null) {
-                    collection.addTreeNode(resourceNode, interfaceJSON.getString("name"), INTERFACE, false)
+                    TreeIconNode iNode = collection.addTreeNode(resourceNode, interfaceJSON.getString("name"), INTERFACE, false)
                             .addProperties(INTERFACE_PROPERTIES)
                             .addTooltip(interfaceJSON.getString("basePath"))
                             .addJSON(interfaceJSON);
+                    iNode.info = new TreeIconNode.ResourceInfo(profileFile);
+                    iNode.info.resource = resource;
                 }
             }
 

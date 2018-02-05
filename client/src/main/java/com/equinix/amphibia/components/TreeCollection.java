@@ -71,6 +71,8 @@ public final class TreeCollection {
     };
 
     public static final Object[][] PROJECT_PROPERTIES = new Object[][]{
+        {"version", VIEW},
+        {"name", VIEW},
         {"hosts", null, VIEW},
         {"interfaces", null, VIEW},
         {"globals", null, VIEW},
@@ -88,9 +90,9 @@ public final class TreeCollection {
 
     public static final Object[][] RESOURCE_PROPERTIES = new Object[][]{
         {"id", VIEW},
+        {"interface", VIEW},
         {"source", VIEW},
-        {"properties", VIEW},
-        {"interface", VIEW}
+        {"properties", VIEW}
     };
 
     public static final Object[][] INTERFACE_PROPERTIES = new Object[][]{
@@ -109,6 +111,7 @@ public final class TreeCollection {
     };
 
     public static final Object[][] PROFILE_PROPERTIES = new Object[][]{
+        {"version", VIEW},
         {"project", new Object[][] {
             {"id", VIEW},
             {"name", EDIT_LIMIT},
@@ -369,6 +372,8 @@ public final class TreeCollection {
 
     public void setProjectProfile(JSONObject json) {
         projectProfile = json;
+        project.getTreeIconUserObject().setLabel(getProjectName());
+        profile.getTreeIconUserObject().setLabel(getProjectName());
     }
 
     public boolean isOpen() {

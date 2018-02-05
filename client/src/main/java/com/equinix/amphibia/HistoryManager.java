@@ -31,36 +31,43 @@ public class HistoryManager {
     }
     
     public void saveEntry(Editor.Entry entry, TreeCollection collection) {
-        TreeIconNode selectedNode = MainPanel.selectedNode;
-        TreeIconNode.ResourceInfo info = selectedNode.info;
-        TreeCollection.TYPE type = selectedNode.getType();
-        TreeIconNode node = (TreeIconNode.ProfileNode) collection.profile;
+        TreeIconNode node = entry.node;
+        TreeIconNode.ResourceInfo info = node.info;
+        TreeCollection.TYPE type = node.getType();
+        TreeIconNode profile = (TreeIconNode.ProfileNode) collection.profile;
         if ("name".equals(entry.name)) {
-            TreeIconNode saveNode = collection.profile;
-            if (type == TESTCASE) {
-                info.testCase.element(entry.name, entry.value);
+            if (type == PROJECT || type == PROFILE) {
+                JSONObject json = profile.jsonObject().getJSONObject("project");
+                json.element("name", entry.value);
+            } else if (type == INTERFACE) {
+                JSONArray interfaces = collection.project.jsonObject().getJSONArray("interfaces");
+                for (Object item : interfaces) {
+                    JSONObject json = (JSONObject) item;
+                    if (json.getString("id").equals(node.jsonObject().getString("id"))) {
+                        if (json.getString("name").equals(entry.value)) {
+                            node.info.resource.remove("name");
+                        } else {
+                            node.info.resource.element("name", entry.value);
+                        }
+                        break;
+                    }
+                }
+            } else if (type == TESTCASE) {
+                info.testCase.element("name", entry.value);
             } else if (type == TEST_STEP_ITEM) {
                 info.testStep.element("name", entry.value);
-            } else {
-                JSONObject json = selectedNode.jsonObject();
-                if (type == PROJECT) {
-                    json = saveNode.jsonObject().getJSONObject("project");
-                } else if (type == INTERFACE) {
-                    saveNode = collection.project;
-                }
-                json.element(entry.name, entry.value);
             }
-            saveAndAddHistory(saveNode);
+            saveAndAddHistory(profile);
             //Save new selection name
-            selectedNode.getTreeIconUserObject().setLabel(entry.value.toString());
-            selectedNode.saveSelection();
+            node.getTreeIconUserObject().setLabel(entry.value.toString());
+            node.saveSelection();
             mainPanel.reloadCollection(collection);
         } else if ("disabled".equals(entry.name)) {
             JSONObject json;
             switch (type) {
                 case TESTSUITE:
-                    JSONArray testsuites = node.jsonObject().getJSONArray("testsuites");
-                    int index = selectedNode.jsonObject().getInt("index");
+                    JSONArray testsuites = profile.jsonObject().getJSONArray("testsuites");
+                    int index = node.jsonObject().getInt("index");
                     json = testsuites.getJSONObject(index);
                     break;
                 case TESTCASE:
@@ -78,18 +85,32 @@ public class HistoryManager {
                 json.element("disabled", true);
             }
         } else if (type == PROJECT) {
-            JSONObject json = node.jsonObject();
-            System.out.println(json);
             if ("properties".equals(entry.getParent().toString())) {
-                updateValues(entry, json.getJSONObject("properties"), collection.getProjectProfile(), "properties");
+                updateValues(entry, collection.project.jsonObject().getJSONObject("projectProperties"),  profile.jsonObject(), "properties");
             }
-            
+        } else if (type == INTERFACE) {
+            JSONArray interfaces = collection.project.jsonObject().getJSONArray("interfaces");
+            for (Object item : interfaces) {
+                JSONObject json = (JSONObject) item;
+                if (json.getString("id").equals(node.jsonObject().getString("id"))) {
+                    if ("headers".equals(entry.getParent().toString())) {
+                        updateValues(entry, json, node.info.resource, "headers");
+                    } else {
+                        if (json.getString(entry.name).equals(entry.value)) {
+                            node.info.resource.remove(entry.name);
+                        } else {
+                            node.info.resource.element(entry.name, entry.value);
+                        }
+                    }
+                    break;
+                }
+            }
         } else if (type == TESTSUITE) {
             if ("properties".equals(entry.getParent().toString())) {
                 updateValues(entry, info.testSuiteInfo.getJSONObject("properties"), info.testSuite, "properties");
             } else if ("endpoint".equals(entry.name)) {
-                selectedNode.info.resource.element("endpoint", entry.value);
-                node = collection.project;
+                node.info.resource.element("endpoint", entry.value);
+                profile = collection.project;
             }
         } else if (type == TESTCASE) {
             if ("summary".equals(entry.name)) {
@@ -110,14 +131,15 @@ public class HistoryManager {
                 return;
             }
         } else if (type == RULES || type == TEST_ITEM || type == SCHEMA_ITEM) {
-            node = selectedNode;
+            saveNode(node);
+            return;
         } else if (type == TEST_STEP_ITEM) {
             if ("headers".equals(entry.getParent().toString())) {
                 if (info.testStep != null) { //update profile.json
                     updateValues(entry, info.testCaseHeaders, info.testStep, "headers");
                 }
             } else {
-                JSONObject json = selectedNode.jsonObject();
+                JSONObject json = node.jsonObject();
                 info.testStep.remove("request");
                 info.testStep.remove("response");
                 JSONObject request = compare(info.testStepInfo.getJSONObject("request"), json.getJSONObject("request"), "request");
@@ -130,7 +152,7 @@ public class HistoryManager {
                 }
             }
         }
-        saveNode(node);
+        saveNode(profile);
     }
     
     public static JSONObject compare(JSONObject source, JSONObject target, String rootName) {
@@ -219,7 +241,7 @@ public class HistoryManager {
         }
         String name = Amphibia.instance.inputDialog("renameResources", MainPanel.selectedNode.getLabel(), names);
         if (name != null && !name.isEmpty()) {
-            Editor.Entry entry = new Editor.Entry("name");
+            Editor.Entry entry = new Editor.Entry(MainPanel.selectedNode, "name");
             entry.value = name;
             saveEntry(entry, MainPanel.selectedNode.getCollection());
         }

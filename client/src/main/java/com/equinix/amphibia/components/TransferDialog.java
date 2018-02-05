@@ -185,7 +185,7 @@ public class TransferDialog extends javax.swing.JPanel {
     public void openDialog(TreeIconNode node, Editor.Entry entry) {
         this.entry = entry;
         Object pathValue = null;
-        if (entry.type == EDIT) {
+        if (entry.getType() == EDIT) {
             JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
             JSONObject transfer = json.containsKey("transfer") ? json.getJSONObject("transfer") : new JSONObject();
             if (transfer.containsKey(entry.name)) {
@@ -202,7 +202,7 @@ public class TransferDialog extends javax.swing.JPanel {
         JSONObject inheritedProperties = node.jsonObject().getJSONObject("inherited-properties");
         inheritedProperties.keySet().forEach((key) -> {
             targetModel.addElement(key);
-            if (entry.type == EDIT && key.toString().equals(entry.name)) {
+            if (entry.getType() == EDIT && key.toString().equals(entry.name)) {
                 cmbTarget.setSelectedIndex(targetModel.getSize() - 1);
             }
         });
@@ -227,7 +227,7 @@ public class TransferDialog extends javax.swing.JPanel {
         }
         treeModel.reload(treeNode);
         lblError.setVisible(false);
-        if (entry.type == ADD || (pathValue instanceof String && pathValue.toString().startsWith("/"))) {
+        if (entry.getType() == ADD || (pathValue instanceof String && pathValue.toString().startsWith("/"))) {
             txtPath.setText(String.valueOf(pathValue));
 
             boolean b = treeNode.getChildCount() > 0;

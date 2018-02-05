@@ -142,7 +142,7 @@ public final class TreePopupMenuBuilder implements ActionListener {
                 mainPanel.history.saveNode(collection.profile);
                 break;
             case "DISABLED":
-                Editor.Entry entry = new Editor.Entry("disabled");
+                Editor.Entry entry = new Editor.Entry(selectedNode, "disabled");
                 entry.value = menuitem.isSelected();
                 mainPanel.history.saveEntry(entry, collection);
                 break;

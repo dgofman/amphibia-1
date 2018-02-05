@@ -281,7 +281,7 @@ public final class Editor extends BaseTaskPane {
                         if (backup.exists()) {
                             file = backup;
                         }
-                        mainPanel.resourceEditDialog.openEditDialog(null, filePath, DIFF.patch_toText(DIFF.patch_make(IO.readFile(file), oldContent)), false);
+                        mainPanel.resourceEditDialog.openEditDialog(filePath, DIFF.patch_toText(DIFF.patch_make(IO.readFile(file), oldContent)));
                     } catch (IOException ex) {
                         addError(ex);
                     }
@@ -375,7 +375,7 @@ public final class Editor extends BaseTaskPane {
         TreeIconNode.TreeIconUserObject userObject = node.getTreeIconUserObject();
         txtInfo.setText(userObject.getFullPath());
         if (userObject.properties != null) {
-            jsonModel = JSONTableModel.createModel(bundle).updateModel(userObject.json, userObject.properties);
+            jsonModel = JSONTableModel.createModel(bundle).updateModel(node, userObject.json, userObject.properties);
             treeTable.setModel(jsonModel);
         }
     }
@@ -637,33 +637,89 @@ public final class Editor extends BaseTaskPane {
     JTextPane txtServers;
     // End of variables declaration//GEN-END:variables
 
-    static public class Entry implements TreeNode {
+    static final public class Entry implements TreeNode {
 
+        public TreeIconNode node;
         public JSON json;
         public String name;
         public Object value;
         public boolean isLeaf;
-        public boolean isDelete;
+        public int editMode;
         public Boolean isDynamic;
-        public JTreeTable.EditValueRenderer.TYPE type;
+        public Boolean isDelete;
         public List<Entry> children;
         private Entry parent;
         public String rootName;
-
-        public Entry(String name) {
+        
+        private JTreeTable.EditValueRenderer.TYPE type;
+        
+        public Entry(TreeIconNode node, String name) {
+            this.node = node;
             this.name = name;
             this.type = EDIT;
-            this.isDelete = false;
+            this.editMode = JTreeTable.EDIT_DELETE;
             this.children = new ArrayList<>();
+            this.isDynamic = false;
+            this.isDelete = false;
         }
 
-        public Entry(Entry parent, JSON json, String name, Object value, boolean isLeaf, boolean isDynamic) {
-            this(name);
+        public Entry(TreeIconNode node, Entry parent, JSON json, String name, Object value, boolean isLeaf, boolean isDynamic) {
+            this(node, name);
             this.parent = parent;
             this.json = json;
             this.value = value;
             this.isLeaf = isLeaf;
             this.isDynamic = isDynamic;
+            this.setType(type);
+        }
+        
+        public void setType(JTreeTable.EditValueRenderer.TYPE type) {
+            this.type = type;
+            if (type == JTreeTable.EditValueRenderer.TYPE.VIEW || type == JTreeTable.EditValueRenderer.TYPE.REFERENCE) {
+                this.editMode = JTreeTable.READ_ONLY;
+            } else {
+                boolean editAndDelete = true;
+                if (isDynamic) {
+                    switch(node.getType()) {
+                        case PROJECT:
+                            if ("properties".equals(parent.toString())) {
+                                JSONObject props = node.getCollection().getProjectProfile().getJSONObject("properties");
+                                editAndDelete = props.containsKey(name);
+                            }
+                            break;
+                        case INTERFACE:
+                            if ("headers".equals(parent.toString())) {
+                                editAndDelete = node.info.resource.getJSONObject("headers").containsKey(name);
+                            }
+                            break;
+                        case TESTSUITE:
+                            editAndDelete = containsKey(node.info.testSuite);
+                            break;
+                        case TESTCASE:
+                            editAndDelete = containsKey(node.info.testCase);
+                            break;
+                        case TEST_STEP_ITEM:
+                            editAndDelete = containsKey(node.info.testStep);
+                            break;
+                    }
+                }
+                this.editMode = editAndDelete ? JTreeTable.EDIT_DELETE : JTreeTable.EDIT_ONLY;
+            }
+        }
+        
+        public JTreeTable.EditValueRenderer.TYPE getType() {
+            return type;
+        }
+        
+        private boolean containsKey(JSONObject json) {
+            if (json != null && json.containsKey(rootName)) {
+                if ("request".equals(rootName) || "response".equals(rootName)) {
+                    return (json.getJSONObject(rootName).containsKey(getParent().toString()) &&
+                            json.getJSONObject(rootName).getJSONObject(getParent().toString()).containsKey(name));
+                }
+                return json.getJSONObject(rootName).containsKey(name);
+            }
+            return false;
         }
 
         public Object getValue(Object value) {
@@ -673,17 +729,17 @@ public final class Editor extends BaseTaskPane {
             return value;
         }
 
-        public Entry add(JSON parentJson, String name, Object value, Object propType, Object[] props, Object rootName) {
+        public Entry add(TreeIconNode node, JSON parentJson, String name, Object value, Object propType, Object[] props, Object rootName) {
             if (rootName == null) {
                 rootName = name;
             }
             boolean isleaf = !(JTreeTable.isNotLeaf(propType) || !(propType instanceof JTreeTable.EditValueRenderer.TYPE));
-            Entry entry = new Entry(this, parentJson, name, value, isleaf, false);
+            Entry entry = new Entry(node, this, parentJson, name, value, isleaf, false);
             entry.rootName = rootName.toString();
             if (propType instanceof JTreeTable.EditValueRenderer.TYPE) {
-                entry.type = (JTreeTable.EditValueRenderer.TYPE) propType;
+                entry.setType((JTreeTable.EditValueRenderer.TYPE) propType);
             } else {
-                entry.type = null;
+                entry.setType(null);
             }
             children.add(entry);
 
@@ -693,9 +749,9 @@ public final class Editor extends BaseTaskPane {
             } else if (value instanceof JSONArray && !(propType instanceof Object[][])) {
                 JSONArray list = (JSONArray) value;
                 for (int i = 0; i < list.size(); i++) {
-                    Entry child = new Entry(entry, list, " ", list.get(i), true, true);
+                    Entry child = new Entry(node, entry, list, " ", list.get(i), true, true);
                     if (props != null && props.length == 3) {
-                        child.type = (JTreeTable.EditValueRenderer.TYPE) props[2];
+                        child.setType((JTreeTable.EditValueRenderer.TYPE) props[2]);
                     }
                     entry.children.add(child);
                 }
@@ -706,12 +762,12 @@ public final class Editor extends BaseTaskPane {
                 for (Object[] prop : (Object[][]) propType) {
                     String key = prop[0].toString();
                     if (jo != null) {
-                        entry.add(jo, key, getValue(jo.get(key)), prop[1], prop, rootName);
+                        entry.add(node, jo, key, getValue(jo.get(key)), prop[1], prop, rootName);
                     } else {
                         JSONArray list = (JSONArray) value;
                         for (int i = 0; i < list.size(); i++) {
                             jo = list.getJSONObject(i);
-                            entry.add(jo, key, getValue(jo.get(key)), prop[1], prop, rootName);
+                            entry.add(node, jo, key, getValue(jo.get(key)), prop[1], prop, rootName);
                         }
                     }
                 }
@@ -722,10 +778,10 @@ public final class Editor extends BaseTaskPane {
                 Iterator<String> keyItr = jo.keys();
                 while (keyItr.hasNext()) {
                     String key = keyItr.next();
-                    Entry child = new Entry(entry, jo, key, getValue(jo.get(key)), true, true);
+                    Entry child = new Entry(node, entry, jo, key, getValue(jo.get(key)), true, true);
                     child.rootName = rootName.toString();
                     if (props.length > 2) {
-                        child.type = (JTreeTable.EditValueRenderer.TYPE) props[2];
+                        child.setType((JTreeTable.EditValueRenderer.TYPE) props[2]);
                     }
                     entry.children.add(child);
                 }

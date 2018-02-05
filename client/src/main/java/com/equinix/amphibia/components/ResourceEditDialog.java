@@ -6,9 +6,6 @@
 package com.equinix.amphibia.components;
 
 import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.*;
-import static com.equinix.amphibia.components.TreeCollection.TYPE.TESTSUITE;
-import static com.equinix.amphibia.components.TreeCollection.TYPE.TESTCASE;
-import static com.equinix.amphibia.components.TreeCollection.TYPE.TEST_STEP_ITEM;
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
@@ -93,7 +90,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         defaultBorder = txtName.getBorder();
         applyButton = new JButton(bundle.getString("apply"));
         applyButton.addActionListener((ActionEvent evt) -> {
-            entry.isDelete = false;
             if (txtName.getText().isEmpty()) {
                 txtName.setBorder(ERROR_BORDER);
                 return;
@@ -140,27 +136,13 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
                 if ("name".equals(entry.name)) {
                     value = value.toString().trim();
-                    if (type == TreeCollection.TYPE.INTERFACE) {
-                        JSONObject json = collection.project.jsonObject();
-                        JSONArray interfaces = json.getJSONArray("interfaces");
-                        String currentName = ((JSONObject)entry.json).getString("name");
-                        for (Object item : interfaces) {
-                            JSONObject itf = (JSONObject) item;
-                            if (itf.getString("name").equals(value) && !itf.toString().equals(entry.json.toString())) {
-                                lblError.setText(String.format(bundle.getString("tip_name_exists")));
-                                lblError.setVisible(true);
-                                return;
-                            }
-                        }
-                    } else {
-                        Enumeration children = node.getParent().children();
-                        while (children.hasMoreElements()) {
-                            TreeIconNode child = (TreeIconNode) children.nextElement();
-                            if (child != node && child.getLabel().equals(value)) {
-                                lblError.setText(String.format(bundle.getString("tip_name_exists")));
-                                lblError.setVisible(true);
-                                return;
-                            }
+                    Enumeration children = node.getParent().children();
+                    while (children.hasMoreElements()) {
+                        TreeIconNode child = (TreeIconNode) children.nextElement();
+                        if (child != node && child.getLabel().equals(value)) {
+                            lblError.setText(String.format(bundle.getString("tip_name_exists")));
+                            lblError.setVisible(true);
+                            return;
                         }
                     }
                 }
@@ -172,14 +154,14 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                         IO.write(IO.prettyJson(json.toString()), file);
                         mainPanel.reloadCollection(collection);
                     }
-                } else if (entry.type == JTreeTable.EditValueRenderer.TYPE.ADD) {
+                } else if (entry.getType() == JTreeTable.EditValueRenderer.TYPE.ADD) {
                     JSONObject json = ((JSONObject) entry.json).getJSONObject(entry.name);
                     if (json.isNullObject()) {
                         json = new JSONObject();
                         ((JSONObject) entry.json).element(entry.name, json);
                     }
                     json.element(txtName.getText(), value);
-                    Editor.Entry child = entry.add(json, txtName.getText(), value, EDIT, null, txtName.getText());
+                    Editor.Entry child = entry.add(node, json, txtName.getText(), value, EDIT, null, txtName.getText());
                     child.isDynamic = true;
                     saveSelectedNode(child);
                 } else {
@@ -200,6 +182,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         });
         deleteButton = new JButton(bundle.getString("delete"));
         deleteButton.addActionListener((ActionEvent evt) -> {
+            entry.isDelete = true;
             TreeIconNode node = MainPanel.selectedNode;
             TreeCollection collection = node.getCollection();
             if (isTestProperties && !chbOnlyForTeststep.isSelected()) {
@@ -215,7 +198,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                     logger.log(Level.SEVERE, ex.toString(), ex);
                 }
             } else {
-                entry.isDelete = true;
                 if (entry.json instanceof JSONObject) {
                     ((JSONObject) entry.json).remove(entry.name);
                 } else {
@@ -258,29 +240,30 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         this.entry = entry;
         openEditDialog(entry, entry.name, value, isEdit);
     }
+    
+    @SuppressWarnings("NonPublicExported")
+    public void openEditDialog(String fileName, String value) {
+        optionPane.setOptions(new Object[] {applyButton, cancelButton});
+        txtName.setText(fileName);
+        txtName.setEditable(false);
+        chbOnlyForTeststep.setVisible(false);
+        lblError.setVisible(false);
+        lblDataType.setVisible(false);
+        cmbDataType.setVisible(false);
+        txtEditor.setEditable(false);
+        txtEditor.setBackground(UIManager.getColor("TextArea.background"));
+        txtEditor.setText(value);
+        Amphibia.setText(txtEditor, splEditor, null);
+        dialog.setVisible(true);
+    }
 
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(Editor.Entry entry, String name, Object value, boolean isEdit) {
         Object[] options = new Object[]{okButton};
         if (isEdit) {
             options = new Object[] {applyButton, cancelButton};
-            if (entry != null && entry.isDynamic) {
-                boolean isDelete = true;
-                TreeIconNode node = MainPanel.selectedNode;
-                switch(node.getType()) {
-                    case TESTSUITE:
-                        isDelete = containsKey(node.info.testSuite, entry);
-                        break;
-                    case TESTCASE:
-                        isDelete = containsKey(node.info.testCase, entry);
-                        break;
-                    case TEST_STEP_ITEM:
-                        isDelete = containsKey(node.info.testStep, entry);
-                        break;
-                }
-                if (isDelete) {
-                    options = new Object[]{applyButton, deleteButton, cancelButton};
-                }
+            if (entry.isDynamic && entry != null && entry.editMode == JTreeTable.EDIT_DELETE) {
+                options = new Object[]{applyButton, deleteButton, cancelButton};
             }
         }
         optionPane.setOptions(options);
@@ -298,7 +281,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblDataType.setVisible(true);
         cmbDataType.setVisible(true);
         cmbDataType.setSelectedItem(getType(value));
-        cmbDataType.setEnabled(isEdit && entry.type != EDIT_LIMIT);
+        cmbDataType.setEnabled(isEdit && entry.getType() != EDIT_LIMIT);
+        cmbDataTypeItemStateChanged(null);
         if (value instanceof JSON) {
             try {
                 txtEditor.setText(IO.prettyJson(((JSON) value).toString()));
@@ -313,18 +297,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblError.setVisible(false);
         dialog.setVisible(true);
     }
-    
-    private boolean containsKey(JSONObject json, Editor.Entry entry) {
-        if (json != null && json.containsKey(entry.rootName)) {
-            if ("request".equals(entry.rootName) || "response".equals(entry.rootName)) {
-                return (json.getJSONObject(entry.rootName).containsKey(entry.getParent().toString()) &&
-                        json.getJSONObject(entry.rootName).getJSONObject(entry.getParent().toString()).containsKey(entry.name));
-            }
-            return json.getJSONObject(entry.rootName).containsKey(entry.name);
-        }
-        return false;
-    }
-    
+        
     public static Object getValue(String dataType, String value) throws Exception {
         switch (dataType) {
             case "NULL":

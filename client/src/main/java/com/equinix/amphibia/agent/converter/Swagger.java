@@ -248,7 +248,7 @@ public final class Swagger {
                 properties.put(key.toString(), value);
             });
         }
-        output.put("properties", properties);
+        output.put("projectProperties", properties);
 
         projectResources.add(new LinkedHashMap<String, Object>() {
             {

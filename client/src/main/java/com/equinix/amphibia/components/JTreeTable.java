@@ -41,6 +41,10 @@ import javax.swing.tree.TreePath;
 @SuppressWarnings("NonPublicExported")
 public final class JTreeTable extends JTable {
 
+    public static final int EDIT_DELETE = 0;
+    public static final int EDIT_ONLY = 1;
+    public static final int READ_ONLY = 2;
+
     /**
      * A subclass of JTree.
      */
@@ -353,7 +357,8 @@ public final class JTreeTable extends JTable {
          */
         protected int visibleRow;
 
-        private ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock_icon.png"));
+        private ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock.png"));
+        private ImageIcon unlock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/unlock.png"));
 
         public TreeTableCellRenderer() {
             super();
@@ -362,9 +367,11 @@ public final class JTreeTable extends JTable {
                 @Override
                 public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean isLeaf, int row, boolean hasFocus) {
                     Component c = super.getTreeCellRendererComponent(tree, value, selected, expanded, isLeaf, row, hasFocus);
-                    JTreeTable.EditValueRenderer.TYPE type = ((Editor.Entry) value).type;
-                    if (type == EditValueRenderer.TYPE.VIEW || type == EditValueRenderer.TYPE.REFERENCE) {
+                    int editMode = ((Editor.Entry) value).editMode;
+                    if (editMode == READ_ONLY) {
                         setIcon(lock_icon);
+                    } else if (editMode == EDIT_ONLY) {
+                        setIcon(unlock_icon);
                     }else {
                         setIcon(isLeaf ? dummy_icon : null);
                     }

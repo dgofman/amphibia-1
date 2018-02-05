@@ -54,9 +54,9 @@ public class Profile {
 
         profile = new LinkedHashMap<Object, Object>() {
             {
+                put("version", "1.0.0");
                 put("project", new LinkedHashMap<Object, Object>() {
                     {
-                        put("version", "1.0.0");
                         put("id", UUID.randomUUID().toString());
                         put("name", null);
                         put("appendLogs", false);
@@ -65,7 +65,6 @@ public class Profile {
                     }
                 });
                 put("properties", new JSONObject());
-                put("globals", new ArrayList<>());
                 put("resources", resources);
                 put("testsuites", testsuites);
                 put("common", common);

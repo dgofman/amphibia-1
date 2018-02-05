@@ -1,6 +1,6 @@
 {
+	"version": "1.0.0",
 	"project": {
-		"version": "1.0.0",
 		"id": "<% PROJECT_ID %>",
 		"name": "<% PROJECT_NAME %>",
 		"appendLogs": false,
@@ -9,8 +9,6 @@
 	},
 	"properties": {
 	},
-	"globals": [
-	],
 	"resources": [
 	],
 	"testsuites": [
