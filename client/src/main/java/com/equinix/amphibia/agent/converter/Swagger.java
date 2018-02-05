@@ -219,9 +219,9 @@ public final class Swagger {
                 put("headers", hs);
             }
         });
-        output.put("interfaces", interfaces);
         output.put("globals", globals);
-
+        output.put("interfaces", interfaces);
+        
         profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile);
 
         JSONArray projectResources = output.containsKey("projectResources") ? output.getJSONArray("projectResources") : new JSONArray();

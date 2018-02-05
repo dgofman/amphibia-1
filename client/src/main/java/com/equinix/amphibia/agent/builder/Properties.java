@@ -39,6 +39,13 @@ public class Properties {
         this.project = project;
     }
 
+    public Properties setProperties(JSONObject project) {
+        JSONObject.fromObject(project).keySet().forEach((key) -> {
+            this.project.put(key, replace(project.get(key), key));
+        });
+        return this;
+    }
+    
     public Properties setTestSuite(JSONObject testsuite) {
         if (this.testsuite == null) {
             this.testsuite = new JSONObject();

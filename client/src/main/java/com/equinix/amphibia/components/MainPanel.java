@@ -559,11 +559,14 @@ public final class MainPanel extends javax.swing.JPanel {
         collection.project.addTooltip(projectFile.getAbsolutePath());
 
         globalVarsDialog.mergeVariables(projectJson.getJSONArray("globals"));
-        wizard.updateEndPoints();
-
+        
         File profileFile = IO.getFile(collection, "data/profile.json");
         JSONObject json = IO.getBackupJSON(profileFile, editor);
         collection.setProjectProfile(json);
+        globalVarsDialog.mergeVariables(json.getJSONArray("globals"));
+        
+        wizard.updateEndPoints();
+
         treeNode.add(collection.project);
 
         return true;
@@ -576,21 +579,16 @@ public final class MainPanel extends javax.swing.JPanel {
         JSONObject projectJson = collection.project.jsonObject();
         Properties projectProperties;
         try {
-            JSONArray globals;
+            JSONArray globals = new JSONArray();
             Object[][] vars = GlobalVariableDialog.getGlobalVarData();
-            if (vars == null) {
-                globals = projectJson.getJSONArray("globals");
-            } else {
-                globals = new JSONArray();
-                int columnIndex = Amphibia.instance.getSelectedEnvDataIndex();
-                for (Object[] data : vars) {
-                    globals.add(new HashMap<Object, Object>() {
-                        {
-                            put("name", data[1]);
-                            put("value", data[columnIndex]);
-                        }
-                    });
-                }
+            int columnIndex = Amphibia.instance.getSelectedEnvDataIndex();
+            for (Object[] data : vars) {
+                globals.add(new HashMap<Object, Object>() {
+                    {
+                        put("name", data[1]);
+                        put("value", data[columnIndex]);
+                    }
+                });
             }
             projectProperties = new Properties(globals, projectJson.getJSONObject("properties"));
         } catch (Exception e) {
@@ -601,10 +599,12 @@ public final class MainPanel extends javax.swing.JPanel {
 
         File profileFile = IO.getFile(collection, "data/profile.json");
         JSONObject json = IO.getBackupJSON(profileFile, editor);
+        collection.setProjectProfile(json);
+        
+        projectProperties.setTestCase(json.getJSONObject("properties"));
+
         collection.profile.addJSON(json)
                 .addTooltip(profileFile.getAbsolutePath());
-
-        collection.setProjectProfile(json);
         collection.project.getTreeIconUserObject().setLabel(collection.getProjectName());
 
         collection.project.add(collection.resources);

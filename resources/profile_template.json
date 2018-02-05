@@ -7,6 +7,10 @@
 		"continueOnError": true,
 		"testCaseTimeout": 15000
 	},
+	"properties": {
+	},
+	"globals": [
+	],
 	"resources": [
 	],
 	"testsuites": [

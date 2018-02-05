@@ -64,6 +64,8 @@ public class Profile {
                         put("testCaseTimeout", 15000);
                     }
                 });
+                put("properties", new JSONObject());
+                put("globals", new ArrayList<>());
                 put("resources", resources);
                 put("testsuites", testsuites);
                 put("common", common);
@@ -92,9 +94,9 @@ public class Profile {
                 put("type", isURL ? RESOURCE_TYPE_URL : RESOURCE_TYPE_FILE);
                 put("source", inputParam);
                 put("properties", propertiesFile);
+                put("headers", new LinkedHashMap<Object, Object>() {});
             }
-        }
-        );
+        });
     }
 
     public void saveFile(JSONObject output, File outputFile) throws Exception {

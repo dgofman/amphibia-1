@@ -35,9 +35,6 @@ public class HistoryManager {
         TreeIconNode.ResourceInfo info = selectedNode.info;
         TreeCollection.TYPE type = selectedNode.getType();
         TreeIconNode node = (TreeIconNode.ProfileNode) collection.profile;
-        if (type == PROJECT || type == INTERFACE) {
-            node = collection.project;
-        }
         if ("name".equals(entry.name)) {
             TreeIconNode saveNode = collection.profile;
             if (type == TESTCASE) {
@@ -80,6 +77,13 @@ public class HistoryManager {
             } else {
                 json.element("disabled", true);
             }
+        } else if (type == PROJECT) {
+            JSONObject json = node.jsonObject();
+            System.out.println(json);
+            if ("properties".equals(entry.getParent().toString())) {
+                updateValues(entry, json.getJSONObject("properties"), collection.getProjectProfile(), "properties");
+            }
+            
         } else if (type == TESTSUITE) {
             if ("properties".equals(entry.getParent().toString())) {
                 updateValues(entry, info.testSuiteInfo.getJSONObject("properties"), info.testSuite, "properties");
