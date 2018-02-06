@@ -44,7 +44,7 @@ public class SaveDialog extends javax.swing.JPanel {
     private DefaultListModel model;
     private boolean isSame;
 
-    private static final Logger logger = Logger.getLogger(SaveDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(SaveDialog.class.getName());
     
     /**
      * Creates new form SaveDialog

@@ -93,7 +93,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             BorderFactory.createLineBorder(Color.RED),
             BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
-    private static final Logger logger = Logger.getLogger(WizardTab.class.getName());
+    private static final Logger logger = Amphibia.getLogger(WizardTab.class.getName());
 
     /**
      * Creates new form WizardTab
@@ -1033,7 +1033,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         testSuitesModel.addElement(openedNode.info.testSuite.getString("name"));
         txtTestCase.setText(openedNode.jsonObject().getString("name"));
         txtSummary.setText(openedNode.info.testCaseInfo.getString("summary"));
-        txtTestCaseFuncName.setText(openedNode.info.testCaseInfo.getJSONObject("config").getString("operationId"));
+        txtTestCaseFuncName.setText(openedNode.info.testCaseInfo.getString("operationId"));
         txtConsole.setText("");
         txtResBody.setText("");
         txtResHeaders.setText("");

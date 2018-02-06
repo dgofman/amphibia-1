@@ -99,7 +99,7 @@ public final class MainPanel extends javax.swing.JPanel {
 
     private final Preferences userPreferences = getUserPreferences();
 
-    private static final Logger logger = Logger.getLogger(MainPanel.class.getName());
+    private static final Logger logger = Amphibia.getLogger(MainPanel.class.getName());
 
     /**
      * Creates new form MainPanel

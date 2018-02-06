@@ -38,8 +38,11 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -49,10 +52,12 @@ import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
 import java.util.prefs.Preferences;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -96,10 +101,12 @@ import net.sf.json.JSONObject;
  */
 public final class Amphibia extends JFrame {
 
+    public static File amphibiaHome;
+    private static ConsoleHandler consoleHandler;
+    private static FileHandler logFileHandler;
+
     public static final Amphibia instance = new Amphibia();
     public static final Color OVERLAY_BG_COLOR = new Color(246, 246, 246, 200);
-
-    private static final Logger logger = Logger.getLogger(Amphibia.class.getName());
 
     public static final String P_PROJECT_UUIDS = "projects";
     public static final String P_RECENT_PROJECTS = "recent";
@@ -135,17 +142,17 @@ public final class Amphibia extends JFrame {
     public static final int TAB_SERVERS = 3;
     public static final int TAB_PROFILE = 4;
     public static final int TAB_HISTORY = 5;
-    
+
     public static int TYPE = 0;
     public static int NAME = 1;
     public static int VALUE = 2;
-    
+
     public static final String OPEN_TABS = "111111";
 
     public static final String VERSION = "1.0";
 
     public static final Preferences userPreferences = getUserPreferences();
-    
+
     public final ImageIcon icon;
     public final ImageIcon waitIcon;
 
@@ -157,20 +164,10 @@ public final class Amphibia extends JFrame {
 
     private ProjectDialog projectDialog;
     private PreferenceDialog preferenceDialog;
-    
-    public static final File AMPHIBIA_HOME = IO.newFile(System.getProperty("user.home"), "amphibia"); 
-    
+
+    private static final Logger logger = Amphibia.getLogger(Amphibia.class.getName());
+
     public static void main(String args[]) {
-        AMPHIBIA_HOME.mkdirs();
-        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n");
-        try {
-            FileHandler fh = new FileHandler(IO.newFile(AMPHIBIA_HOME, "amphibia.log").getAbsolutePath());
-            fh.setFormatter(new SimpleFormatter()); 
-            Logger.getLogger("").addHandler(fh);
-        } catch (IOException | SecurityException ex) {
-            logger.log(Level.SEVERE, ex.toString(), ex);
-        }
-        
         java.awt.EventQueue.invokeLater(() -> {
             instance.init();
             instance.setAlwaysOnTop(true);
@@ -189,6 +186,43 @@ public final class Amphibia extends JFrame {
 
     public Amphibia() {
         super();
+        try {
+            amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
+            amphibiaHome.mkdirs();
+
+            consoleHandler = new ConsoleHandler();
+            logFileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath());
+            final Formatter formatter = new Formatter() {
+                final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                //System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n");
+
+                @Override
+                public String format(LogRecord record) {
+                    return String.format(Locale.ROOT,
+                            "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n",
+                            record.getMillis(), record.getSourceClassName() + "::" + record.getSourceMethodName(), "",
+                            record.getLevel(), formatMessage(record), getStackTrace(record.getThrown()));
+                }
+
+                private String getStackTrace(Throwable thrown) {
+                    if (thrown == null) {
+                        return "";
+                    }
+                    StringWriter sw = new StringWriter();
+                    PrintWriter printWriter = new PrintWriter(sw);
+                    try {
+                        thrown.printStackTrace(printWriter);
+                    } finally {
+                        printWriter.close();
+                    }
+                    return sw.toString();
+                }
+            };
+            logFileHandler.setFormatter(formatter);
+            consoleHandler.setFormatter(formatter);
+        } catch (IOException | SecurityException ex) {
+            logger.log(Level.SEVERE, ex.toString(), ex);
+        }
         icon = new ImageIcon(Amphibia.class.getResource("/com/equinix/amphibia/icons/logo_16.png"));
         waitIcon = new ImageIcon(Amphibia.class.getResource("/com/equinix/amphibia/icons/ajax-loader.gif"));
         addWindowListener(new WindowAdapter() {
@@ -199,6 +233,17 @@ public final class Amphibia extends JFrame {
                 }
             }
         });
+    }
+
+    public static Logger getLogger(String className) {
+        return getLogger(Logger.getLogger(className));
+    }
+
+    public static Logger getLogger(Logger logger) {
+        logger.setUseParentHandlers(false);
+        logger.addHandler(logFileHandler);
+        logger.addHandler(consoleHandler);
+        return logger;
     }
 
     /**
@@ -212,7 +257,7 @@ public final class Amphibia extends JFrame {
         }
 
         bundle = Amphibia.getBundle();
-        
+
         try {
             String userLF = userPreferences.get(Amphibia.P_LOOKANDFEEL, UIManager.getSystemLookAndFeelClassName());
             UIManager.setLookAndFeel(userLF);
@@ -266,7 +311,7 @@ public final class Amphibia extends JFrame {
         for (int i = 0; i < tabs.length; i++) {
             showHideTab(i, "1".equals(tabs[i]));
         }
-        
+
         isExpertView = userPreferences.getBoolean(P_MENU_VIEW, false);
         mnuExpert.setSelected(isExpertView);
 
@@ -356,11 +401,11 @@ public final class Amphibia extends JFrame {
     public static ResourceBundle getBundle() {
         return ResourceBundle.getBundle("com/equinix/amphibia/messages");
     }
-    
+
     public static boolean isExpertView() {
         return instance.isExpertView;
     }
-    
+
     public TreeCollection registerProject(TreeCollection collection) {
         updateRecentProjects(collection.getProjectFile(), null);
         createRecentProjectMenu(collection);
@@ -369,13 +414,13 @@ public final class Amphibia extends JFrame {
         mainPanel.reloadAll();
         return collection;
     }
-    
+
     public TreeCollection registerProject(File projectFile) {
         TreeCollection collection = new TreeCollection();
         collection.setProjectFile(projectFile);
         return registerProject(collection);
     }
-    
+
     public void updateRecentProjects(File file, JSONArray recentProjects) {
         if (recentProjects == null) {
             String projects = userPreferences.get(P_PROJECT_UUIDS, "[]");
@@ -448,11 +493,11 @@ public final class Amphibia extends JFrame {
         dialog.setResizable(isResizable);
         return dialog;
     }
-    
+
     public static JDialog createDialog(JOptionPane optionPane, boolean isResizable) {
         return createDialog(optionPane, UIManager.getString("OptionPane.title"), isResizable);
     }
-    
+
     public static JDialog createDialog(Object form, Object[] options, String title, boolean isResizable) {
         JOptionPane optionPane = new JOptionPane(form);
         optionPane.setOptions(options);
@@ -507,7 +552,7 @@ public final class Amphibia extends JFrame {
     public void openTipDialog(String msgKey, String preferenceKey) {
         tipDialog.openDialog(bundle.getString(msgKey), preferenceKey);
     }
-    
+
     public int getSelectedEnvDataIndex() {
         int columnEnv = GlobalVariableDialog.defaultColumnIndex;
         String[] columns = GlobalVariableDialog.getGlobalVarColumns();
@@ -519,11 +564,11 @@ public final class Amphibia extends JFrame {
         }
         return columnEnv; //Default
     }
-    
+
     public void resetEnvironmentModel() {
         int index = 0;
         int columnEnv = GlobalVariableDialog.defaultColumnIndex;
-        
+
         String[] columns = GlobalVariableDialog.getGlobalVarColumns();
         Object[][] data = GlobalVariableDialog.getGlobalVarData();
         SelectedEnvironment[] model = new SelectedEnvironment[columns.length - columnEnv + 1];
@@ -1358,13 +1403,13 @@ public final class Amphibia extends JFrame {
             saveFileChooserDir(jf);
             Enumeration children = mainPanel.treeNode.children();
             while (children.hasMoreElements()) {
-                TreeIconNode node = (TreeIconNode)children.nextElement();
+                TreeIconNode node = (TreeIconNode) children.nextElement();
                 if (node.getCollection().getProjectFile().getAbsolutePath().equals(jf.getSelectedFile().getAbsolutePath())) {
                     JOptionPane.showMessageDialog(mainPanel,
-                        bundle.getString("error_project_exists"),
-                        bundle.getString("title"),
-                        JOptionPane.ERROR_MESSAGE);
-                        return;
+                            bundle.getString("error_project_exists"),
+                            bundle.getString("title"),
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
             }
             String name;
@@ -1377,13 +1422,13 @@ public final class Amphibia extends JFrame {
             }
             children = mainPanel.treeNode.children();
             while (children.hasMoreElements()) {
-                TreeIconNode node = (TreeIconNode)children.nextElement();
+                TreeIconNode node = (TreeIconNode) children.nextElement();
                 if (name.equals(node.getLabel())) {
                     int option = JOptionPane.showOptionDialog(mainPanel,
-                                bundle.getString("error_duplicate_project"),
-                                bundle.getString("title"),
-                                JOptionPane.WARNING_MESSAGE,
-                                JOptionPane.OK_CANCEL_OPTION, null, null, null);
+                            bundle.getString("error_duplicate_project"),
+                            bundle.getString("title"),
+                            JOptionPane.WARNING_MESSAGE,
+                            JOptionPane.OK_CANCEL_OPTION, null, null, null);
                     if (option != JOptionPane.OK_OPTION) {
                         return;
                     }
@@ -1551,10 +1596,10 @@ public final class Amphibia extends JFrame {
     }//GEN-LAST:event_btnGlobalVarsActionPerformed
 
     private void cmbEnvironmentActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cmbEnvironmentActionPerformed
-        SelectedEnvironment item = (SelectedEnvironment)cmbEnvironment.getSelectedItem();
+        SelectedEnvironment item = (SelectedEnvironment) cmbEnvironment.getSelectedItem();
         if (item.columnIndex == -1) {
-           mainPanel.globalVarsDialog.openDialog();
-           cmbEnvironment.setSelectedIndex(getSelectedEnvDataIndex() - GlobalVariableDialog.defaultColumnIndex);
+            mainPanel.globalVarsDialog.openDialog();
+            cmbEnvironment.setSelectedIndex(getSelectedEnvDataIndex() - GlobalVariableDialog.defaultColumnIndex);
         } else {
             userPreferences.put(P_SELECTED_ENVIRONMENT, item.name);
             if (MainPanel.selectedNode != null) {
@@ -1637,13 +1682,13 @@ public final class Amphibia extends JFrame {
     public String inputDialog(String bundleKey, String initValue, String[] exisitingName) {
         return inputDialog(bundleKey, initValue, exisitingName, this);
     }
-    
+
     public String inputDialog(String bundleKey, String initValue, String[] exisitingName, Component owner) {
         final JOptionPane optionPane = new JOptionPane(
                 bundle.getString(bundleKey), JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
         optionPane.setWantsInput(true);
         optionPane.setInitialSelectionValue(initValue);
-        
+
         final JLabel error = new JLabel(bundle.getString("tip_name_exists"), JLabel.LEFT);
         error.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 75));
         error.setForeground(Color.red);
@@ -1651,7 +1696,7 @@ public final class Amphibia extends JFrame {
 
         JDialog dialog;
         if (owner instanceof Frame) {
-            dialog = new JDialog((Frame)owner, bundle.getString("title"), true);
+            dialog = new JDialog((Frame) owner, bundle.getString("title"), true);
         } else {
             dialog = new JDialog(Amphibia.instance, bundle.getString("title"), true);
         }
@@ -1680,12 +1725,12 @@ public final class Amphibia extends JFrame {
         dialog.dispose();
         return !error.isVisible() && optionPane.getValue().equals(JOptionPane.OK_OPTION) ? optionPane.getInputValue().toString() : null;
     }
-    
+
     public SelectedEnvironment getSelectedEnvironment() {
         SelectedEnvironment env = (SelectedEnvironment) cmbEnvironment.getSelectedItem();
         return env != null && env.columnIndex != -1 ? env : null;
     }
-    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public JButton btnAddToWizard;
     private JButton btnCreate;
@@ -1772,7 +1817,6 @@ public final class Amphibia extends JFrame {
     private JToolBar tlbTop;
     private JButton tlbUndo;
     // End of variables declaration//GEN-END:variables
-
 
     public static class SelectedEnvironment {
 

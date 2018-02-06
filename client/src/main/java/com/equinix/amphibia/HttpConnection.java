@@ -40,7 +40,7 @@ public final class HttpConnection {
 
     public static int DEFAULT_TIMEOUT = 60;
 
-    private static final Logger logger = Logger.getLogger(HttpConnection.class.getName());
+    private static final Logger logger = Amphibia.getLogger(HttpConnection.class.getName());
 
     public HttpConnection(IHttpConnection out) {
         this.out = out;

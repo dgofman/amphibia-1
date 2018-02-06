@@ -52,7 +52,7 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
     private MainPanel mainPanel;
     private JSONArray source;
 
-    private static final Logger logger = Logger.getLogger(ResourceOrderDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(ResourceOrderDialog.class.getName());
 
     /**
      * Creates new form TableEditDialog

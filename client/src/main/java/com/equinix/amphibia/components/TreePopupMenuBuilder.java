@@ -40,7 +40,7 @@ public final class TreePopupMenuBuilder implements ActionListener {
     
     private final Preferences userPreferences = getUserPreferences();
     
-    private static final Logger logger = Logger.getLogger(TreePopupMenuBuilder.class.getName());
+    private static final Logger logger = Amphibia.getLogger(TreePopupMenuBuilder.class.getName());
 
     public TreePopupMenuBuilder(Amphibia amphibia, MainPanel mainPanel) {
         this.amphibia = amphibia;

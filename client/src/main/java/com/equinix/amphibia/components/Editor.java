@@ -253,7 +253,7 @@ public final class Editor extends BaseTaskPane {
     }
     
     public void loadHistory() {
-        File history = IO.newFile(Amphibia.AMPHIBIA_HOME, ".history");
+        File history = IO.newFile(Amphibia.amphibiaHome, ".history");
         try {
             historyIndex = 0;
             if (history.exists()) {

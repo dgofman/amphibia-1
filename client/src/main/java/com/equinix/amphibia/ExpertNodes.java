@@ -36,7 +36,7 @@ public class ExpertNodes {
     public static String dirFormat = "data/%s/tests/%s";
     public static String pathFormat = ExpertNodes.dirFormat + "/%s.json";
     
-    private static final Logger logger = Logger.getLogger(ExpertNodes.class.getName());
+    private static final Logger logger = Amphibia.getLogger(ExpertNodes.class.getName());
     
     public static void createNodes(TreeCollection collection, JSONArray projectResources, Map<String, 
             TreeIconNode.ResourceInfo> resourceInfoMap, Map<Object, JSONObject> interfacesMap) {

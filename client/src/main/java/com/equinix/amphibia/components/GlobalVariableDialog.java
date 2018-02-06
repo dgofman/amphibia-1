@@ -64,7 +64,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
     private static final GlobalVarSource globalVarsSource = new GlobalVarSource();
     private static final NumberFormat numberFormat = NumberFormat.getInstance();
     private static final Preferences userPreferences = Amphibia.getUserPreferences();
-    private static final Logger logger = Logger.getLogger(GlobalVariableDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(GlobalVariableDialog.class.getName());
 
     private String[] originalColumns;
     private Object[][] originalData;

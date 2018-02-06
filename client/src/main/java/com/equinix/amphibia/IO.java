@@ -41,7 +41,7 @@ import org.apache.commons.io.IOUtils;
 public class IO {
     
     public static final JSONNull NULL = JSONNull.getInstance();
-    private static final Logger logger = Logger.getLogger(IO.class.getName());
+    private static final Logger logger = Amphibia.getLogger(IO.class.getName());
     
     public static JSONArray toJSONArray(Object obj) {
         return JSONArray.fromObject(obj);

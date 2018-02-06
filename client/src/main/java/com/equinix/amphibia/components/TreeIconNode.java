@@ -40,7 +40,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
     private int nodeType; //0 - Project Node, 1 - Debug Node 
 
-    private static final Logger logger = Logger.getLogger(TreeIconNode.class.getName());
+    private static final Logger logger = Amphibia.getLogger(TreeIconNode.class.getName());
     private static final Preferences userPreferences = getUserPreferences();
     private static String selectedUIDName;
 

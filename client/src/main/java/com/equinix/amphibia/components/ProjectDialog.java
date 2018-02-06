@@ -67,7 +67,7 @@ import org.apache.commons.io.IOUtils;
  */
 public final class ProjectDialog extends javax.swing.JPanel {
 
-    private static final Logger logger = Logger.getLogger(ProjectDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(ProjectDialog.class.getName());
 
     private JDialog dialog;
     private JDialog optionDialog;
@@ -872,7 +872,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
                         }
                     }
                 }
-                File projectFile = IO.newFile(Amphibia.AMPHIBIA_HOME, "projects" + "/" + Amphibia.generateTime() + "/" + projectName + ".json");
+                File projectFile = IO.newFile(Amphibia.amphibiaHome, "projects" + "/" + Amphibia.generateTime() + "/" + projectName + ".json");
                 collection.setProjectFile(projectFile);
             }
 

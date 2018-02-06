@@ -73,7 +73,7 @@ public class TransferDialog extends javax.swing.JPanel {
     public final DefaultMutableTreeNode treeNode;
     public final DefaultTreeModel treeModel;
     
-    private static final Logger logger = Logger.getLogger(TransferDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(TransferDialog.class.getName());
 
     /**
      * Creates new form TransferDialog

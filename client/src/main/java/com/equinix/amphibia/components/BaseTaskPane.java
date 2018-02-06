@@ -62,7 +62,7 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
     protected final DefaultMutableTreeNode errors;
 
     protected final Preferences userPreferences = getUserPreferences();
-    protected static final Logger logger = Logger.getLogger(BaseTaskPane.class.getName());
+    protected static final Logger logger = Amphibia.getLogger(BaseTaskPane.class.getName());
     protected int defaultDividerLocation;
 
     protected String propertyChangeName;

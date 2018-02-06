@@ -72,7 +72,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             BorderFactory.createLineBorder(Color.RED),
             BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
-    private static final Logger logger = Logger.getLogger(ResourceEditDialog.class.getName());
+    private static final Logger logger = Amphibia.getLogger(ResourceEditDialog.class.getName());
     private static final NumberFormat NUMBER = NumberFormat.getInstance();
 
     /**

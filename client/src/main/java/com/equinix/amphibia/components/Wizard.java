@@ -14,6 +14,7 @@ import com.equinix.amphibia.IO;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -199,9 +200,9 @@ public class Wizard extends javax.swing.JPanel {
                 }
             }
             for (int i = 0; i < tabNav.getTabCount(); i++) {
-                WizardTab tab = (WizardTab)tabNav.getComponent(i);
-                if (tab != null) {
-                    tab.updateEndPoints(endpoints);
+                Component tab = tabNav.getComponentAt(i);
+                if (tab instanceof WizardTab) {
+                    ((WizardTab)tab).updateEndPoints(endpoints);
                 }
             }
         }
@@ -209,15 +210,20 @@ public class Wizard extends javax.swing.JPanel {
     
     public void replaceNode(TreeIconNode node) {
         for (int i = 0; i < tabNav.getTabCount(); i++) {
-            ((WizardTab)tabNav.getComponent(i)).replaceNode(node);
+            Component tab = tabNav.getComponentAt(i);
+            if (tab instanceof WizardTab) {
+                ((WizardTab)tab).replaceNode(node);
+            }
         }       
     }
     
     public void removeDeadNodes() {
         for (int i = tabNav.getTabCount() - 1; i > 0; i--) { //till first tab
-            WizardTab tab = (WizardTab)tabNav.getComponent(i);
-            if (tab.getNode() != null && tab.getNode().getParent() == null) {
-                tabNav.remove(i);
+            if (tabNav.getComponentAt(i) instanceof WizardTab) {
+                WizardTab tab = (WizardTab) tabNav.getComponentAt(i);
+                if (tab.getNode() != null && tab.getNode().getParent() == null) {
+                    tabNav.remove(i);
+                }
             }
         }       
     }
