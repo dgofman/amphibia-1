@@ -460,17 +460,19 @@ public class TreeIconNode extends DefaultMutableTreeNode {
     public static class ProfileNode extends TreeIconNode {
 
         private JSONObject profileJSON;
+        private boolean initialized;
         private Timer timer;
 
         ProfileNode(TreeCollection collection, String label, TreeCollection.TYPE type, boolean truncate, Object[][] properties) {
             super(collection, label, type, truncate, properties);
+            initialized = false;
         }
-
+        
         public void load(File dir) throws Exception {
             TreeCollection collection = getCollection();
             collection.loadProjectProfile();
             
-            profileJSON = IO.toJSONObject(collection.getProjectProfile());
+            profileJSON = collection.getProjectProfile();
 
             if (!profileJSON.containsKey("states")) {
                 JSONObject states = new JSONObject();
@@ -489,8 +491,11 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             if (!Amphibia.isExpertView() || !profileJSON.containsKey("expandResources")) {
                 profileJSON.element("expandResources", new JSONObject());
             }
-            IO.write(profileJSON.toString(), collection.getProfile(), true);
+
+            IO.write(IO.prettyJson(profileJSON.toString()), collection.getProfile());
             IO.copy(collection.getProfile(), collection.getBackupProfile());
+            
+            profileJSON = IO.toJSONObject(profileJSON.toString()); //clone
         }
 
         public void saveState(TreeIconNode node) {
@@ -513,7 +518,8 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                         //update states
                         TreeCollection.TYPE type = node.getType();
 
-                        if (type == TESTSUITE || type == TESTCASE || type == TEST_STEP_ITEM) {
+                        if (!initialized || type == TESTSUITE || type == TESTCASE || type == TEST_STEP_ITEM) {
+                            initialized = true;
                             for (Object item1 : json.getJSONArray("testsuites")) {
                                 JSONObject testsuite1 = (JSONObject) item1;
                                 for (Object item2 : profileJSON.getJSONArray("testsuites")) {

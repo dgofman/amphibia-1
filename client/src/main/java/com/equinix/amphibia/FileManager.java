@@ -36,6 +36,10 @@ public final class FileManager {
         records.put(file.getAbsolutePath(),  new Record(file, content));
     }
     
+    public static void deleteContent(File file) {
+        records.remove(file.getAbsolutePath());
+    }
+    
     static class Record {
         public File file;
         public String content;

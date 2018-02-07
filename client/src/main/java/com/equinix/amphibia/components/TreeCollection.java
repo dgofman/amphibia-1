@@ -32,7 +32,6 @@ public final class TreeCollection {
     private File projectFile;
     private File profileFile;
     private File backupProfileFile;
-    private JSONObject projectProfile;
     private Properties projectProperties;
 
     public final TreeIconNode.ProfileNode profile;
@@ -358,7 +357,7 @@ public final class TreeCollection {
     }
      
     public JSONObject getProject() {
-        return projectProfile.getJSONObject("project");
+        return getProjectProfile().getJSONObject("project");
     }
     
     public String getProjectName() {
@@ -378,12 +377,12 @@ public final class TreeCollection {
     }
     
     public JSONObject loadProjectProfile() throws Exception {
-        projectProfile = (JSONObject) IO.getJSON(backupProfileFile.exists() ? backupProfileFile : profileFile);
-        return projectProfile;
+        profile.getTreeIconUserObject().json = IO.getJSON(backupProfileFile.exists() ? backupProfileFile : profileFile);
+        return getProjectProfile();
     }
     
     public JSONObject getProjectProfile() {
-        return projectProfile;
+        return profile.jsonObject();
     }
 
     public boolean isOpen() {

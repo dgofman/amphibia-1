@@ -1022,16 +1022,20 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             return;
         }
         JSONObject headers = openedNode.info.getRequestHeader(openedNode);
+        JSONObject json = openedNode.jsonObject();
         try {
             Amphibia.setText(txtReqHeaders, spnReqHeaders, IO.prettyJson(openedNode.info.properties.replace(headers.toString())));
         } catch (Exception ex) {
             logger.log(Level.SEVERE, ex.toString(), ex);
         }
 
-        txtPath.setText(openedNode.jsonObject().getString("reqPath"));
+        if (json != null) {
+            txtPath.setText(json.getString("reqPath"));
+            txtTestCase.setText(json.getString("name"));
+        }
+        
         Amphibia.setText(txtReqBody, spnReqBody, openedNode.info.getRequestBody(openedNode.getCollection()));
         testSuitesModel.addElement(openedNode.info.testSuite.getString("name"));
-        txtTestCase.setText(openedNode.jsonObject().getString("name"));
         txtSummary.setText(openedNode.info.testCaseInfo.getString("summary"));
         txtTestCaseFuncName.setText(openedNode.info.testCaseInfo.getString("operationId"));
         txtConsole.setText("");

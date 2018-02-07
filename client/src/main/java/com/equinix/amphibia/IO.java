@@ -256,14 +256,17 @@ public class IO {
     }
     
     public static void write(String content, File file) throws IOException {
+        FileManager.deleteContent(file);
         IOUtils.write(content, new FileOutputStream(file));
     }
 
     public static void copy(File source, File target) throws IOException {
+        FileManager.deleteContent(target);
         copy(new FileInputStream(source), new FileOutputStream(target));
     }
 
     public static void copy(URI source, File target) throws IOException {
+        FileManager.deleteContent(target);
         copy(source.toURL().openStream(), new FileOutputStream(target));
     }
     
