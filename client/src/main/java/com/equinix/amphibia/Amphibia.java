@@ -446,7 +446,7 @@ public final class Amphibia extends JFrame {
             File projectFile = IO.getFile(recentProjects.getString(i));
             if (projectFile.exists()) {
                 try {
-                    JSONObject profile = collection.loadProjectProfile();
+                    JSONObject profile = collection.getProjectProfile();
                     String projectName = profile.getJSONObject("project").getString("name");
                     JMenuItem menu = new JMenuItem(projectName);
                     menu.setToolTipText(projectFile.getAbsolutePath());
@@ -1199,7 +1199,7 @@ public final class Amphibia extends JFrame {
         mnuView.add(spr7);
 
         inheritProp.setSelected(true);
-        inheritProp.setText(bundle.getString("ivailableProperties")); // NOI18N
+        inheritProp.setText(bundle.getString("availableProperties")); // NOI18N
         inheritProp.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 inheritPropActionPerformed(evt);
@@ -1347,8 +1347,7 @@ public final class Amphibia extends JFrame {
         if (MainPanel.selectedNode != null) {
             try {
                 TreeCollection collection = MainPanel.selectedNode.getCollection();
-                File profile = collection.getProfile();
-                IO.copy(IO.getBackupFile(profile), profile);
+                IO.copy(collection.getBackupProfile(), collection.getProfile());
             } catch (IOException ex) {
                 logger.log(Level.SEVERE, ex.toString(), ex);
             }

@@ -583,11 +583,12 @@ public final class MainPanel extends javax.swing.JPanel {
                     }
                 });
             }
-            json = collection.loadProjectProfile();
+            json = collection.getProjectProfile();
         } catch (Exception e) {
             editor.addError(e, Amphibia.getBundle().getString("error_open_json"));
             return false;
         }
+        collection.project.getTreeIconUserObject().setLabel(collection.getProjectName());
 
         JSONObject projectProps = JSONObject.fromObject(projectJson.getJSONObject("projectProperties"));
         JSONObject profileProps = json.getJSONObject("properties");
@@ -796,7 +797,7 @@ public final class MainPanel extends javax.swing.JPanel {
                     } else {
                         testcases.add(testcase.getString("name"));
                         Properties properties = info.properties.cloneProperties();
-                        JSONObject testCaseProperties = IO.toJSONObject(properties.getProperty("TestCase"));
+                        JSONObject testCaseProperties = IO.toJSONObject(info.testCaseInfo.getJSONObject("properties"));
                         JSONObject testCaseHeaders = IO.toJSONObject(info.testCaseHeaders);
 
                         if (testcase.containsKey("properties")) {
@@ -825,20 +826,17 @@ public final class MainPanel extends javax.swing.JPanel {
 
                         final JSONObject testcaseJSON = IO.toJSONObject(info.testStepInfo);
                         final JSONObject testCaseAvailableProperties = new JSONObject();
-                        info.properties.getProperty("Global").keySet().forEach((key) -> {
-                            testCaseAvailableProperties.put(key, "${#Global$" + key + "}");
+                        properties.getProperty("Global").keySet().forEach((key) -> {
+                            testCaseAvailableProperties.put(key, "${#Global#" + key + "}");
                         });
-                        info.properties.getProperty("Project").keySet().forEach((key) -> {
-                            testCaseAvailableProperties.put(key, "${#Project$" + key + "}");
+                        properties.getProperty("Project").keySet().forEach((key) -> {
+                            testCaseAvailableProperties.put(key, "${#Project#" + key + "}");
                         });
-                        info.properties.getProperty("TestSuite").keySet().forEach((key) -> {
-                            testCaseAvailableProperties.put(key, "${#TestSuite$" + key + "}");
-                        });
-                        info.properties.getProperty("TestCase").keySet().forEach((key) -> {
-                            testCaseAvailableProperties.put(key, "${#TestCase$" + key + "}");
+                        properties.getProperty("TestSuite").keySet().forEach((key) -> {
+                            testCaseAvailableProperties.put(key, "${#TestSuite#" + key + "}");
                         });
                         testCaseProperties.keySet().forEach((key) -> {
-                            testCaseAvailableProperties.put(key, "${#TestCase$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#TestCase#" + key + "}");
                         });
                         if (testcase.containsKey("transfer")) {
                             JSONObject transferProps = testcase.getJSONObject("transfer");
@@ -858,10 +856,10 @@ public final class MainPanel extends javax.swing.JPanel {
                         String url = "${#Global#" + resource.getString("endpoint") + "}" + interfaceJSON.getString("basePath") + info.testCaseInfo.getString("path");
 
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
-                        testCaseInfo.properties.setTestCase(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
-                        testCaseInfo.properties.setTestCase(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
                         testCaseInfo.properties.setTestCase(IO.toJSONObject(testcase.getOrDefault("properties", new JSONObject())));
-
+                        testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
+                        testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
+                        
                         testcaseJSON.element("name", testcase.getString("name"));
                         testcaseJSON.element("disabled", testcase.get("disabled") == Boolean.TRUE);
                         testcaseJSON.element("file", path);

@@ -92,14 +92,6 @@ public class IO {
         return json;
     }
     
-    public static JSONObject getBackupJSON(File file) throws Exception {
-        File backupFile = getBackupFile(file);
-        if (!backupFile.exists()) {
-            backupFile = file;
-        }
-        return (JSONObject) getJSON(backupFile);
-    }
-    
     public static File getBackupFile(File file) {
         return IO.newFile(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".bak");
     }

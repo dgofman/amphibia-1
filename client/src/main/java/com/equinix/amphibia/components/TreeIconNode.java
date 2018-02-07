@@ -459,6 +459,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
     public static class ProfileNode extends TreeIconNode {
 
+        private JSONObject profileJSON;
         private Timer timer;
 
         ProfileNode(TreeCollection collection, String label, TreeCollection.TYPE type, boolean truncate, Object[][] properties) {
@@ -469,8 +470,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             TreeCollection collection = getCollection();
             collection.loadProjectProfile();
             
-            File profile = collection.getProfile();
-            JSONObject profileJSON = collection.getProjectProfile();
+            profileJSON = IO.toJSONObject(collection.getProjectProfile());
 
             if (!profileJSON.containsKey("states")) {
                 JSONObject states = new JSONObject();
@@ -489,8 +489,8 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             if (!Amphibia.isExpertView() || !profileJSON.containsKey("expandResources")) {
                 profileJSON.element("expandResources", new JSONObject());
             }
-            IO.write(profileJSON.toString(), profile, true);
-            IO.copy(profile, IO.getBackupFile(profile));
+            IO.write(profileJSON.toString(), collection.getProfile(), true);
+            IO.copy(collection.getProfile(), collection.getBackupProfile());
         }
 
         public void saveState(TreeIconNode node) {
@@ -506,10 +506,9 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                 public void run() {
                     try {
                         TreeCollection collection = node.getCollection();
-                        File profile = collection.getProfile();
-                        JSONObject profileJSON = collection.getProjectProfile();
+
                         JSONObject json = collection.profile.jsonObject();
-                        IO.write(IO.prettyJson(json.toString()), IO.getBackupFile(profile));
+                        IO.write(IO.prettyJson(json.toString()), collection.getBackupProfile());
 
                         //update states
                         TreeCollection.TYPE type = node.getType();
@@ -560,7 +559,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
                         profileJSON.element("states", json.getJSONObject("states"));
                         profileJSON.element("expandResources", json.getJSONObject("expandResources"));
-                        IO.write(IO.prettyJson(profileJSON.toString()), profile);
+                        IO.write(IO.prettyJson(profileJSON.toString()), collection.getProfile());
                     } catch (Exception ex) {
                         logger.log(Level.SEVERE, ex.toString(), ex);
                     }

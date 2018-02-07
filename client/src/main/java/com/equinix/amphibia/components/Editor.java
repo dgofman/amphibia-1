@@ -713,7 +713,7 @@ public final class Editor extends BaseTaskPane {
                             break;
                     }
                 }
-                this.editMode = editAndDelete ? JTreeTable.EDIT_DELETE : JTreeTable.EDIT_ONLY;
+                this.editMode = editAndDelete ? JTreeTable.EDIT_RESET : JTreeTable.EDIT_ONLY;
             }
         }
 

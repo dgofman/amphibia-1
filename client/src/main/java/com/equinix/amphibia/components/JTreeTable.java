@@ -42,8 +42,9 @@ import javax.swing.tree.TreePath;
 public final class JTreeTable extends JTable {
 
     public static final int EDIT_DELETE = 0;
-    public static final int EDIT_ONLY = 1;
-    public static final int READ_ONLY = 2;
+    public static final int EDIT_RESET = 1;
+    public static final int EDIT_ONLY = 2;
+    public static final int READ_ONLY = 3;
 
     /**
      * A subclass of JTree.

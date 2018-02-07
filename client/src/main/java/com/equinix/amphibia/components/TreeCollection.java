@@ -30,6 +30,8 @@ import net.sf.json.JSONObject;
 public final class TreeCollection {
 
     private File projectFile;
+    private File profileFile;
+    private File backupProfileFile;
     private JSONObject projectProfile;
     private Properties projectProperties;
 
@@ -368,12 +370,15 @@ public final class TreeCollection {
     }
     
     public File getProfile() {
-        return IO.getFile(this, "data/profile.json");
+        return profileFile;
+    }
+    
+    public File getBackupProfile() {
+        return backupProfileFile;
     }
     
     public JSONObject loadProjectProfile() throws Exception {
-        projectProfile = IO.getBackupJSON(getProfile());
-        project.getTreeIconUserObject().setLabel(getProjectName());
+        projectProfile = (JSONObject) IO.getJSON(backupProfileFile.exists() ? backupProfileFile : profileFile);
         return projectProfile;
     }
     
@@ -399,6 +404,8 @@ public final class TreeCollection {
 
     public void setProjectFile(File file) {
         projectFile = file;
+        profileFile = IO.getFile(this, "data/profile.json");
+        backupProfileFile = IO.getBackupFile(profileFile);
     }
     
     public File getProjectFile() {

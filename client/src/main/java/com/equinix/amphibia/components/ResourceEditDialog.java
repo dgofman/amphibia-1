@@ -61,13 +61,14 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     private JDialog dialog;
     private JButton applyButton;
     private JButton deleteButton;
+    private JButton resetButton;
     private JButton cancelButton;
     private JButton okButton;
     private ResourceBundle bundle;
     private Editor.Entry entry;
     private Border defaultBorder;
     private boolean isTestProperties;
-    
+
     private final Border ERROR_BORDER = BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.RED),
             BorderFactory.createEmptyBorder(2, 2, 2, 2));
@@ -104,13 +105,15 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 JSONObject properties = null;
                 if (m.groupCount() == 2 && m.find()) {
                     Object value = ckbPropertyCopy.isSelected() ? entry.value : null;
-                    switch(this.cmbPropertyTypes.getSelectedItem().toString()) {
+                    switch (this.cmbPropertyTypes.getSelectedItem().toString()) {
                         case "Global":
                             JSONArray globals = new JSONArray();
-                            globals.add(IO.toJSONObject(new HashMap<String, Object>(){{
-                               put("name", m.group(2));
-                               put("value", value);
-                            }}));
+                            globals.add(IO.toJSONObject(new HashMap<String, Object>() {
+                                {
+                                    put("name", m.group(2));
+                                    put("value", value);
+                                }
+                            }));
                             mainPanel.globalVarsDialog.mergeVariables(globals);
                             break;
                         case "Project":
@@ -136,8 +139,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
                 if ("name".equals(entry.name)) {
                     value = value.toString().trim();
-                    System.out.println(node);
-                    System.out.println(node.getParent());
                     Enumeration children = node.getParent().children();
                     while (children.hasMoreElements()) {
                         TreeIconNode child = (TreeIconNode) children.nextElement();
@@ -185,30 +186,11 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         });
         deleteButton = new JButton(bundle.getString("delete"));
         deleteButton.addActionListener((ActionEvent evt) -> {
-            entry.isDelete = true;
-            TreeIconNode node = MainPanel.selectedNode;
-            TreeCollection collection = node.getCollection();
-            if (isTestProperties && !chbOnlyForTeststep.isSelected()) {
-                try {
-                    File file = IO.getFile(collection, node.jsonObject().getString("file"));
-                    if (file.exists()) {
-                        JSONObject json = (JSONObject) IO.getJSON(file);
-                        json.getJSONObject(entry.rootName).getJSONObject("properties").remove(entry.name);
-                        IO.write(IO.prettyJson(json.toString()), file);
-                        mainPanel.reloadCollection(collection);
-                    }
-                } catch (Exception ex) {
-                    logger.log(Level.SEVERE, ex.toString(), ex);
-                }
-            } else {
-                if (entry.json instanceof JSONObject) {
-                    ((JSONObject) entry.json).remove(entry.name);
-                } else {
-                    ((JSONArray) entry.json).remove(Integer.parseInt(entry.name));
-                }
-                saveSelectedNode(entry);
-            }
-            dialog.setVisible(false);
+            deleteOrReset();
+        });
+        resetButton = new JButton(bundle.getString("reset"));
+        resetButton.addActionListener((ActionEvent evt) -> {
+            deleteOrReset();
         });
         cancelButton = new JButton(bundle.getString("cancel"));
         cancelButton.addActionListener((ActionEvent evt) -> {
@@ -227,7 +209,34 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             dialog.setLocationRelativeTo(mainPanel);
         });
     }
-    
+
+    private void deleteOrReset() {
+        entry.isDelete = true;
+        TreeIconNode node = MainPanel.selectedNode;
+        TreeCollection collection = node.getCollection();
+        if (isTestProperties && !chbOnlyForTeststep.isSelected()) {
+            try {
+                File file = IO.getFile(collection, node.jsonObject().getString("file"));
+                if (file.exists()) {
+                    JSONObject json = (JSONObject) IO.getJSON(file);
+                    json.getJSONObject(entry.rootName).getJSONObject("properties").remove(entry.name);
+                    IO.write(IO.prettyJson(json.toString()), file);
+                    mainPanel.reloadCollection(collection);
+                }
+            } catch (Exception ex) {
+                logger.log(Level.SEVERE, ex.toString(), ex);
+            }
+        } else {
+            if (entry.json instanceof JSONObject) {
+                ((JSONObject) entry.json).remove(entry.name);
+            } else {
+                ((JSONArray) entry.json).remove(Integer.parseInt(entry.name));
+            }
+            saveSelectedNode(entry);
+        }
+        dialog.setVisible(false);
+    }
+
     private void saveSelectedNode(Editor.Entry entry) {
         mainPanel.history.saveEntry(entry, MainPanel.selectedNode.getCollection());
     }
@@ -243,10 +252,10 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         this.entry = entry;
         openEditDialog(entry, entry.name, value, isEdit);
     }
-    
+
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(String fileName, String value) {
-        optionPane.setOptions(new Object[] {applyButton, cancelButton});
+        optionPane.setOptions(new Object[]{applyButton, cancelButton});
         txtName.setText(fileName);
         txtName.setEditable(false);
         chbOnlyForTeststep.setVisible(false);
@@ -264,9 +273,13 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     public void openEditDialog(Editor.Entry entry, String name, Object value, boolean isEdit) {
         Object[] options = new Object[]{okButton};
         if (isEdit) {
-            options = new Object[] {applyButton, cancelButton};
-            if (entry.isDynamic && entry != null && entry.editMode == JTreeTable.EDIT_DELETE) {
-                options = new Object[]{applyButton, deleteButton, cancelButton};
+            options = new Object[]{applyButton, cancelButton};
+            if (entry.isDynamic && entry != null) {
+                if (entry.editMode == JTreeTable.EDIT_DELETE) {
+                    options = new Object[]{applyButton, deleteButton, cancelButton};
+                } else if (entry.editMode == JTreeTable.EDIT_RESET) {
+                    options = new Object[]{applyButton, resetButton, cancelButton};
+                }
             }
         }
         optionPane.setOptions(options);
@@ -300,7 +313,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblError.setVisible(false);
         dialog.setVisible(true);
     }
-        
+
     public static Object getValue(String dataType, String value) throws Exception {
         switch (dataType) {
             case "NULL":
@@ -462,14 +475,14 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             java.awt.EventQueue.invokeLater(() -> {
                 JButton btnOk = new JButton(UIManager.getString("OptionPane.okButtonText"));
                 JButton btnCancel = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
-                JDialog propDialog = Amphibia.createDialog(pnlNewProperty, new Object[] {btnOk, btnCancel}, bundle.getString("properties_title"), false);
+                JDialog propDialog = Amphibia.createDialog(pnlNewProperty, new Object[]{btnOk, btnCancel}, bundle.getString("properties_title"), false);
                 propDialog.setLocationRelativeTo(mainPanel);
                 btnCancel.addActionListener((ActionEvent e) -> {
                     propDialog.setVisible(false);
                 });
-                btnOk.addActionListener((ActionEvent e) -> {       
+                btnOk.addActionListener((ActionEvent e) -> {
                     entry.value = txtEditor.getText();
-                    txtEditor.setText("${#" + cmbPropertyTypes.getSelectedItem() + "#" + txtName.getText()  + "}");
+                    txtEditor.setText("${#" + cmbPropertyTypes.getSelectedItem() + "#" + txtName.getText() + "}");
                     propDialog.setVisible(false);
                 });
                 propDialog.setVisible(true);

@@ -26,6 +26,8 @@ public class Properties {
     public static final String TESTSUITE = "TestSuite";
     public static final String TESTCASE = "TestCase";
     public static final String TESTSTEP = "TestStep";
+    
+    public static final String[] PROPERTY_NAMES = new String[] {GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
     private static final Logger LOGGER = Logger.getLogger(Properties.class.getName());
 
@@ -171,6 +173,19 @@ public class Properties {
             return teststep;
         }
         return null;
+    }
+    
+    public boolean isInheritKey(String propName, String key) {
+        for (String name : PROPERTY_NAMES) {
+            if (name.equals(propName)) {
+                return false;
+            }
+            JSONObject json = getProperty(name);
+            if (json != null && json.containsKey(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Properties cloneProperties() {
