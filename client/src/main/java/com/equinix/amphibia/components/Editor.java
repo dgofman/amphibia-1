@@ -253,7 +253,7 @@ public final class Editor extends BaseTaskPane {
     }
 
     public void loadHistory() {
-        File history = IO.newFile(Amphibia.amphibiaHome, ".history");
+        /*File history = IO.newFile(Amphibia.amphibiaHome, ".history");
         try {
             historyIndex = 0;
             if (history.exists()) {
@@ -291,11 +291,12 @@ public final class Editor extends BaseTaskPane {
             historyWriter.seek(history.length());
         } catch (IOException ex) {
             logger.log(Level.SEVERE, ex.toString() + "::" + history.getAbsolutePath(), ex);
-        }
+        }*/
     }
 
     public boolean addHistory(Date setDate, String filePath, String oldContent, String newContent) {
-        if (newContent == null || newContent.equals(oldContent)) {
+        return false;
+        /*if (newContent == null || newContent.equals(oldContent)) {
             return false;
         }
         new Thread() {
@@ -342,7 +343,7 @@ public final class Editor extends BaseTaskPane {
             }
         }.start();
         
-        return true;
+        return true;*/
     }
 
     @Override

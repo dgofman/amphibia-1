@@ -45,6 +45,10 @@ public final class JTreeTable extends JTable {
     public static final int EDIT_RESET = 1;
     public static final int EDIT_ONLY = 2;
     public static final int READ_ONLY = 3;
+    
+    private ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock.png"));
+    private ImageIcon unlock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/unlock.png"));
+
 
     /**
      * A subclass of JTree.
@@ -357,9 +361,6 @@ public final class JTreeTable extends JTable {
          * Last table/tree row asked to renderer.
          */
         protected int visibleRow;
-
-        private ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock.png"));
-        private ImageIcon unlock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/unlock.png"));
 
         public TreeTableCellRenderer() {
             super();

@@ -73,7 +73,11 @@ public class IO {
     public static JSON getJSON(File file) throws Exception {
         JSON json = null;
         try {
-            json = getJSON(new FileInputStream(file));
+            FileManager.Record record = FileManager.getRecord(file);
+            if (record != null) {
+                return record.toJSON();
+            }
+            json = toJSON(readFile(file));
         } catch (Exception ex) {
             throw new Exception("File: " + file.getAbsolutePath() + "\n" + ex.toString(), ex);
         }
@@ -81,15 +85,7 @@ public class IO {
     }
     
     public static JSON getJSON(InputStream is) throws Exception {
-        JSON json = null;
-        try {
-            json = (JSON) toJSON(IOUtils.toString(is));
-        } catch (Exception ex) {
-            throw ex;
-        } finally {
-            is.close();
-        }
-        return json;
+        return toJSON(readInputStream(is));
     }
     
     public static File getBackupFile(File file) {
@@ -136,16 +132,27 @@ public class IO {
     }
     
     public static String readFile(URI uri) throws IOException {
-        return readFile(uri.toURL().openStream());
+        return readInputStream(uri.toURL().openStream());
     }
 
     public static String readFile(File file) throws IOException {
-        return readFile(new FileInputStream(file));
+        String content = FileManager.getContent(file);
+        if (content == null) {
+            content = readInputStream(new FileInputStream(file));
+            FileManager.addContent(file, content);
+        }
+        return content;
     }
     
-    public static String readFile(InputStream is) throws IOException {
-        String str = IOUtils.toString(is);
-        is.close();
+    public static String readInputStream(InputStream is) throws IOException {
+        String str;
+        try {
+            str = IOUtils.toString(is);
+        } catch (IOException ex) {
+            throw ex;
+        } finally {
+            is.close();
+        }
         return str;
     }
     
@@ -224,12 +231,14 @@ public class IO {
     }
 
     public static String[] write(TreeIconNode node) throws Exception {
+        if (node instanceof TreeIconNode.ProfileNode) {
+            TreeCollection collection = node.getCollection();
+            String content = prettyJson(collection.getProjectProfile().toString());
+            write(content, collection.getBackupProfile());
+            return new String[] {"", content};
+        }
         TreeIconNode.TreeIconUserObject userObject = node.getTreeIconUserObject();
         File file = IO.newFile(userObject.getFullPath());
-        File backup = getBackupFile(file);
-        if (backup.exists()) {
-            file = backup;
-        }
         return write(userObject.json.toString(), file, true);
     }
     
