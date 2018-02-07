@@ -59,7 +59,7 @@ public final class JSONTableModel extends JTreeTable.AbstractTreeTableModel {
                 Object name = prop[0];
                 if (name != null) {
                     Object element = ((JSONObject) json).get(name.toString());
-                    if (!isInherit && "inherited-properties".equals(name)) {
+                    if (!isInherit && "available-properties".equals(name)) {
                         continue;
                     }
                     rootEntry.add(node, json, name.toString(), element, prop[1], prop, name);

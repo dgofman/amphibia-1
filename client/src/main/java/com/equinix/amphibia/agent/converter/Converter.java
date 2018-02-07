@@ -58,6 +58,9 @@ public class Converter {
         warnings,
         errors
     };
+    
+    public static final Object ENDPOINT = 0;
+    public static final Object VARIABLE = 1;
 
     public static Map<RESOURCE_TYPE, Object> execute(String[] args) throws Exception {
         Options options = new Options();

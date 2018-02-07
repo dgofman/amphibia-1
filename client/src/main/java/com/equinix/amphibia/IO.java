@@ -92,12 +92,12 @@ public class IO {
         return json;
     }
     
-    public static JSONObject getBackupJSON(File file, BaseTaskPane pane) {
+    public static JSONObject getBackupJSON(File file) throws Exception {
         File backupFile = getBackupFile(file);
         if (!backupFile.exists()) {
             backupFile = file;
         }
-        return (JSONObject) getJSON(backupFile, pane);
+        return (JSONObject) getJSON(backupFile);
     }
     
     public static File getBackupFile(File file) {

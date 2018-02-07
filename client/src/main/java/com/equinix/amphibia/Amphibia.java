@@ -445,21 +445,20 @@ public final class Amphibia extends JFrame {
         for (int i = recentProjects.size() - 1; i >= 0; i--) {
             File projectFile = IO.getFile(recentProjects.getString(i));
             if (projectFile.exists()) {
-                File profileFile = IO.newFile(projectFile.getParentFile(), "data/profile.json");
-                JSONObject profile = IO.getBackupJSON(profileFile, mainPanel.editor);
-                String projectName = profile.getJSONObject("project").getString("name");
-                JMenuItem menu = new JMenuItem(projectName);
-                menu.setToolTipText(projectFile.getAbsolutePath());
-                menu.addActionListener((ActionEvent evt) -> {
-                    try {
+                try {
+                    JSONObject profile = collection.loadProjectProfile();
+                    String projectName = profile.getJSONObject("project").getString("name");
+                    JMenuItem menu = new JMenuItem(projectName);
+                    menu.setToolTipText(projectFile.getAbsolutePath());
+                    menu.addActionListener((ActionEvent evt) -> {
                         TreeCollection selectedProject = mainPanel.getSelectedProject(projectFile);
                         selectedProject.setProjectFile(projectFile);
                         registerProject(selectedProject);
-                    } catch (Exception e) {
-                        mainPanel.addError(e);
-                    }
-                });
-                menuRecentProject.add(menu);
+                    });
+                    menuRecentProject.add(menu);
+                } catch (Exception e) {
+                    mainPanel.addError(e);
+                }
             } else {
                 recentProjects.remove(i);
             }
@@ -1200,7 +1199,7 @@ public final class Amphibia extends JFrame {
         mnuView.add(spr7);
 
         inheritProp.setSelected(true);
-        inheritProp.setText(bundle.getString("inheritedProperties")); // NOI18N
+        inheritProp.setText(bundle.getString("ivailableProperties")); // NOI18N
         inheritProp.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 inheritPropActionPerformed(evt);
@@ -1348,10 +1347,9 @@ public final class Amphibia extends JFrame {
         if (MainPanel.selectedNode != null) {
             try {
                 TreeCollection collection = MainPanel.selectedNode.getCollection();
-                IO.copy(IO.getBackupFile(collection.getProjectFile()), collection.getProjectFile());
-                IO.copy(collection.profile.backupFile, collection.profile.profileFile);
-                collection.profile.reloadJSON();
-            } catch (Exception ex) {
+                File profile = collection.getProfile();
+                IO.copy(IO.getBackupFile(profile), profile);
+            } catch (IOException ex) {
                 logger.log(Level.SEVERE, ex.toString(), ex);
             }
         }

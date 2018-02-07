@@ -554,8 +554,6 @@ public final class MainPanel extends javax.swing.JPanel {
         
         try {
             collection.profile.load(collection.getProjectDir());
-            JSONObject json = collection.profile.profileJSON;
-            collection.setProjectProfile(json);
         } catch (Exception ex) {
             addError(ex);
         }
@@ -572,6 +570,7 @@ public final class MainPanel extends javax.swing.JPanel {
 
         TreeIconNode debugProjectNode = new TreeIconNode(collection.project);
         JSONObject projectJson = collection.project.jsonObject();
+        JSONObject json;
         JSONArray globals = new JSONArray();
         try {
             Object[][] vars = GlobalVariableDialog.getGlobalVarData();
@@ -584,15 +583,12 @@ public final class MainPanel extends javax.swing.JPanel {
                     }
                 });
             }
+            json = collection.loadProjectProfile();
         } catch (Exception e) {
             editor.addError(e, Amphibia.getBundle().getString("error_open_json"));
             return false;
         }
-        
-        File profileFile = IO.getFile(collection, "data/profile.json");
-        JSONObject json = IO.getBackupJSON(profileFile, editor);
-        collection.setProjectProfile(json);
-        
+
         JSONObject projectProps = JSONObject.fromObject(projectJson.getJSONObject("projectProperties"));
         JSONObject profileProps = json.getJSONObject("properties");
         profileProps.keySet().forEach((key) -> {
@@ -606,7 +602,7 @@ public final class MainPanel extends javax.swing.JPanel {
         collection.setProjectProperties(projectProperties);
 
         collection.profile.addJSON(json)
-                .addTooltip(profileFile.getAbsolutePath());
+                .addTooltip(collection.getProfile().getAbsolutePath());
         
         collection.project.add(collection.resources);
         collection.project.add(collection.interfaces);
@@ -651,7 +647,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             .addProperties(INTERFACE_PROPERTIES)
                             .addTooltip(interfaceJSON.getString("basePath"))
                             .addJSON(interfaceJSON);
-                    iNode.info = new TreeIconNode.ResourceInfo(profileFile);
+                    iNode.info = new TreeIconNode.ResourceInfo(collection.getProfile());
                     iNode.info.resource = resource;
                     interfaceList.add(interfaceJSON);
                 }
@@ -733,7 +729,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             .addProperties(INTERFACE_PROPERTIES)
                             .addTooltip(interfaceJSON.getString("basePath"))
                             .addJSON(interfaceJSON);
-                    iNode.info = new TreeIconNode.ResourceInfo(profileFile);
+                    iNode.info = new TreeIconNode.ResourceInfo(collection.getProfile());
                     iNode.info.resource = resource;
                 }
             }
@@ -828,33 +824,33 @@ public final class MainPanel extends javax.swing.JPanel {
                         }
 
                         final JSONObject testcaseJSON = IO.toJSONObject(info.testStepInfo);
-                        final JSONObject testCaseInheritedProperties = new JSONObject();
+                        final JSONObject testCaseAvailableProperties = new JSONObject();
                         info.properties.getProperty("Global").keySet().forEach((key) -> {
-                            testCaseInheritedProperties.put(key, "${#Global$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#Global$" + key + "}");
                         });
                         info.properties.getProperty("Project").keySet().forEach((key) -> {
-                            testCaseInheritedProperties.put(key, "${#Project$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#Project$" + key + "}");
                         });
                         info.properties.getProperty("TestSuite").keySet().forEach((key) -> {
-                            testCaseInheritedProperties.put(key, "${#TestSuite$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#TestSuite$" + key + "}");
                         });
                         info.properties.getProperty("TestCase").keySet().forEach((key) -> {
-                            testCaseInheritedProperties.put(key, "${#TestCase$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#TestCase$" + key + "}");
                         });
                         testCaseProperties.keySet().forEach((key) -> {
-                            testCaseInheritedProperties.put(key, "${#TestCase$" + key + "}");
+                            testCaseAvailableProperties.put(key, "${#TestCase$" + key + "}");
                         });
                         if (testcase.containsKey("transfer")) {
                             JSONObject transferProps = testcase.getJSONObject("transfer");
                             transferProps.keySet().forEach((key) -> {
                                 String values;
-                                if (testCaseInheritedProperties.containsKey(key)) {
-                                    values = testCaseInheritedProperties.get(key)
+                                if (testCaseAvailableProperties.containsKey(key)) {
+                                    values = testCaseAvailableProperties.get(key)
                                             + ", \n${#TestCase:" + transferProps.get(key) + "}";
                                 } else {
                                     values = "${#TestCase:" + transferProps.get(key) + "}";
                                 }
-                                testCaseInheritedProperties.put(key, values);
+                                testCaseAvailableProperties.put(key, values);
                             });
                             testcaseJSON.element("transfer", transferProps);
                         }
@@ -896,7 +892,7 @@ public final class MainPanel extends javax.swing.JPanel {
                         debugSuiteNode.add(debugTestCaseNode);
 
                         JSONArray teststeps = new JSONArray();
-                        JSONObject inheritedProperties = IO.toJSONObject(testCaseInheritedProperties);
+                        JSONObject ivailableProperties = IO.toJSONObject(testCaseAvailableProperties);
                         testcase.getJSONArray("steps").forEach((item) -> {
                             JSONObject step = (JSONObject) item;
                             boolean isCommon = step.containsKey("common");
@@ -914,7 +910,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             });
                             testStepJSON.element("disabled", step.get("disabled") == Boolean.TRUE);
 
-                            JSONObject stepInheritedProperties = IO.toJSONObject(inheritedProperties);
+                            JSONObject stepAvailableProperties = IO.toJSONObject(ivailableProperties);
                             final JSONObject requestProp = testStepJSON.getJSONObject("request").getJSONObject("properties");
                             final JSONObject responseProp = testStepJSON.getJSONObject("response").getJSONObject("properties");
 
@@ -925,12 +921,12 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customReqProps = commonItem.getJSONObject("request").getJSONObject("properties");
                                 customReqProps.keySet().forEach((key) -> {
                                     requestProp.put(key, customReqProps.get(key));
-                                    stepInheritedProperties.put(key, "${#Common$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#Common$" + key + "}");
                                 });
                                 JSONObject customResProps = commonItem.getJSONObject("response").getJSONObject("properties");
                                 customResProps.keySet().forEach((key) -> {
                                     responseProp.put(key, customResProps.get(key));
-                                    stepInheritedProperties.put(key, "${#Common$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#Common$" + key + "}");
                                 });
                             }
 
@@ -938,7 +934,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customStepProps = step.getJSONObject("request").getJSONObject("properties");
                                 customStepProps.keySet().forEach((key) -> {
                                     requestProp.put(key, customStepProps.get(key));
-                                    stepInheritedProperties.put(key, "${#TestStep$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#TestStep$" + key + "}");
                                 });
                             }
 
@@ -946,7 +942,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customStepProps = step.getJSONObject("response").getJSONObject("properties");
                                 customStepProps.keySet().forEach((key) -> {
                                     responseProp.put(key, customStepProps.get(key));
-                                    stepInheritedProperties.put(key, "${#TestStep$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#TestStep$" + key + "}");
                                 });
                             }
 
@@ -972,26 +968,26 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject transferProps = step.getJSONObject("transfer");
                                 transferProps.keySet().forEach((key) -> {
                                     String values;
-                                    if (stepInheritedProperties.containsKey(key)) {
-                                        values = stepInheritedProperties.get(key)
+                                    if (stepAvailableProperties.containsKey(key)) {
+                                        values = stepAvailableProperties.get(key)
                                                 + ", \n${#TestStep:" + transferProps.get(key) + "}";
                                     } else {
                                         values = "${#TestStep:" + transferProps.get(key) + "}";
                                     }
-                                    stepInheritedProperties.put(key, values);
+                                    stepAvailableProperties.put(key, values);
 
-                                    if (testCaseInheritedProperties.containsKey(key)) {
-                                        values = testCaseInheritedProperties.get(key)
+                                    if (testCaseAvailableProperties.containsKey(key)) {
+                                        values = testCaseAvailableProperties.get(key)
                                                 + ", \n${#TestStep#" + step.getString("name") + ":" + transferProps.get(key) + "}";
                                     } else {
                                         values = "${#TestStep#" + step.getString("name") + ":" + transferProps.get(key) + "}";
                                     }
-                                    testCaseInheritedProperties.put(key, values);
+                                    testCaseAvailableProperties.put(key, values);
                                 });
                                 testStepJSON.getJSONObject("response").element("transfer", transferProps);
                             }
 
-                            testStepJSON.element("inherited-properties", stepInheritedProperties);
+                            testStepJSON.element("available-properties", stepAvailableProperties);
 
                             String tootltip = stepInfo.properties.replace(url).replaceAll("&amp;", "&");
                             
@@ -1025,7 +1021,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             debugTestCaseNode.add(new TreeIconNode(testStepNode, null).addJSON(step));
                         });
                         testcaseJSON.element("teststeps", teststeps);
-                        testcaseJSON.element("inherited-properties", testCaseInheritedProperties);
+                        testcaseJSON.element("available-properties", testCaseAvailableProperties);
                         testcaseNode.addJSON(testcaseJSON);
                     }
                 }

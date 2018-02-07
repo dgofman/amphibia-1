@@ -5,8 +5,11 @@
  */
 package com.equinix.amphibia.components;
 
+import com.equinix.amphibia.agent.converter.Converter;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -71,8 +74,6 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
     private String[] defaultHadersNames;
     private int cloneColumnIndex;
     
-    public static final Object ENDPOINT = 0;
-    public static final Object VARIABLE = 1;
     public static final int defaultColumnIndex = 2;
     
     /**
@@ -136,7 +137,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
             }
             Object val = globalVarsModel.getValueAt(row, 0);
             if (val != null && column == 1) {
-                label.setIcon(ENDPOINT.equals(val) ? btnAddEndPoint.getIcon() : btnAddVar.getIcon());
+                label.setIcon(Converter.ENDPOINT.equals(val) ? btnAddEndPoint.getIcon() : btnAddVar.getIcon());
             } else {
                 label.setIcon(null);
             }
@@ -258,9 +259,9 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
         int envColumn = Amphibia.instance.getSelectedEnvDataIndex();
         variables.forEach((item) -> {
             JSONObject vars = (JSONObject) item;
-            Object type = VARIABLE;
+            Object type = Converter.VARIABLE;
             if ("endpoint".equals(vars.getOrDefault("type", null))) {
-                type = ENDPOINT;
+                type = Converter.ENDPOINT;
             }
             if (!names.containsKey(vars.getString("name"))) {
                 int row = globalVarsModel.getRowCount();
@@ -390,14 +391,14 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
     private void btnAddEndPointActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnAddEndPointActionPerformed
         String name = Amphibia.instance.inputDialog("tip_add_var", "", new String[]{}, this);
         if (name != null && !name.isEmpty()) {
-            globalVarsModel.addRow(new Object[]{ENDPOINT, name, "http://"});
+            globalVarsModel.addRow(new Object[]{Converter.ENDPOINT, name, "http://"});
         }
     }//GEN-LAST:event_btnAddEndPointActionPerformed
 
     private void btnAddVarActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnAddVarActionPerformed
         String name = Amphibia.instance.inputDialog("tip_add_var", "", new String[]{}, this);
         if (name != null && !name.isEmpty()) {
-            globalVarsModel.addRow(new Object[]{VARIABLE, name});
+            globalVarsModel.addRow(new Object[]{Converter.VARIABLE, name});
         }
     }//GEN-LAST:event_btnAddVarActionPerformed
 

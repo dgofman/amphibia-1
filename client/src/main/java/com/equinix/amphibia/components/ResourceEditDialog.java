@@ -136,6 +136,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
                 if ("name".equals(entry.name)) {
                     value = value.toString().trim();
+                    System.out.println(node);
+                    System.out.println(node.getParent());
                     Enumeration children = node.getParent().children();
                     while (children.hasMoreElements()) {
                         TreeIconNode child = (TreeIconNode) children.nextElement();
@@ -151,7 +153,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                     if (file.exists()) {
                         JSONObject json = (JSONObject) IO.getJSON(file);
                         json.getJSONObject(entry.rootName).getJSONObject("properties").element(txtName.getText(), value);
-                        IO.write(IO.prettyJson(json.toString()), file);
+                        String[] contents = IO.write(json.toString(), file, true);
+                        mainPanel.history.addHistory(file.getAbsolutePath(), contents[0], contents[1]);
                         mainPanel.reloadCollection(collection);
                     }
                 } else if (entry.getType() == JTreeTable.EditValueRenderer.TYPE.ADD) {

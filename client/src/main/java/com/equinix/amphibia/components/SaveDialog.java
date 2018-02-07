@@ -5,9 +5,10 @@
  */
 package com.equinix.amphibia.components;
 
-import com.equinix.amphibia.Amphibia;
 import static com.equinix.amphibia.Amphibia.P_PROJECT_UUIDS;
 import static com.equinix.amphibia.Amphibia.userPreferences;
+
+import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
 
 import java.awt.BorderLayout;

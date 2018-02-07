@@ -17,8 +17,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import net.sf.json.JSONObject;
-
 public class Builder {
 
     public static final String FORMAT = "format";

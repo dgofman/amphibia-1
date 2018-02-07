@@ -111,9 +111,9 @@ public class JsonScript extends ProjectAbstract {
             if ("restrequest".equals(testcase.get("type"))) {
                 properties.setTestCase(testcase.getJSONObject("properties"));
 
-                for (Object key : testcase.keySet()) {
+                testcase.keySet().forEach((key) -> {
                     testCaseJson.element(key.toString(), testcase.get(key));
-                }
+                });
                 Object path = testcase.get("path");
                 if (path != null) {
                     path = properties.replace(path.toString()).replaceAll("&amp;", "&");
@@ -129,15 +129,15 @@ public class JsonScript extends ProjectAbstract {
                 List<?> assertions = (List<?>) testcase.get("assertions");
                 if (assertions != null) {
                     JSONObject assertionsJSON = new JSONObject();
-                    for (Object assertion : assertions) {
+                    assertions.forEach((assertion) -> {
                         JSONObject assertionItem = (JSONObject) assertion;
                         JSONObject assertionJSON = new JSONObject();
                         JSONObject replace = assertionItem.getJSONObject("replace");
-                        for (Object key : replace.keySet()) {
+                        replace.keySet().forEach((key) -> {
                             assertionJSON.element(key.toString(), replace.get(key));
-                        }
+                        });
                         assertionsJSON.element(assertionItem.get("type").toString(), assertionJSON);
-                    }
+                    });
                     testCaseJson.element("assertions", assertionsJSON);
                 }
                 testCasesJSON.element(testcase.getString("name"), testCaseJson);

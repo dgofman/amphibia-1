@@ -9,6 +9,8 @@ import static com.equinix.amphibia.Amphibia.TYPE;
 import static com.equinix.amphibia.Amphibia.NAME;
 import static com.equinix.amphibia.Amphibia.VALUE;
 
+import com.equinix.amphibia.agent.converter.Converter;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
 
@@ -180,8 +182,8 @@ public class Wizard extends javax.swing.JPanel {
         }); 
 
         for (int i = 0; i < tabNav.getTabCount(); i++) {
-            WizardTab tab = (WizardTab)tabNav.getComponent(i);
-            if (tab != null) {
+            if (tabNav.getComponent(i) instanceof WizardTab) {
+                WizardTab tab = (WizardTab) tabNav.getComponent(i);
                 tab.updateInterfaces();
                 tab.refresh();
             }
@@ -193,7 +195,7 @@ public class Wizard extends javax.swing.JPanel {
         if (env != null) {
             endpoints = new HashMap<>();
             for (Object[] item : env.data) {
-                if (GlobalVariableDialog.ENDPOINT.equals(item[TYPE]) &&
+                if (Converter.ENDPOINT.equals(item[TYPE]) &&
                         item[NAME] != null && item[VALUE] != null &&
                         !item[NAME].toString().trim().isEmpty() && !item[VALUE].toString().trim().isEmpty()) {
                     endpoints.put(item[NAME], item[VALUE]);

@@ -1,6 +1,5 @@
 package com.equinix.amphibia.agent.builder;
 
-import java.text.NumberFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -21,8 +20,13 @@ public class Properties {
     private JSONObject testsuite;
     private JSONObject testcase;
     private JSONObject teststep;
+    
+    public static final String GLOBAL = "Global";
+    public static final String PROJECT = "Project";
+    public static final String TESTSUITE = "TestSuite";
+    public static final String TESTCASE = "TestCase";
+    public static final String TESTSTEP = "TestStep";
 
-    private static final NumberFormat NUMBER = NumberFormat.getInstance();
     private static final Logger LOGGER = Logger.getLogger(Properties.class.getName());
 
     public Properties(JSONArray globals, JSONObject project) {
@@ -151,19 +155,19 @@ public class Properties {
     }
 
     public JSONObject getProperty(String name) {
-        if ("Global".equals(name)) {
+        if (GLOBAL.equals(name)) {
             return globals;
         }
-        if ("Project".equals(name)) {
+        if (PROJECT.equals(name)) {
             return project;
         }
-        if ("TestSuite".equals(name)) {
+        if (TESTSUITE.equals(name)) {
             return testsuite;
         }
-        if ("TestCase".equals(name)) {
+        if (TESTCASE.equals(name)) {
             return testcase;
         }
-        if ("TestStep".equals(name)) {
+        if (TESTSTEP.equals(name)) {
             return teststep;
         }
         return null;

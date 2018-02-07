@@ -199,8 +199,8 @@ public class TransferDialog extends javax.swing.JPanel {
         txtEditor.setText("");
         targetModel.removeAllElements();
         treeNode.removeAllChildren();
-        JSONObject inheritedProperties = node.jsonObject().getJSONObject("inherited-properties");
-        inheritedProperties.keySet().forEach((key) -> {
+        JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
+        ivailableProperties.keySet().forEach((key) -> {
             targetModel.addElement(key);
             if (entry.getType() == EDIT && key.toString().equals(entry.name)) {
                 cmbTarget.setSelectedIndex(targetModel.getSize() - 1);

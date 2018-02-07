@@ -9,6 +9,7 @@ import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.
 import static com.equinix.amphibia.components.TreeCollection.TYPE.*;
 
 import com.equinix.amphibia.Amphibia;
+import com.equinix.amphibia.IO;
 import com.equinix.amphibia.agent.builder.Properties;
 
 import java.io.File;
@@ -154,7 +155,7 @@ public final class TreeCollection {
             {"schema", REFERENCE_EDIT},
             {"asserts", REFERENCE_EDIT}
         }},
-        {"inherited-properties", null, VIEW},
+        {"available-properties", null, VIEW},
         {"teststeps", ADD_RESOURCES, REFERENCE_EDIT}
     };
 
@@ -177,7 +178,7 @@ public final class TreeCollection {
             {"schema", REFERENCE_EDIT},
             {"asserts", REFERENCE_EDIT}
         }},
-        {"inherited-properties", null, VIEW}
+        {"available-properties", null, VIEW}
     };
     
     public static final Object[][] TEST_STEP_LINK_PROPERTIES = new Object[][]{
@@ -200,7 +201,7 @@ public final class TreeCollection {
             {"schema", REFERENCE_EDIT},
             {"asserts", REFERENCE_EDIT}
         }},
-        {"inherited-properties", null, VIEW}
+        {"available-properties", null, VIEW}
     };
                 
     public static final Object[][] TEST_ITEM_PROPERTIES = new Object[][]{
@@ -366,13 +367,18 @@ public final class TreeCollection {
         return getProject().getString("id");
     }
     
-    public JSONObject getProjectProfile() {
+    public File getProfile() {
+        return IO.getFile(this, "data/profile.json");
+    }
+    
+    public JSONObject loadProjectProfile() throws Exception {
+        projectProfile = IO.getBackupJSON(getProfile());
+        project.getTreeIconUserObject().setLabel(getProjectName());
         return projectProfile;
     }
-
-    public void setProjectProfile(JSONObject json) {
-        projectProfile = json;
-        project.getTreeIconUserObject().setLabel(getProjectName());
+    
+    public JSONObject getProjectProfile() {
+        return projectProfile;
     }
 
     public boolean isOpen() {

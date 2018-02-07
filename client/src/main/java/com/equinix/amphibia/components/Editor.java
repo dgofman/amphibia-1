@@ -81,14 +81,14 @@ public final class Editor extends BaseTaskPane {
     private final List<String[]> histories = new ArrayList<>();
     private int historyIndex;
 
-    private  JTreeTable treeTable;
-    private  JSONTableModel defaultModel;
-    private  DefaultTableModel historyModel;
+    private JTreeTable treeTable;
+    private JSONTableModel defaultModel;
+    private DefaultTableModel historyModel;
     private DefaultComboBoxModel serversModel;
 
     private RandomAccessFile historyWriter;
     private JSONTableModel jsonModel;
-    
+
     public int loadMaxLastHistory;
 
     /**
@@ -97,8 +97,8 @@ public final class Editor extends BaseTaskPane {
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public Editor() {
         super();
-        
-        serversModel = new DefaultComboBoxModel<>(new String[] { bundle.getString("mockServer") });
+
+        serversModel = new DefaultComboBoxModel<>(new String[]{bundle.getString("mockServer")});
 
         historyModel = new DefaultTableModel(
                 new Object[][]{},
@@ -109,14 +109,14 @@ public final class Editor extends BaseTaskPane {
 
         defaultDividerLocation = 300;
         loadMaxLastHistory = userPreferences.getInt(Amphibia.P_HISTORY, 50);
-        
+
         initComponents();
-        
+
         WizardTab.ExtendedStyledEditorKit editorKit = new WizardTab.ExtendedStyledEditorKit();
         String contentType = editorKit.getContentType();
         txtRaw.setEditorKitForContentType(contentType, editorKit);
         txtRaw.setEditorKit(editorKit);
-        
+
         setDividerLocation(userPreferences.getInt(propertyChangeName, getDividerLocation()));
 
         defaultModel = JSONTableModel.createModel(bundle);
@@ -146,11 +146,11 @@ public final class Editor extends BaseTaskPane {
                     mainPanel.resourceAddDialog.showTestStepDialog(node);
                 }
             } else if (cellValue == REFERENCE_EDIT) {
-                if ((type == TESTSUITE && "testcases".equals(entry.parent.name)) || 
-                    (type == TESTCASE && "teststeps".equals(entry.parent.name))) {
+                if ((type == TESTSUITE && "testcases".equals(entry.parent.name))
+                        || (type == TESTCASE && "teststeps".equals(entry.parent.name))) {
                     mainPanel.resourceOrderDialog.openDialog(node, entry.getParent().getIndex(entry));
                 } else {
-                   mainPanel.referenceEditDialog.openEditDialog(collection, entry);
+                    mainPanel.referenceEditDialog.openEditDialog(collection, entry);
                 }
             } else if (cellValue == REFERENCE) {
                 mainPanel.referenceEditDialog.openViewDialog(collection, entry);
@@ -193,7 +193,7 @@ public final class Editor extends BaseTaskPane {
 
         treeTable.getTableHeader().setFont(font.deriveFont(Font.BOLD));
         treeTable.getTableHeader().setReorderingAllowed(false);
-        
+
         tblHistory.getTableHeader().setFont(font.deriveFont(Font.BOLD));
         tblHistory.setAutoCreateColumnsFromModel(false);
         tblHistory.getTableHeader().setResizingAllowed(true);
@@ -251,7 +251,7 @@ public final class Editor extends BaseTaskPane {
 
         setComponents(tbpOutput, treeProblems);
     }
-    
+
     public void loadHistory() {
         File history = IO.newFile(Amphibia.amphibiaHome, ".history");
         try {
@@ -293,51 +293,58 @@ public final class Editor extends BaseTaskPane {
             logger.log(Level.SEVERE, ex.toString() + "::" + history.getAbsolutePath(), ex);
         }
     }
-    
-    public boolean addHistory(Date date, String filePath, String oldContent, String newContent) {
-        if (date == null) {
-            date = new Date();
-        }
+
+    public boolean addHistory(Date setDate, String filePath, String oldContent, String newContent) {
         if (newContent == null || newContent.equals(oldContent)) {
             return false;
         }
-        Object[] items = new Object[]{dateFormat.print(date.getTime()), filePath, oldContent, null};
-        while (historyIndex > 0) {
-            historyModel.removeRow(0);
-            histories.remove(0);
-            try {
-                long length = historyWriter.length() - 1;
-                byte b = 0;
-                while (b != 10 && length > 0) {
-                    length -= 1;
-                    historyWriter.seek(length);
-                    b = historyWriter.readByte();
+        new Thread() {
+            @Override
+            public void run() {
+                Date date = setDate;
+                if (date == null) {
+                    date = new Date();
                 }
-                historyWriter.setLength(length == 0 ? 0 : length + 1);
-            } catch (IOException ex) {
-                addError(ex);
+                Object[] items = new Object[]{dateFormat.print(date.getTime()), filePath, oldContent, null};
+                while (historyIndex > 0) {
+                    historyModel.removeRow(0);
+                    histories.remove(0);
+                    try {
+                        long length = historyWriter.length() - 1;
+                        byte b = 0;
+                        while (b != 10 && length > 0) {
+                            length -= 1;
+                            historyWriter.seek(length);
+                            b = historyWriter.readByte();
+                        }
+                        historyWriter.setLength(length == 0 ? 0 : length + 1);
+                    } catch (IOException ex) {
+                        addError(ex);
+                    }
+                    historyIndex--;
+                }
+                Amphibia.instance.enableUndo(true);
+                Amphibia.instance.enableRedo(false);
+                if (histories.size() > 0) {
+                    histories.remove(0); //remove last saved content
+                }
+                histories.add(0, new String[]{oldContent, filePath});
+                histories.add(0, new String[]{newContent, filePath});
+                historyModel.insertRow(0, items);
+                if (historyWriter != null) {
+                    try {
+                        historyWriter.writeBytes(date.getTime() + "\t" + filePath + "\t" + oldContent);
+                        historyWriter.writeByte(LINE_SEPARATOR);
+                    } catch (IOException ex) {
+                        addError(ex);
+                    }
+                }
             }
-            historyIndex--;
-        }
-        Amphibia.instance.enableUndo(true);
-        Amphibia.instance.enableRedo(false);
-        if (histories.size() > 0) {
-            histories.remove(0); //remove last saved content
-        }
-        histories.add(0, new String[]{oldContent, filePath});
-        histories.add(0, new String[]{newContent, filePath});
-        historyModel.insertRow(0, items);
-        if (historyWriter != null) {
-            try {
-                historyWriter.writeBytes(date.getTime() + "\t" + filePath + "\t" + oldContent);
-                historyWriter.writeByte(LINE_SEPARATOR);
-            } catch (IOException ex) {
-                addError(ex);
-            }
-        }
+        }.start();
+        
         return true;
     }
-    
+
     @Override
     public DefaultMutableTreeNode addError(String error) {
         return super.addError(error);
@@ -381,7 +388,7 @@ public final class Editor extends BaseTaskPane {
             treeTable.setModel(jsonModel);
         }
     }
-    
+
     @Override
     public void clear() {
         if (tabs.getSelectedIndex() == Amphibia.TAB_CONSOLE) {
@@ -412,7 +419,7 @@ public final class Editor extends BaseTaskPane {
         Amphibia.instance.enableUndo(false);
         Amphibia.instance.enableRedo(false);
     }
-    
+
     public void deleteHistory() {
         try {
             historyWriter.setLength(0);
@@ -652,9 +659,9 @@ public final class Editor extends BaseTaskPane {
         public List<Entry> children;
         private Entry parent;
         public String rootName;
-        
+
         private JTreeTable.EditValueRenderer.TYPE type;
-        
+
         public Entry(TreeIconNode node, String name) {
             this.node = node;
             this.name = name;
@@ -672,9 +679,8 @@ public final class Editor extends BaseTaskPane {
             this.value = value;
             this.isLeaf = isLeaf;
             this.isDynamic = isDynamic;
-            this.setType(type);
         }
-        
+
         public void setType(JTreeTable.EditValueRenderer.TYPE type) {
             this.type = type;
             if (type == JTreeTable.EditValueRenderer.TYPE.VIEW || type == JTreeTable.EditValueRenderer.TYPE.REFERENCE) {
@@ -682,7 +688,7 @@ public final class Editor extends BaseTaskPane {
             } else {
                 boolean editAndDelete = true;
                 if (isDynamic) {
-                    switch(node.getType()) {
+                    switch (node.getType()) {
                         case PROJECT:
                             if ("properties".equals(parent.toString())) {
                                 JSONObject props = node.getCollection().getProjectProfile().getJSONObject("properties");
@@ -695,7 +701,9 @@ public final class Editor extends BaseTaskPane {
                             }
                             break;
                         case TESTSUITE:
-                            editAndDelete = containsKey(node.info.testSuite);
+                            if ("properties".equals(parent.toString()) && node.info.testSuite.containsKey("properties")) {
+                                editAndDelete = node.info.testSuite.getJSONObject("properties").containsKey(name);
+                            }
                             break;
                         case TESTCASE:
                             editAndDelete = containsKey(node.info.testCase);
@@ -708,18 +716,24 @@ public final class Editor extends BaseTaskPane {
                 this.editMode = editAndDelete ? JTreeTable.EDIT_DELETE : JTreeTable.EDIT_ONLY;
             }
         }
-        
+
         public JTreeTable.EditValueRenderer.TYPE getType() {
             return type;
         }
-        
+
         private boolean containsKey(JSONObject json) {
-            if (json != null && json.containsKey(rootName)) {
-                if ("request".equals(rootName) || "response".equals(rootName)) {
-                    return (json.getJSONObject(rootName).containsKey(getParent().toString()) &&
-                            json.getJSONObject(rootName).getJSONObject(getParent().toString()).containsKey(name));
+            if (json != null) {
+                if ("headers".equals(parent.toString()) && json.containsKey("headers")) {
+                    return json.getJSONObject("headers").containsKey(name);
+                } else if ("properties".equals(parent.toString()) && json.containsKey("properties")) {
+                    return json.getJSONObject("properties").containsKey(name);
+                } else if (json.containsKey(rootName)) {
+                    if ("request".equals(rootName) || "response".equals(rootName)) {
+                        return (json.getJSONObject(rootName).containsKey(getParent().toString())
+                                && json.getJSONObject(rootName).getJSONObject(getParent().toString()).containsKey(name));
+                    }
+                    return json.getJSONObject(rootName).containsKey(name);
                 }
-                return json.getJSONObject(rootName).containsKey(name);
             }
             return false;
         }
@@ -754,6 +768,8 @@ public final class Editor extends BaseTaskPane {
                     Entry child = new Entry(node, entry, list, " ", list.get(i), true, true);
                     if (props != null && props.length == 3) {
                         child.setType((JTreeTable.EditValueRenderer.TYPE) props[2]);
+                    } else {
+                        child.setType(EDIT);
                     }
                     entry.children.add(child);
                 }
@@ -784,6 +800,8 @@ public final class Editor extends BaseTaskPane {
                     child.rootName = rootName.toString();
                     if (props.length > 2) {
                         child.setType((JTreeTable.EditValueRenderer.TYPE) props[2]);
+                    } else {
+                        child.setType(EDIT);
                     }
                     entry.children.add(child);
                 }
