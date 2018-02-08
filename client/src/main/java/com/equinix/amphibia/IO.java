@@ -19,10 +19,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import net.sf.json.JSON;
@@ -43,6 +45,10 @@ public class IO {
     public static final JSONNull NULL = JSONNull.getInstance();
     private static final Logger logger = Amphibia.getLogger(IO.class.getName());
     
+    public static String join(Collection collection) {
+        return (String) collection.stream().map(Object::toString).collect(Collectors.joining(","));
+    }
+    
     public static JSONArray toJSONArray(Object obj) {
         return JSONArray.fromObject(obj);
     }
@@ -52,14 +58,16 @@ public class IO {
     }
 
     public static boolean isNULL(Object value) {
-        if (value == null) {
-            return true;
-        } else if (value == NULL) {
+        if (value == null || value instanceof JSONNull || value == NULL) {
             return true;
         } else if (value instanceof JSONObject) {
             return ((JSONObject) value).isNullObject();
         }
         return false;
+    }
+    
+    public static Object isNULL(Object value, Object defaltValue) {
+        return isNULL(value) ? defaltValue : value;
     }
 
     public static JSON toJSON(String json) throws Exception {

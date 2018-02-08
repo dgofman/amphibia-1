@@ -1,5 +1,6 @@
 package com.equinix.amphibia.agent.builder;
 
+import com.equinix.amphibia.IO;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -189,10 +190,14 @@ public class Properties {
     }
 
     public Properties cloneProperties() {
-        Properties clone = new Properties(globals, project);
-        clone.testsuite = testsuite;
-        clone.testcase = testcase;
-        clone.teststep = teststep;
+        Properties clone = new Properties(cloneJSON(globals), cloneJSON(project));
+        clone.testsuite = cloneJSON(testsuite);
+        clone.testcase = cloneJSON(testcase);
+        clone.teststep = cloneJSON(teststep);
         return clone;
+    }
+    
+    public JSONObject cloneJSON(JSONObject json) {
+        return json == null ? null : IO.toJSONObject(json);
     }
 }

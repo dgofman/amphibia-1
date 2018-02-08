@@ -73,9 +73,9 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
     private Object[][] originalData;
     private String[] defaultHadersNames;
     private int cloneColumnIndex;
-    
+
     public static final int defaultColumnIndex = 2;
-    
+
     /**
      * Creates new form GlobalVaraibleDialog
      */
@@ -97,10 +97,10 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 logger.log(Level.SEVERE, ex.toString(), ex);
             }
         }
-        
+
         originalColumns = globalVarsSource.columns;
         originalData = globalVarsSource.data;
-    
+
         globalVarsModel = new TableModel(globalVarsSource.data, globalVarsSource.columns) {
             @Override
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -166,12 +166,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 int columnIndex = tblVars.columnAtPoint(me.getPoint());
                 if (columnIndex == 0) {
                     int rowIndex = tblVars.rowAtPoint(me.getPoint());
-                    int n = JOptionPane.showConfirmDialog(GlobalVariableDialog.this,
-                            String.format(bundle.getString("tip_delete_env_var"), globalVarsModel.getValueAt(rowIndex, 1)), bundle.getString("title"),
-                            JOptionPane.YES_NO_OPTION);
-                    if (n == JOptionPane.YES_OPTION) {
-                        globalVarsModel.removeRow(rowIndex);
-                    }
+                    globalVarsModel.removeRow(rowIndex);
                 }
             }
         });
@@ -186,7 +181,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 int index = colModel.getColumnIndexAtX(evt.getX());
                 if (index > 1) {
                     cloneColumnIndex = index;
-                    table.setRowSelectionInterval(0, table.getRowCount()-1);
+                    table.setRowSelectionInterval(0, table.getRowCount() - 1);
                     table.setColumnSelectionInterval(index, index);
                 }
                 if (index < 3) {
@@ -222,10 +217,10 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
             setLocationRelativeTo(mainPanel);
         });
     }
-    
+
     public void openDialog() {
         if (!String.join("~", originalColumns).equals(String.join("~", globalVarsSource.columns))) {
-            while(tblVars.getColumnModel().getColumnCount() != defaultHadersNames.length) {
+            while (tblVars.getColumnModel().getColumnCount() != defaultHadersNames.length) {
                 tblVars.removeColumn(tblVars.getColumnModel().getColumn(defaultHadersNames.length));
                 globalVarsModel.removeColumn(defaultHadersNames.length);
             }
@@ -237,10 +232,10 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
             }
             originalColumns = globalVarsModel.getColumnNames();
         }
-                
+
         globalVarsSource.data = originalData;
         globalVarsSource.columns = originalColumns;
-        
+
         if (globalVarsSource.data.length == 0) {
             globalVarsSource.data = new Object[][]{{0, "", "http://"}};
         }
@@ -248,14 +243,14 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
 
         setVisible(true);
     }
-    
+
     @SuppressWarnings("UseOfObsoleteCollectionType")
     public void mergeVariables(JSONArray variables) {
         Map<Object, Boolean> names = new HashMap<>();
         for (int r = 0; r < globalVarsModel.getRowCount(); r++) {
             names.put(globalVarsModel.getValueAt(r, Amphibia.NAME), true);
         }
-        
+
         int envColumn = Amphibia.instance.getSelectedEnvDataIndex();
         variables.forEach((item) -> {
             JSONObject vars = (JSONObject) item;
@@ -269,7 +264,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 globalVarsModel.setValueAt(vars.get("value"), row, envColumn);
             }
         });
-        
+
         Object[][] data = new Object[globalVarsModel.getRowCount()][];
         for (int r = 0; r < globalVarsModel.getRowCount(); r++) {
             data[r] = new Object[globalVarsSource.columns.length];
@@ -277,14 +272,13 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 data[r][c] = globalVarsModel.getValueAt(r, c);
             }
         }
-        
-        globalVarsSource.data = originalData = data;
+        saveModel(data);
     }
 
     public static String[] getGlobalVarColumns() {
         return globalVarsSource.columns;
     }
-    
+
     public static Object[][] getGlobalVarData() {
         return globalVarsSource.data;
     }
@@ -429,59 +423,64 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
 
     @SuppressWarnings("UseOfObsoleteCollectionType")
     private void btnApplyActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnApplyActionPerformed
-        try {
-            CellEditor cellEditor = tblVars.getCellEditor();
-            if (cellEditor != null) {
-                cellEditor.stopCellEditing();
-            }
-            java.util.Vector<java.util.Vector> rows = globalVarsModel.getDataVector();
-            Object[][] data = new Object[rows.size()][];
-            for (int r = 0; r < rows.size(); r++) {
-                java.util.Vector row = rows.get(r);
-                Object[] colData = new Object[row.size()];
-                for (int c = 0; c < row.size(); c++) {
-                    colData[c] = row.get(c);
-                    if (colData[c] instanceof String) {
-                        if ("true".equals(colData[c]) || "false".equals(colData[c])) {
-                            colData[c] = Boolean.getBoolean(colData[c].toString());
-                        } else {
+
+        CellEditor cellEditor = tblVars.getCellEditor();
+        if (cellEditor != null) {
+            cellEditor.stopCellEditing();
+        }
+        java.util.Vector<java.util.Vector> rows = globalVarsModel.getDataVector();
+        Object[][] data = new Object[rows.size()][];
+        for (int r = 0; r < rows.size(); r++) {
+            java.util.Vector row = rows.get(r);
+            Object[] colData = new Object[row.size()];
+            for (int c = 0; c < row.size(); c++) {
+                colData[c] = row.get(c);
+                if (colData[c] instanceof String) {
+                    if ("true".equals(colData[c]) || "false".equals(colData[c])) {
+                        colData[c] = Boolean.getBoolean(colData[c].toString());
+                    } else {
+                        try {
+                            colData[c] = numberFormat.parse(String.valueOf(row.get(c)));
+                        } catch (ParseException e) {
                             try {
-                                colData[c] = numberFormat.parse(String.valueOf(row.get(c)));
-                            } catch (ParseException e) {
-                                try {
-                                    colData[c] = IO.prettyJson(colData[c].toString());
-                                } catch (Exception ex) {
-                                }
+                                colData[c] = IO.prettyJson(colData[c].toString());
+                            } catch (Exception ex) {
                             }
                         }
                     }
                 }
-                data[r] = colData;
             }
-            globalVarsSource.data = data;
-            globalVarsSource.columns = globalVarsModel.getColumnNames();
-            
-            originalColumns = globalVarsSource.columns;
-            originalData = globalVarsSource.data;
-        
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ObjectOutputStream os = new ObjectOutputStream(out);
-            os.writeObject(globalVarsSource);
-            userPreferences.putByteArray(Amphibia.P_GLOBAL_VARS, out.toByteArray());
-            Amphibia.instance.resetEnvironmentModel();
-            if (MainPanel.selectedNode != null) {
-                mainPanel.reloadCollection(MainPanel.selectedNode.getCollection());
-            }
-            dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
-        } catch (IOException ex) {
-            mainPanel.addError(ex);
+            data[r] = colData;
         }
+        saveModel(data);
+        Amphibia.instance.resetEnvironmentModel();
+        if (MainPanel.selectedNode != null) {
+            mainPanel.reloadCollection(MainPanel.selectedNode.getCollection());
+        }
+        dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+
     }//GEN-LAST:event_btnApplyActionPerformed
 
     private void btnCancelActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
         dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }//GEN-LAST:event_btnCancelActionPerformed
 
+    private void saveModel(Object[][] data) {
+        try {
+            globalVarsSource.data = data;
+            globalVarsSource.columns = globalVarsModel.getColumnNames();
+
+            originalColumns = globalVarsSource.columns;
+            originalData = globalVarsSource.data;
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream os = new ObjectOutputStream(out);
+            os.writeObject(globalVarsSource);
+            userPreferences.putByteArray(Amphibia.P_GLOBAL_VARS, out.toByteArray());
+        } catch (IOException ex) {
+            mainPanel.addError(ex);
+        }
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JButton btnAddEndPoint;
@@ -500,16 +499,16 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     class TableModel extends DefaultTableModel {
-        
+
         public TableModel(Object[][] data, Object[] columnNames) {
             super(data, columnNames);
         }
-        
+
         public void removeColumn(int column) {
             columnIdentifiers.remove(column);
             fireTableStructureChanged();
         }
-        
+
         public String[] getColumnNames() {
             return (String[]) columnIdentifiers.toArray(new String[columnIdentifiers.size()]);
         }

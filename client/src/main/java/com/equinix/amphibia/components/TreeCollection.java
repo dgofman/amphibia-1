@@ -167,6 +167,7 @@ public final class TreeCollection {
         {"method", VIEW},
         {"url", VIEW},
         {"headers", ADD},
+        {"properties", ADD},
         {"request", new Object[][]{
             {"properties", ADD},
             {"body", REFERENCE_EDIT},
@@ -190,6 +191,7 @@ public final class TreeCollection {
         {"method", VIEW},
         {"url", VIEW},
         {"headers", ADD},
+        {"properties", ADD},
         {"request", new Object[][]{
             {"properties", ADD},
             {"body", REFERENCE_EDIT},

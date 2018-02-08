@@ -27,6 +27,7 @@ import javax.swing.CellEditor;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import javax.swing.UIDefaults;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
@@ -54,9 +55,12 @@ public final class JTreeTable extends JTable {
      * A subclass of JTree.
      */
     private final TreeTableCellRenderer tree;
+    private final JScrollPane scrollPane;
 
     public JTreeTable(AbstractTreeTableModel treeTableModel, RowEventListener listener) {
         super();
+        
+        scrollPane = new JScrollPane(this);
 
         // Create the tree. It will be used as a renderer and editor.
         tree = new TreeTableCellRenderer();
@@ -86,6 +90,10 @@ public final class JTreeTable extends JTable {
 
         defaultRenderersByColumnClass.put(EditValueRenderer.class, (UIDefaults.LazyValue) t -> new EditValueRenderer(this, listener));
     }
+    
+    public JScrollPane getScrollPane() {
+        return scrollPane;
+    }
 
     public void setModel(AbstractTreeTableModel treeTableModel) {
         final TableColumnModel colModel = getColumnModel();
@@ -93,15 +101,17 @@ public final class JTreeTable extends JTable {
         for (int i = 0; i < colModel.getColumnCount(); i++) {
             widths[i] = colModel.getColumn(i).getPreferredWidth();
         }
+        int value = scrollPane.getVerticalScrollBar().getValue();
         tree.setModel(treeTableModel);
         super.setModel(new TreeTableModelAdapter(treeTableModel, tree));
         for (int i = 0; i < widths.length; i++) {
             colModel.getColumn(i).setPreferredWidth(widths[i]);
         }
+        for (int i = 0; i < tree.getRowCount(); i++) {
+            tree.expandRow(i);
+        }
         java.awt.EventQueue.invokeLater(() -> {
-            for (int i = 0; i < tree.getRowCount(); i++) {
-                tree.expandRow(i);
-            }
+            scrollPane.getVerticalScrollBar().setValue(value);
         });
     }
 

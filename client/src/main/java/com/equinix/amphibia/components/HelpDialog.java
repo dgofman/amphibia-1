@@ -83,11 +83,13 @@ public final class HelpDialog extends javax.swing.JFrame {
         mnuGoForward.setEnabled(false);
         
         Amphibia.setDefaultHTMLStyles(txContent);
-        try {
-            URL url = selectedNode((TreeItem)treeNode.getChildAt(0));
-            urlStack.add(url);
-        } catch (IOException ex) {
-            mainPanel.addError(ex);
+        if (treeNode.getChildCount() > 0) {
+            try {
+                URL url = selectedNode((TreeItem)treeNode.getChildAt(0));
+                urlStack.add(url);
+            } catch (IOException ex) {
+                mainPanel.addError(ex);
+            }
         }
 
         treeNav.setRowHeight(20);

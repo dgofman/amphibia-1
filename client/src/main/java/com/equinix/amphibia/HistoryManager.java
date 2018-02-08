@@ -138,6 +138,10 @@ public class HistoryManager {
                 if (info.testStep != null) { //update profile.json
                     updateValues(entry, info.testCaseHeaders, info.testStep, "headers");
                 }
+            } else if ("properties".equals(entry.rootName)) {
+                if (info.testCase != null) { //update profile.json
+                    updateValues(entry, info.testCaseInfo.getJSONObject("properties"), info.testStep, "properties");
+                }
             } else {
                 JSONObject json = node.jsonObject();
                 info.testStep.remove("request");
@@ -184,7 +188,7 @@ public class HistoryManager {
     }
     
     public static void replace(JSONObject source, JSONObject target) {
-        if (target == null || target.isNullObject()) {
+        if (IO.isNULL(target)) {
             return;
         }
         source.keySet().forEach((k) -> {

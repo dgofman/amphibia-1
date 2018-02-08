@@ -307,11 +307,13 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             return headers;
         }
 
-        public Object getResultStatus(TreeIconNode node) {
-            TreeIconNode.ResourceInfo info = node.info;
-            Properties props = info.properties;
-            if (info.testStep != null && info.testStep.containsKey("response")) {
-                props = info.properties.cloneProperties().setTestStep(info.testStep.getJSONObject("response").getJSONObject("properties"));
+        public Object getResultStatus() {
+            Properties props = properties.cloneProperties();
+            if (testStep != null && testStep.containsKey("response")) {
+                props.setTestStep(testStep.getJSONObject("response").getJSONObject("properties"));
+            }
+            if (common != null) {
+                props.setTestStep(common.getJSONObject("response").getJSONObject("properties"));
             }
             return props.replace("${#HTTPStatusCode}", null);
         }
@@ -324,11 +326,14 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                 try {
                     json = IO.readFile(collection, json);
                     json = IO.prettyJson(json);
+                    Properties props = properties.cloneProperties();
                     if (testStep != null && testStep.containsKey("request")) {
-                        json = properties.cloneProperties().setTestStep(testStep.getJSONObject("request").getJSONObject("properties")).replace(json);
-                    } else {
-                        json = properties.replace(json);
+                        props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
                     }
+                    if (common != null) {
+                        props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
+                    }
+                    json = props.replace(json);
                 } catch (Exception ex) {
                     logger.log(Level.SEVERE, ex.toString(), ex);
                 }

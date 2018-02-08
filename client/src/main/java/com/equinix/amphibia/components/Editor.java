@@ -178,7 +178,7 @@ public final class Editor extends BaseTaskPane {
                 }
             }
         });
-        pnlTop.add(new JScrollPane(treeTable));
+        pnlTop.add(treeTable.getScrollPane());
 
         JTree tableTree = treeTable.getTree();
         tableTree.setShowsRootHandles(true);
@@ -375,10 +375,6 @@ public final class Editor extends BaseTaskPane {
             addError(ex);
         }
         return false;
-    }
-
-    public void reloadTable() {
-        treeTable.setModel(JSONTableModel.cloneModel(jsonModel));
     }
 
     public void selectedTreeNode(TreeIconNode node) {

@@ -491,8 +491,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     }//GEN-LAST:event_cmbDataTypeActionPerformed
 
     private void cmbPropertyTypesActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cmbPropertyTypesActionPerformed
-        ckbPropertyCreate.setEnabled(!"TestStep".equals(cmbPropertyTypes.getSelectedItem()));
-        ckbPropertyCopy.setEnabled(!"TestStep".equals(cmbPropertyTypes.getSelectedItem()));
+        ckbPropertyCreate.setEnabled("Global".equals(cmbPropertyTypes.getSelectedItem()));
+        ckbPropertyCopy.setEnabled("Global".equals(cmbPropertyTypes.getSelectedItem()));
     }//GEN-LAST:event_cmbPropertyTypesActionPerformed
 
     private void ckbPropertyCreateActionPerformed(ActionEvent evt) {//GEN-FIRST:event_ckbPropertyCreateActionPerformed

@@ -463,7 +463,7 @@ public final class MainPanel extends javax.swing.JPanel {
             case TEST_STEP_ITEM:
                 addRaw("Request URL: ", true).addRaw(node.getTreeIconUserObject().getTooltip());
                 addRaw("\nRequest Method: ", true).addRaw(node.jsonObject().getString("method"));
-                addRaw("\nResult Status Code: ", true).addRaw(node.info.getResultStatus(node).toString());
+                addRaw("\nResult Status Code: ", true).addRaw(node.info.getResultStatus().toString());
                 addRaw("\n\nRequest Headers:", true);
                 final JSONObject headers = node.info.getRequestHeader(node);
                 headers.keySet().forEach((key) -> {
@@ -579,7 +579,7 @@ public final class MainPanel extends javax.swing.JPanel {
                 globals.add(new HashMap<Object, Object>() {
                     {
                         put("name", data[1]);
-                        put("value", data[columnIndex]);
+                        put("value", IO.isNULL(data[columnIndex], null));
                     }
                 });
             }
@@ -960,6 +960,22 @@ public final class MainPanel extends javax.swing.JPanel {
                                 });
                             }
                             testStepJSON.element("headers", testStepHeader);
+                            
+                            JSONObject testStepProperties = IO.toJSONObject(testCaseProperties);
+                            if (step.containsKey("properties")) {
+                                JSONObject props = step.getJSONObject("properties");
+                                props.keySet().forEach((key) -> {
+                                    Object prop = props.get(key);
+                                    if (prop instanceof JSONObject && ((JSONObject) prop).isNullObject()) {
+                                        testStepHeader.remove(key);
+                                    } else {
+                                        testStepProperties.put(key, prop);
+                                    }
+                                });
+                                properties.setTestCase(testStepProperties);
+                            }
+                            testStepJSON.element("properties", testStepProperties);
+                            
                             testStepJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
 
                             if (step.containsKey("transfer")) {
