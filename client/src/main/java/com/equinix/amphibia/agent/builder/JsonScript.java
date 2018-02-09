@@ -13,6 +13,7 @@ import org.apache.commons.cli.CommandLine;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+@SuppressWarnings("unchecked")
 public class JsonScript extends ProjectAbstract {
 
     protected File outputFile;

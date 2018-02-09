@@ -1,6 +1,5 @@
 package com.equinix.amphibia.agent.builder;
 
-import com.equinix.amphibia.IO;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -14,6 +13,7 @@ import net.sf.json.JSONObject;
  *
  * @author dgofman
  */
+@SuppressWarnings("unchecked")
 public class Properties {
 
     private JSONObject globals;
@@ -198,6 +198,6 @@ public class Properties {
     }
     
     public JSONObject cloneJSON(JSONObject json) {
-        return json == null ? null : IO.toJSONObject(json);
+        return json == null ? null : JSONObject.fromObject(json);
     }
 }

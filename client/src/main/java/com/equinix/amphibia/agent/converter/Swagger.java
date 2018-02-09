@@ -26,6 +26,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 
+@SuppressWarnings({"serial", "unchecked"})
 public final class Swagger {
 
     private final CommandLine cmd;
@@ -421,7 +422,6 @@ public final class Swagger {
         return config;
     }
 
-    @SuppressWarnings("unchecked")
     protected void parseDefinition(ApiInfo info, Definition definition, JSONObject api, Map<String, Object> properties) throws Exception {
         if (api.containsKey("parameters")) {
             String methodName = info.methodName;

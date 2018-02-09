@@ -17,6 +17,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 
+@SuppressWarnings("unchecked")
 public class JUnit extends ProjectAbstract {
 
     protected File outputFile;

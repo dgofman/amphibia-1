@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 
+@SuppressWarnings("serial")
 public final class Schema {
 
     private final Swagger swagger;

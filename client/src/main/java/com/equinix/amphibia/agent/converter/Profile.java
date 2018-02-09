@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+@SuppressWarnings("serial")
 public class Profile {
 
     protected JSONObject definitions;
@@ -72,7 +73,8 @@ public class Profile {
         };
     }
 
-    public void finalize(String projectName) {
+    @SuppressWarnings("unchecked")
+	public void finalize(String projectName) {
         ((LinkedHashMap<Object, Object>) profile.get("project")).put("name", projectName);
     }
 
@@ -162,7 +164,7 @@ public class Profile {
         }
     }
 
-    @SuppressWarnings("NonPublicExported")
+    @SuppressWarnings({ "NonPublicExported", "unchecked" })
     protected void addTestSteps(JSONArray steps, ApiInfo info, String testFile, String childDir, String fileName) throws Exception {
         JSONObject api = info.api;
         Map<Object, Object> body = new LinkedHashMap<>();
@@ -170,7 +172,7 @@ public class Profile {
         Map<String, Object> teststep = new LinkedHashMap<>();
         teststep.put("defaultName", info.testCaseName);
         Map<String, Object> step = addStep(info, testFile, api, body);
-        Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
+		Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
         if (request != null) {
             Map<Object, Object> properties = request.get("properties");
             properties.keySet().forEach((key) -> {

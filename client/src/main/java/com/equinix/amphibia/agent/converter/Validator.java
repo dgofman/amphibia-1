@@ -13,6 +13,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 
+@SuppressWarnings("unchecked")
 public class Validator {
 
     private static final Map<String, Boolean> uniqWarningKeys = new HashMap<String, Boolean>();
@@ -120,7 +121,6 @@ public class Validator {
         walk(ref, example, schema.getFields(), schema.getDefinitions(), new ArrayList<>());
     }
 
-    @SuppressWarnings("unchecked")
     private static void walk(String defintionPath, Map<Object, Object> node1, Map<Object, Object> node2, Map<Object, Object> defintions, ArrayList<String> keys) {
         String definitionName = Swagger.getDefinitionName(defintionPath);
         for (Object key : node1.keySet()) {

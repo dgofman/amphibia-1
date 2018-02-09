@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+@SuppressWarnings("unchecked")
 public class Mocha extends ProjectAbstract {
 
     public static final String DEFAULT_ENDPOINT = "${globals.RestEndPoint}";

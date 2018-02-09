@@ -23,6 +23,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 
+@SuppressWarnings("unchecked")
 public abstract class ProjectAbstract {
 
     protected CommandLine cmd;

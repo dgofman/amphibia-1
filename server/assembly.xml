@@ -17,25 +17,10 @@
 	</dependencySets>
 	<fileSets>
 		<fileSet>
-			<directory>${basedir}/target/classes</directory>
+			<directory>${outputDirectory}/classes</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>**/*.class</include>
-			</includes>
-		</fileSet>
-		<fileSet>
-			<directory>${basedir}/target</directory>
-			<outputDirectory>/com/equinix</outputDirectory>
-			<includes>
-				<include>*.xsl</include>
-				<include>*.xml</include>
-			</includes>
-		</fileSet>
-		<fileSet>
-			<directory>${basedir}/target</directory>
-			<outputDirectory>/com/equinix</outputDirectory>
-			<includes>
-				<include>templates/**</include>
+				<include>**/*.*</include>
 			</includes>
 		</fileSet>
 	</fileSets>
