@@ -145,7 +145,7 @@ public class Properties {
             sb.getChars(begin - 1, begin, dst, 0);
             sb.getChars(end, end + 1, dst, 1);
             if (dst[0] == '`' && dst[1] == '`') {
-                if (val instanceof String && !"true".equals(val) && !"false".equals(val)) {
+                if (val instanceof String) {
                     begin = begin - 1;
                     end = end + 1;
                 } else {

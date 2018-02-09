@@ -40,6 +40,8 @@ public class Converter {
     public static final String ADD_NULL = "null+";
     public static final String TYPE = "type";
     public static final String ADD_TYPE = "type+";
+    public static final String NULL_VALIDATION = "null-";
+    public static final String TYPE_VALIDATION = "type-";
     public static final String DEFAULT = "default";
 
     public static CommandLine cmd;
@@ -75,6 +77,8 @@ public class Converter {
         options.addOption(new Option("uu", ADD_NULL, true, "Include NULL TestSteps. Default: false"));
         options.addOption(new Option("y", TYPE, true, "Generate invalid type TestSteps. Default: false"));
         options.addOption(new Option("yy", ADD_TYPE, true, "Include invalid type TestSteps. Default: false"));
+        options.addOption(new Option("vn", NULL_VALIDATION, true, "Validate parameter value on NULL. Default: false"));
+        options.addOption(new Option("vt", TYPE_VALIDATION, true, "Validate parameter value BOOLEAN TYPE. Default: false"));
         options.addOption(new Option("d", DEFAULT, true, "Validate that default values have been assigned (Optional)"));
 
         Option input = new Option("i", INPUT, true, "Comma-separated list of Swagger file(s) or URL(s)");

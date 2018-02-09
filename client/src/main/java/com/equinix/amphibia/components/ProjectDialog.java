@@ -137,7 +137,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
         colModel.getColumn(2).setPreferredWidth(400);
         
         optionDialog = Amphibia.createDialog(pnlOptions, null, false);
-        optionDialog.setSize(new Dimension(345, 200));
+        optionDialog.setSize(new Dimension(345, 250));
             
         dialog = Amphibia.createDialog(this, new Object[]{}, false);
         dialog.setMinimumSize(new Dimension(getWidth(), getHeight()));
@@ -187,6 +187,8 @@ public final class ProjectDialog extends javax.swing.JPanel {
         chbIncludeNull = new JCheckBox();
         chbGenerateType = new JCheckBox();
         chbIncludeType = new JCheckBox();
+        chbVerifyType = new JCheckBox();
+        chbVerifyNull = new JCheckBox();
         lpnLayer = new JLayeredPane();
         pnlSetup = new JPanel();
         lblSwagger = new JLabel();
@@ -261,6 +263,13 @@ public final class ProjectDialog extends javax.swing.JPanel {
         chbIncludeType.setText(bundle.getString("include2TestCase")); // NOI18N
         chbIncludeType.setMargin(new Insets(2, 20, 2, 2));
         pnlOptions.add(chbIncludeType);
+
+        chbVerifyType.setSelected(true);
+        chbVerifyType.setText(bundle.getString("verifyType")); // NOI18N
+        pnlOptions.add(chbVerifyType);
+
+        chbVerifyNull.setText(bundle.getString("verifyNull")); // NOI18N
+        pnlOptions.add(chbVerifyNull);
 
         setPreferredSize(new Dimension(775, 290));
         setLayout(new OverlayLayout(this));
@@ -662,6 +671,8 @@ public final class ProjectDialog extends javax.swing.JPanel {
                 "-y=" + chbGenerateType.isSelected(),
                 "-uu=" + chbIncludeNull.isSelected(),
                 "-yy=" + chbIncludeType.isSelected(),
+                "-vn=" + chbVerifyNull.isSelected(),
+                "-vt=" + chbVerifyType.isSelected(),
                 "-j=true", "-d=true"
             };
             logger.log(Level.INFO, String.join(" ", args));
@@ -940,6 +951,8 @@ public final class ProjectDialog extends javax.swing.JPanel {
     private JCheckBox chbGenerateType;
     private JCheckBox chbIncludeNull;
     private JCheckBox chbIncludeType;
+    private JCheckBox chbVerifyNull;
+    private JCheckBox chbVerifyType;
     private JLabel lblAnimation;
     private JLabel lblLocation;
     private JLabel lblLocationError;
