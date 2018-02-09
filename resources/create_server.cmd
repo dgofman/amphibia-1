@@ -1,2 +1,2 @@
 CD ../server
-CALL mvn clean assembly:assembly
+CALL mvn -f=pom-server.xml clean assembly:assembly

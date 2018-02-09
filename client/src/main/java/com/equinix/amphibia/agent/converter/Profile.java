@@ -74,7 +74,7 @@ public class Profile {
     }
 
     @SuppressWarnings("unchecked")
-	public void finalize(String projectName) {
+    public void finalize(String projectName) {
         ((LinkedHashMap<Object, Object>) profile.get("project")).put("name", projectName);
     }
 
@@ -172,7 +172,7 @@ public class Profile {
         Map<String, Object> teststep = new LinkedHashMap<>();
         teststep.put("defaultName", info.testCaseName);
         Map<String, Object> step = addStep(info, testFile, api, body);
-		Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
+        Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
         if (request != null) {
             Map<Object, Object> properties = request.get("properties");
             properties.keySet().forEach((key) -> {
@@ -365,7 +365,7 @@ public class Profile {
     }
 
     protected String escapeParam(JSONObject val, String param) {
-        return isJSON ? "`" + param + "`" : "" + param + "'";
+        return "`" + param + "`";
     }
 
     @SuppressWarnings("NonPublicExported")
@@ -410,19 +410,34 @@ public class Profile {
                 JSONObject response = responses.getJSONObject(httpCode.toString());
                 if (response.containsKey("schema")) {
                     JSONObject schema = response.getJSONObject("schema");
+                    Map<Object, Object> resBody = new LinkedHashMap<>();
                     if (schema.containsKey("$ref")) {
                         String ref = schema.getString("$ref");
                         if (Schema.schemas.get(ref) != null) {
                             responseSchema = Schema.schemas.get(ref);
                         }
-                        Map<Object, Object> resBody = new LinkedHashMap<>();
                         addBodyAndProperties(info, schema.getString("$ref"), responseProperties, resBody, "");
                         if (!resBody.isEmpty()) {
                             responseBody = save(swagger.getDataDir(), Swagger.escapeJson(resBody), fileName, "responses", RESOURCE_TYPE.responses);
                         }
+                    } else {
+                        if (response.containsKey("examples")) {
+                            if (schema.containsKey("properties")) {
+                                responseBody = addExamples(info, schema.getJSONObject("properties"), responseProperties, response.getJSONObject("examples"), fileName, resBody);
+                            } else if (schema.containsKey("items")) {
+                                JSONObject items = schema.getJSONObject("items");
+                                if (items.containsKey("$ref")) {
+                                    addBodyAndProperties(info, items.getString("$ref"), responseProperties, resBody, "");
+                                    if (!resBody.isEmpty()) {
+                                        responseBody = save(swagger.getDataDir(), Swagger.escapeJson(resBody), fileName, "responses", RESOURCE_TYPE.responses);
+                                    }
+                                }
+                            } else {
+                                responseBody = addExamples(info, schema, responseProperties, response.getJSONObject("examples"), fileName, resBody);
+                            }
+                        }
                     }
                 }
-
                 if (Swagger.asserts.containsKey(httpCode)) {
                     responseAsserts = Swagger.getPath(new File(Schema.getSchemasDir(swagger.getDataDir()), ASSERTS_DIR)) + "/" + Swagger.asserts.getJSONObject(httpCode.toString()).getString("status") + ".json";
                     break;
@@ -451,5 +466,19 @@ public class Profile {
             }
         });
         return step;
+    }
+
+    private String addExamples(ApiInfo info, JSONObject props, Map<Object, Object> properties, JSONObject examples, String fileName, Map<Object, Object> resBody) throws Exception {
+         addBodyAndProperty(info, null, props, properties, resBody, "");
+         if (!resBody.isEmpty()) {
+             return save(swagger.getDataDir(), Swagger.escapeJson(resBody), fileName, "responses", RESOURCE_TYPE.responses);
+         } else {
+             if (examples.containsKey("application/json")) {
+                 return save(swagger.getDataDir(), Swagger.escapeJson(examples.getJSONObject("application/json")), fileName, "responses", RESOURCE_TYPE.responses);
+             } else if (examples.containsKey("application/javascript")) {
+                 return save(swagger.getDataDir(), Swagger.escapeJson(Swagger.getJson(examples.getString("application/javascript"))), fileName, "responses", RESOURCE_TYPE.responses);
+             }
+         }
+         return null;
     }
 }

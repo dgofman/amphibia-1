@@ -139,13 +139,13 @@ public class Properties {
         return replace;
     }
     
-    public void replace(StringBuilder sb, int begin, int end, Object val) {
+    public static void replace(StringBuilder sb, int begin, int end, Object val) {
         if (begin > 0 && end < sb.length() - 2) {
             char[] dst = new char[2];
             sb.getChars(begin - 1, begin, dst, 0);
             sb.getChars(end, end + 1, dst, 1);
             if (dst[0] == '`' && dst[1] == '`') {
-                if (val instanceof String) {
+                if (val instanceof String && !"true".equals(val) && !"false".equals(val)) {
                     begin = begin - 1;
                     end = end + 1;
                 } else {

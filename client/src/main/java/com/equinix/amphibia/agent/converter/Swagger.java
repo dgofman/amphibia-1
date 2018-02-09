@@ -22,6 +22,7 @@ import javax.script.ScriptEngineManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
 
+import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
@@ -96,7 +97,10 @@ public final class Swagger {
     }
 
     public static String escapeJson(Map<?, ?> value) throws Exception {
-        String output = getJson(value);
+        return escapeJson(getJson(value));
+    }
+
+    public static String escapeJson(String output) throws Exception {
         Pattern p = Pattern.compile("(\\\"'\\$\\{#)(.*)(}'\")");
         Matcher m = p.matcher(output);
         if (m.find()) {
@@ -415,6 +419,10 @@ public final class Swagger {
                         }
                         break;
                     }
+                }
+            } else if (response != null) {
+            	if (response.containsKey("schema") && response.getJSONObject("schema").containsKey("$ref")) {
+                    new Schema(this, response.getJSONObject("schema").getString("$ref"), "responses");
                 }
             }
         }
