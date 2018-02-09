@@ -466,7 +466,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                 executeTest(thread, null, selectedNode, selectedNode.getReportState());
                 if (isRunning(thread)) {
                     stopTests();
-                    mainPanel.reloadAll();
+                    mainPanel.reloadAll(false);
                 }
             }
         };

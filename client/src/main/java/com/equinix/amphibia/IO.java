@@ -241,9 +241,7 @@ public class IO {
     public static String[] write(TreeIconNode node) throws Exception {
         if (node instanceof TreeIconNode.ProfileNode) {
             TreeCollection collection = node.getCollection();
-            String content = prettyJson(collection.getProjectProfile().toString());
-            write(content, collection.getBackupProfile());
-            return new String[] {"", content};
+            return write(collection.getProjectProfile().toString(), collection.getBackupProfile(), true);
         }
         TreeIconNode.TreeIconUserObject userObject = node.getTreeIconUserObject();
         File file = IO.newFile(userObject.getFullPath());

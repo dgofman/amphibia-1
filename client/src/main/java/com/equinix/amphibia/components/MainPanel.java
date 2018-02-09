@@ -1093,10 +1093,17 @@ public final class MainPanel extends javax.swing.JPanel {
         return true;
     }
 
-    public void reloadAll() {
+    public void reloadAll(boolean isLoadProfile) {
         for (int i = 0; i < treeModel.getChildCount(treeNode); i++) {
             TreeIconNode projectNode = (TreeIconNode) treeModel.getChild(treeNode, i);
             projectNode.removeAllChildren();
+            if (isLoadProfile) {
+                try {
+                    projectNode.getCollection().loadProjectProfile();
+                } catch (Exception ex) {
+                    addError(ex);
+                }
+            }
             reloadCollection(projectNode.getCollection(), false);
         }
         selectNode(selectedNode);

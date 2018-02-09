@@ -353,7 +353,7 @@ public final class Amphibia extends JFrame {
 
         logger.info("Reload APP");
         mainPanel.profile.openReport();
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(false);
         mainPanel.wizard.openTabs();
         logger.info("Init End");
     }
@@ -411,7 +411,7 @@ public final class Amphibia extends JFrame {
         createRecentProjectMenu(collection);
         mainPanel.loadProject(collection);
         mainPanel.treeModel.reload();
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(false);
         return collection;
     }
 
@@ -1371,7 +1371,7 @@ public final class Amphibia extends JFrame {
     }//GEN-LAST:event_mnuRulesFileActionPerformed
 
     private void mnuRefreshActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuRefreshActionPerformed
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(true);
     }//GEN-LAST:event_mnuRefreshActionPerformed
 
     private void tlbRunActionPerformed(ActionEvent evt) {//GEN-FIRST:event_tlbRunActionPerformed
@@ -1452,13 +1452,13 @@ public final class Amphibia extends JFrame {
     private void mnuUserActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuUserActionPerformed
         userPreferences.putBoolean(P_MENU_VIEW, false);
         isExpertView = false;
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(false);
     }//GEN-LAST:event_mnuUserActionPerformed
 
     private void mnuExpertActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuExpertActionPerformed
         userPreferences.putBoolean(P_MENU_VIEW, true);
         isExpertView = true;
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(false);
         if (userPreferences.getBoolean(P_SHOW_EXPERT_TIP, true)) {
             openTipDialog("tip_expert_mode", P_SHOW_EXPERT_TIP);
         }
@@ -1528,7 +1528,7 @@ public final class Amphibia extends JFrame {
 
     private void inheritPropActionPerformed(ActionEvent evt) {//GEN-FIRST:event_inheritPropActionPerformed
         userPreferences.putBoolean(Amphibia.P_INHERIT_PROPERTIES, inheritProp.isSelected());
-        mainPanel.reloadAll();
+        mainPanel.reloadAll(false);
     }//GEN-LAST:event_inheritPropActionPerformed
 
     private void mnuEmptyProjectActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuEmptyProjectActionPerformed

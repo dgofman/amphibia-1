@@ -21,15 +21,15 @@ import net.sf.json.JSONObject;
  * @author dgofman
  */
 public class HistoryManager {
-    
+
     private MainPanel mainPanel;
     private Editor editor;
-    
+
     public HistoryManager(MainPanel mainPanel, Editor editor) {
         this.mainPanel = mainPanel;
         this.editor = editor;
     }
-    
+
     public void saveEntry(Editor.Entry entry, TreeCollection collection) {
         TreeIconNode node = entry.node;
         TreeIconNode.ResourceInfo info = node.info;
@@ -86,7 +86,7 @@ public class HistoryManager {
             }
         } else if (type == PROJECT) {
             if ("properties".equals(entry.getParent().toString())) {
-                updateValues(entry, collection.project.jsonObject().getJSONObject("projectProperties"),  profile.jsonObject(), "properties");
+                updateValues(entry, collection.project.jsonObject().getJSONObject("projectProperties"), profile.jsonObject(), "properties");
             }
         } else if (type == INTERFACE) {
             JSONArray interfaces = collection.project.jsonObject().getJSONArray("interfaces");
@@ -158,7 +158,7 @@ public class HistoryManager {
         }
         saveNode(profile);
     }
-    
+
     public static JSONObject compare(JSONObject source, JSONObject target, String rootName) {
         source.keySet().forEach((key) -> {
             if (rootName == null || !"properties".equals(key)) {
@@ -186,7 +186,7 @@ public class HistoryManager {
         }
         return target;
     }
-    
+
     public static void replace(JSONObject source, JSONObject target) {
         if (IO.isNULL(target)) {
             return;
@@ -223,7 +223,7 @@ public class HistoryManager {
             target.element(name, json);
         }
     }
-    
+
     public void saveNode(TreeIconNode node) {
         mainPanel.history.saveAndAddHistory(node);
         mainPanel.reloadCollection(node.getCollection());
@@ -251,12 +251,12 @@ public class HistoryManager {
         }
     }
 
-    public boolean addHistory(String oldContent, String newContent, TreeIconNode node) {
-        return addHistory(node.getTreeIconUserObject().getFullPath(), oldContent, newContent);
+    public void addHistory(String oldContent, String newContent, TreeIconNode node) {
+        addHistory(node.getTreeIconUserObject().getFullPath(), oldContent, newContent);
     }
 
-    public boolean addHistory(String filePath, String oldContent, String newContent) {
-        return editor.addHistory(null, filePath, oldContent, newContent);
+    public void addHistory(String filePath, String oldContent, String newContent) {
+        editor.addHistory(null, filePath, oldContent, newContent);
     }
 
     public void saveAndAddHistory(TreeIconNode node) {

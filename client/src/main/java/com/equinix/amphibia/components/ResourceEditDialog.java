@@ -22,6 +22,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.ResourceBundle;
@@ -254,8 +255,17 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     }
 
     @SuppressWarnings("NonPublicExported")
-    public void openEditDialog(String fileName, String value) {
-        optionPane.setOptions(new Object[]{applyButton, cancelButton});
+    public void openEditDialog(int row, String fileName, String value) {
+        JButton delButton = new JButton(bundle.getString("delete"));
+        delButton.addActionListener((ActionEvent evt) -> {
+            try {
+                mainPanel.editor.deleteHistory(row);
+                dialog.setVisible(false);
+            } catch (IOException ex) {
+                mainPanel.addError(ex);
+            }
+        });
+        optionPane.setOptions(new Object[]{applyButton, delButton, cancelButton});
         txtName.setText(fileName);
         txtName.setEditable(false);
         chbOnlyForTeststep.setVisible(false);
@@ -263,6 +273,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblDataType.setVisible(false);
         cmbDataType.setVisible(false);
         txtEditor.setEditable(false);
+        txtEditor.setEnabled(true);
         txtEditor.setBackground(UIManager.getColor("TextArea.background"));
         txtEditor.setText(value);
         Amphibia.setText(txtEditor, splEditor, null);
@@ -292,6 +303,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         txtName.setText(name);
         txtName.setEditable(name == null);
         txtName.setBorder(defaultBorder);
+        txtEditor.setEnabled(true);
         txtEditor.setEditable(isEdit);
         txtEditor.setText(value == null ? "" : String.valueOf(value));
         lblDataType.setVisible(true);

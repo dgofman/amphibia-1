@@ -24,10 +24,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -67,7 +68,10 @@ import javax.swing.tree.TreeNode;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSON;
-import org.apache.commons.io.IOUtils;
+
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.*;
 
 /**
  *
@@ -76,9 +80,12 @@ import org.apache.commons.io.IOUtils;
 public final class Editor extends BaseTaskPane {
 
     private static final DiffMatchPatch DIFF = new DiffMatchPatch();
-    private static final byte LINE_SEPARATOR = '\u0001';
 
-    private final List<String[]> histories = new ArrayList<>();
+    private final File history;
+    private final URI historyURI;
+    private final String historyInfo;
+
+    private final List<String> histories = new ArrayList<>();
     private int historyIndex;
 
     private JTreeTable treeTable;
@@ -86,7 +93,6 @@ public final class Editor extends BaseTaskPane {
     private DefaultTableModel historyModel;
     private DefaultComboBoxModel serversModel;
 
-    private RandomAccessFile historyWriter;
     private JSONTableModel jsonModel;
 
     public int loadMaxLastHistory;
@@ -97,6 +103,10 @@ public final class Editor extends BaseTaskPane {
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public Editor() {
         super();
+
+        historyInfo = "info.properties";
+        history = IO.newFile(Amphibia.amphibiaHome, ".history.zip");
+        historyURI = URI.create("jar:" + history.toURI());
 
         serversModel = new DefaultComboBoxModel<>(new String[]{bundle.getString("mockServer")});
 
@@ -194,6 +204,7 @@ public final class Editor extends BaseTaskPane {
         treeTable.getTableHeader().setFont(font.deriveFont(Font.BOLD));
         treeTable.getTableHeader().setReorderingAllowed(false);
 
+        tblHistory.setDefaultEditor(Object.class, null);
         tblHistory.getTableHeader().setFont(font.deriveFont(Font.BOLD));
         tblHistory.setAutoCreateColumnsFromModel(false);
         tblHistory.getTableHeader().setResizingAllowed(true);
@@ -234,15 +245,10 @@ public final class Editor extends BaseTaskPane {
                 if (column == buttonIndex) {
                     int row = tblHistory.rowAtPoint(e.getPoint());
                     String filePath = tblHistory.getValueAt(row, 1).toString();
-                    String oldContent = tblHistory.getValueAt(row, 2).toString();
+                    String diff = tblHistory.getValueAt(row, 2).toString();
                     try {
-                        File file = IO.newFile(filePath);
-                        File backup = IO.getBackupFile(file);
-                        if (backup.exists()) {
-                            file = backup;
-                        }
-                        mainPanel.resourceEditDialog.openEditDialog(filePath, DIFF.patch_toText(DIFF.patch_make(IO.readFile(file), oldContent)));
-                    } catch (IOException ex) {
+                        mainPanel.resourceEditDialog.openEditDialog(row, filePath, diff);
+                    } catch (Exception ex) {
                         addError(ex);
                     }
                 }
@@ -252,51 +258,102 @@ public final class Editor extends BaseTaskPane {
         setComponents(tbpOutput, treeProblems);
     }
 
-    public void loadHistory() {
-        /*File history = IO.newFile(Amphibia.amphibiaHome, ".history");
+    private String getHistoryContent(String path) {
+        String content = null;
+        FileSystem zipfs = null;
         try {
-            historyIndex = 0;
-            if (history.exists()) {
-                int counter = 0;
-                historyWriter = new RandomAccessFile(history, "rw");
-                long length = historyWriter.length() - 1;
-                while (length > 0 && counter++ < loadMaxLastHistory) {
-                    byte b = 0;
-                    StringBuilder sb = new StringBuilder();
-                    while (b != LINE_SEPARATOR && length > 0) {
-                        length -= 1;
-                        historyWriter.seek(length);
-                        b = historyWriter.readByte();
-                        if (b != LINE_SEPARATOR) {
-                            sb.append((char) b);
-                        }
-                    }
-                    String line = "";
-                    try {
-                        line = sb.reverse().toString();
-                        int idx1 = line.indexOf("\t");
-                        String time = line.substring(0, idx1);
-                        Date date = new Date(Long.valueOf(time));
-                        int idx2 = line.indexOf("\t", idx1 + 1);
-                        String file = line.substring(idx1 + 1, idx2);
-                        historyModel.addRow(new Object[]{dateFormat.print(date.getTime()), file, line.substring(idx2 + 1)});
-                    } catch (NullPointerException | NumberFormatException | StringIndexOutOfBoundsException e) {
-                        logger.log(Level.SEVERE, "Line number: " + counter + "::" + line, e);
-                    }
-                }
-                historyWriter.close();
-            }
-
-            historyWriter = new RandomAccessFile(history, "rw");
-            historyWriter.seek(history.length());
+            zipfs = getFileSystem();
+            content = IO.readInputStream(Files.newInputStream(zipfs.getPath(path)));
         } catch (IOException ex) {
-            logger.log(Level.SEVERE, ex.toString() + "::" + history.getAbsolutePath(), ex);
-        }*/
+            addError(ex);
+        } finally {
+            try {
+                if (zipfs != null) {
+                    zipfs.close();
+                }
+            } catch (IOException ex) {
+                addError(ex, path);
+            }
+        }
+        return content;
+    }
+
+    public void deleteHistory(int row) throws IOException {
+        FileSystem zipfs = null;
+        try {
+            zipfs = getFileSystem();
+            String timeDir = tblHistory.getValueAt(row, 3).toString();
+            Iterator<String> lines = histories.iterator();
+            while (lines.hasNext()) {
+                if (lines.next().startsWith(timeDir)) {
+                    lines.remove();
+                    break;
+                }
+            }
+            Path historyPath = zipfs.getPath(historyInfo);
+            Files.deleteIfExists(historyPath);
+            Files.write(historyPath, String.join("\n", histories).getBytes(), StandardOpenOption.CREATE);
+            deleteHistoryDir(zipfs, timeDir);
+            historyModel.removeRow(row);
+            historyIndex = 0;
+            tblHistory.clearSelection();
+        } finally {
+            if (zipfs != null) {
+                zipfs.close();
+            }
+        }
+    }
+
+    private void deleteHistoryDir(FileSystem zipfs, String dir) throws IOException {
+        Files.deleteIfExists(zipfs.getPath(dir + "/diff.txt"));
+        Files.deleteIfExists(zipfs.getPath(dir + "/content.json"));
+        Files.deleteIfExists(zipfs.getPath(dir));
+    }
+
+    public void loadHistory() {
+        try {
+            getFileSystem().close();
+        } catch (IOException ex) {
+            history.delete(); //corrupted archive file
+        }
+
+        FileSystem zipfs = null;
+        try {
+            zipfs = getFileSystem();
+            Files.createDirectories(zipfs.getPath("0")); //last content directory
+            BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(zipfs.getPath(historyInfo))));
+            int index = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                try {
+                    histories.add(line);
+                    String[] time_path = line.split("=");
+                    long time = Long.valueOf(time_path[0]);
+                    if (time != 0) {
+                        if (index++ > loadMaxLastHistory) {
+                            break;
+                        }
+                        String diff = IO.readInputStream(Files.newInputStream(zipfs.getPath(time + "/diff.txt")));
+                        historyModel.addRow(new Object[]{dateMediumFormat.print(time), time_path[1], diff, time});
+                    }
+                } catch (NullPointerException | NumberFormatException | StringIndexOutOfBoundsException e) {
+                    logger.log(Level.SEVERE, "Line number: " + index + "::" + line, e);
+                }
+            }
+        } catch (IOException ex) {
+        } finally {
+            try {
+                if (zipfs != null) {
+                    zipfs.close();
+                }
+            } catch (IOException ex) {
+                addError(ex);
+            }
+        }
     }
 
     public boolean addHistory(Date setDate, String filePath, String oldContent, String newContent) {
-        return false;
-        /*if (newContent == null || newContent.equals(oldContent)) {
+        if (newContent == null || newContent.equals(oldContent)) {
             return false;
         }
         new Thread() {
@@ -306,44 +363,63 @@ public final class Editor extends BaseTaskPane {
                 if (date == null) {
                     date = new Date();
                 }
-                Object[] items = new Object[]{dateFormat.print(date.getTime()), filePath, oldContent, null};
-                while (historyIndex > 0) {
-                    historyModel.removeRow(0);
-                    histories.remove(0);
-                    try {
-                        long length = historyWriter.length() - 1;
-                        byte b = 0;
-                        while (b != 10 && length > 0) {
-                            length -= 1;
-                            historyWriter.seek(length);
-                            b = historyWriter.readByte();
+                long time = date.getTime();
+                String diff = DIFF.patch_toText(DIFF.patch_make(oldContent, newContent));
+                Object[] items = new Object[]{dateMediumFormat.print(time), filePath, diff, time};
+
+                FileSystem zipfs = null;
+                try {
+                    zipfs = getFileSystem();
+                    Files.createDirectories(zipfs.getPath(String.valueOf(time)));
+
+                    while (historyIndex > 0) {
+                        String timeDir = histories.get(0).split("=")[0];
+                        if (!"0".equals(timeDir)) {
+                            deleteHistoryDir(zipfs, timeDir);
+                            historyModel.removeRow(0);
+                            historyIndex--;
                         }
-                        historyWriter.setLength(length == 0 ? 0 : length + 1);
-                    } catch (IOException ex) {
-                        addError(ex);
+                        histories.remove(0);
                     }
-                    historyIndex--;
-                }
-                Amphibia.instance.enableUndo(true);
-                Amphibia.instance.enableRedo(false);
-                if (histories.size() > 0) {
-                    histories.remove(0); //remove last saved content
-                }
-                histories.add(0, new String[]{oldContent, filePath});
-                histories.add(0, new String[]{newContent, filePath});
-                historyModel.insertRow(0, items);
-                if (historyWriter != null) {
+                    Amphibia.instance.enableUndo(true);
+                    Amphibia.instance.enableRedo(false);
+                    if (histories.size() > 0) {
+                        histories.remove(0); //remove last saved content
+                    }
+                    histories.add(0, "0=" + filePath);
+                    Path contentPath = zipfs.getPath("0/content.json");
+                    Files.deleteIfExists(contentPath);
+                    Files.write(contentPath, newContent.getBytes(), StandardOpenOption.CREATE);
+
+                    histories.add(1, time + "=" + filePath);
+                    Path diffPath = zipfs.getPath(time + "/diff.txt");
+                    Files.write(diffPath, diff.getBytes());
+                    contentPath = zipfs.getPath(time + "/content.json");
+                    Files.write(contentPath, oldContent.getBytes());
+
+                    historyModel.insertRow(0, items);
+
+                    Path historyPath = zipfs.getPath(historyInfo);
+                    Files.deleteIfExists(historyPath);
+                    Files.write(historyPath, String.join("\n", histories).getBytes(), StandardOpenOption.CREATE);
+                } catch (IOException ex) {
+                    addError(ex);
+                } finally {
                     try {
-                        historyWriter.writeBytes(date.getTime() + "\t" + filePath + "\t" + oldContent);
-                        historyWriter.writeByte(LINE_SEPARATOR);
+                        if (zipfs != null) {
+                            zipfs.close();
+                        }
                     } catch (IOException ex) {
                         addError(ex);
                     }
                 }
             }
         }.start();
-        
-        return true;*/
+        return true;
+    }
+
+    public FileSystem getFileSystem() throws IOException {
+        return FileSystems.newFileSystem(historyURI, Collections.singletonMap("create", String.valueOf(!history.exists())));
     }
 
     @Override
@@ -352,24 +428,36 @@ public final class Editor extends BaseTaskPane {
     }
 
     public boolean undo() {
-        tblHistory.setRowSelectionInterval(0, historyIndex);
-        return patchHistory(histories.get(++historyIndex), historyIndex < histories.size() - 1);
+        if (histories.size() > historyIndex + 1) {
+            tblHistory.setRowSelectionInterval(0, historyIndex);
+            return patchHistory(histories.get(++historyIndex), historyIndex < histories.size() - 1);
+        }
+        return false;
     }
 
     public boolean redo() {
-        if (--historyIndex > 0) {
-            tblHistory.setRowSelectionInterval(0, historyIndex - 1);
-        } else {
-            tblHistory.clearSelection();
+        if (historyIndex > 0) {
+            if (--historyIndex > 0) {
+                tblHistory.setRowSelectionInterval(0, historyIndex - 1);
+            } else {
+                tblHistory.clearSelection();
+            }
+            return patchHistory(histories.get(historyIndex), historyIndex > 0);
         }
-        return patchHistory(histories.get(historyIndex), historyIndex > 0);
+        return false;
     }
 
-    public boolean patchHistory(String[] item, boolean isEnabled) {
-        File file = IO.newFile(item[1]);
+    public boolean patchHistory(String line, boolean isEnabled) {
         try {
-            IOUtils.write(item[0], new FileOutputStream(file));
-            mainPanel.reloadAll();
+            String[] time_path = line.split("=");
+            File file = IO.newFile(time_path[1]);
+            File backup = IO.getBackupFile(file);
+            if (backup.exists()) {
+                file = backup;
+            }
+            String oldContent = getHistoryContent(time_path[0] + "/content.json");
+            IO.write(oldContent, file);
+            mainPanel.reloadAll(true);
             return isEnabled;
         } catch (IOException ex) {
             addError(ex);
@@ -418,11 +506,7 @@ public final class Editor extends BaseTaskPane {
     }
 
     public void deleteHistory() {
-        try {
-            historyWriter.setLength(0);
-        } catch (IOException ex) {
-            addError(ex);
-        }
+        history.delete();
         historyModel.getDataVector().clear();
         historyModel.fireTableStructureChanged();
         resetHistory();
