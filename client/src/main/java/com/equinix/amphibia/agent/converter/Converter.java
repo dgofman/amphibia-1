@@ -43,6 +43,7 @@ public class Converter {
     public static final String NULL_VALIDATION = "null-";
     public static final String TYPE_VALIDATION = "type-";
     public static final String DEFAULT = "default";
+    public static final String CODES = "codes";
 
     public static CommandLine cmd;
 
@@ -57,6 +58,7 @@ public class Converter {
         tests,
         requests,
         responses,
+        asserts,
         warnings,
         errors
     };
@@ -80,6 +82,7 @@ public class Converter {
         options.addOption(new Option("vn", NULL_VALIDATION, true, "Validate parameter value on NULL. Default: false"));
         options.addOption(new Option("vt", TYPE_VALIDATION, true, "Validate parameter value BOOLEAN TYPE. Default: false"));
         options.addOption(new Option("d", DEFAULT, true, "Validate that default values have been assigned (Optional)"));
+        options.addOption(new Option("c", CODES, true, "Comma-separated list of HTTP response codes. Default (200,201)"));
 
         Option input = new Option("i", INPUT, true, "Comma-separated list of Swagger file(s) or URL(s)");
         input.setRequired(true);
@@ -111,6 +114,7 @@ public class Converter {
             results.put(RESOURCE_TYPE.responses, new ArrayList<>());
             results.put(RESOURCE_TYPE.schemas, new ArrayList<>());
             results.put(RESOURCE_TYPE.warnings, new ArrayList<>());
+            results.put(RESOURCE_TYPE.asserts, new ArrayList<>());
             results.put(RESOURCE_TYPE.errors, new ArrayList<>());
             Logger.getGlobal().setLevel(Level.SEVERE);
         }

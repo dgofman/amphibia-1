@@ -22,7 +22,6 @@ import javax.script.ScriptEngineManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
 
-import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
@@ -37,7 +36,7 @@ public final class Swagger {
     private final Profile profile;
     private final String resourceId;
 
-    public static final JSONObject asserts = new JSONObject();
+    public static final Map<Object, String> asserts = new LinkedHashMap<>();
     public static final JSONNull NULL = JSONNull.getInstance();
 
     public Swagger(CommandLine cmd, String resourceId, InputStream input, InputStream properties, JSONObject output, Profile profile)
@@ -182,7 +181,7 @@ public final class Swagger {
         if (param != null) {
             String[] params = param.split(",");
             if (params.length > index && !params[index].isEmpty()) {
-            	interfaceName = params[index];
+                interfaceName = params[index];
             }
         }
 
@@ -386,42 +385,10 @@ public final class Swagger {
         
         config.put("assertions", assertions);
 
-        JSONArray statuses = null;
-        if (swaggerProperties != null && swaggerProperties.containsKey("asserts")) {
-            statuses = swaggerProperties.getJSONArray("asserts");
-        }
         for (Object httpCode : responses.keySet()) {
-            int code;
-            try {
-                code = Integer.parseInt(httpCode.toString());
-            } catch (NumberFormatException e) {
-                Converter.addResult(RESOURCE_TYPE.errors, "Invalid HTTP code [" + httpCode + "]. " + info.methodName + " :: " + info.apiName);
-                continue;
-            }
             JSONObject response = responses.getJSONObject(httpCode.toString());
-            if (response != null && statuses != null) {
-                JSONObject item = new JSONObject();
-                for (Object obj : statuses) {
-                    JSONObject jsonObj = (JSONObject) obj;
-                    JSONArray range = jsonObj.getJSONArray("range");
-                    if (code >= (int) range.get(0) && code <= (int) range.get(1)) {
-                        item.put("status", jsonObj.getString("status"));
-                        item.put("statusCode", "`${#HTTPStatusCode}`");
-
-                        if (!"false".equals(Converter.cmd.getOptionValue(Converter.SCHEMA))) {
-                            asserts.put(httpCode.toString(), item);
-                        }
-
-                        if (code >= 200 && code < 300) {
-                            if (response.containsKey("schema") && response.getJSONObject("schema").containsKey("$ref")) {
-                                new Schema(this, response.getJSONObject("schema").getString("$ref"), "responses");
-                            }
-                        }
-                        break;
-                    }
-                }
-            } else if (response != null) {
-            	if (response.containsKey("schema") && response.getJSONObject("schema").containsKey("$ref")) {
+            if (response != null) {
+                if (response.containsKey("schema") && response.getJSONObject("schema").containsKey("$ref")) {
                     new Schema(this, response.getJSONObject("schema").getString("$ref"), "responses");
                 }
             }
