@@ -9,8 +9,6 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
@@ -32,8 +30,6 @@ public class Project implements HttpHandler {
 
     private JSONObject interfacesJSON;
     private JSONObject pathJSON;
-
-    private static final String FILE_FORMAT = "data/%s/tests/%s/%s.json";
 
     public Project(CommandLine cmd, String projectFile) throws IOException {
         LOGGER.log(Level.INFO, "projectFile: " + projectFile);
@@ -96,30 +92,7 @@ public class Project implements HttpHandler {
                 String resourceId = testcase.getString("resourceId");
                 String testSuiteName = testcase.getString("testsuiteName");
                 String testCaseName = testcase.getString("name");
-                String path = String.format(FILE_FORMAT, resourceId, testSuiteName, testCaseName);
-                File testFile = new File(projectDir, path);
-                if (testFile.exists()) {
-                    JSONObject testJSON = getContent(new FileInputStream(testFile));
-                    String resonseBodyPath = testJSON.getJSONObject("response").getString("body");
-                    LOGGER.info(resonseBodyPath);
-                    File responseFile = new File(projectDir, resonseBodyPath);
-                    if (resonseBodyPath != null && responseFile.exists()) {
-                        response = IOUtils.toString(new FileInputStream(responseFile));
-                        JSONObject properties = testJSON.getJSONObject("response").getJSONObject("properties");
-                        StringBuilder sb = new StringBuilder(response);
-                        Matcher m = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(response);
-                        while (m.find()) {
-                            String key = m.group(1);
-                            if (key.contains("#")) {
-                                continue;
-                            }
-                            Object propValue = properties.getOrDefault(key, null);
-                            int offset = response.length() - sb.length();
-                            Properties.replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue);
-                        }
-                        response = sb.toString();
-                    }
-                }
+                response = Properties.getBody(projectDir, resourceId, testSuiteName, testCaseName, false);
                 if (response != null) {
                     JSONObject properties = testcase.getJSONObject("properties");
                     request.getResponseHeaders().set("Content-Type", "appication/json");

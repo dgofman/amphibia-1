@@ -29,6 +29,8 @@ public abstract class ProjectAbstract {
     protected CommandLine cmd;
     protected JSONObject inputJsonProject;
 
+    protected Properties properties;
+    protected File projectDir;
     protected String inputFilePath;
     protected String projectDirPath;
     protected String outputDirPath;
@@ -44,7 +46,8 @@ public abstract class ProjectAbstract {
     public ProjectAbstract(CommandLine cmd) throws Exception {
         this.cmd = cmd;
         inputFilePath = cmd.getOptionValue(Builder.INPUT);
-        projectDirPath = new File(inputFilePath).getParentFile().getAbsolutePath();
+        projectDir = new File(inputFilePath).getParentFile();
+        projectDirPath = projectDir.getAbsolutePath();
         outputDirPath = new File(projectDirPath, getClass().getSimpleName().toLowerCase()).getAbsolutePath();
 
         File outputDir = new File(outputDirPath);
@@ -197,20 +200,11 @@ public abstract class ProjectAbstract {
     }
 
     protected void parseInputProjectFile() throws Exception {
-        for (Object key : inputJsonProject.keySet()) {
-            Object value = inputJsonProject.get(key);
-            if ("name".equals(key)) {
-                buildProject((String) value);
-            } else if ("globals".equals(key)) {
-                buildGlobalParameters((JSONArray) value);
-            } else if ("properties".equals(key)) {
-                buildProperties((JSONObject) value);
-            } else if ("interfaces".equals(key)) {
-                buildInterfaces((JSONArray) value);
-            } else if ("projectResources".equals(key)) {
-                buildResources((JSONArray) value);
-            }
-        }
+        buildProject(inputJsonProject.getString("name"));
+        buildGlobalParameters(inputJsonProject.getJSONArray("globals"));
+        buildProperties(inputJsonProject.getJSONObject("projectProperties"));
+        buildInterfaces(inputJsonProject.getJSONArray("interfaces"));
+        buildResources(inputJsonProject.getJSONArray("projectResources"));
     }
 
     protected void buildProject(String name) throws Exception {
@@ -227,6 +221,7 @@ public abstract class ProjectAbstract {
 
     protected void buildProperties(JSONObject properties) throws Exception {
         projectPropertiesJSON = properties;
+        this.properties = new Properties(globalsJson, properties);
     }
 
     protected void buildInterfaces(JSONArray interfaces) throws Exception {

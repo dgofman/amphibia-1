@@ -392,7 +392,7 @@ public class Profile {
 
     @SuppressWarnings("NonPublicExported")
     protected void addBodyAndProperty(Map<Object, Object> resBody, Map<Object, Object> properties, String ids) {
-        for (Object key : resBody.keySet()) {
+        resBody.keySet().forEach((key) -> {
             String id = ids + (ids.length() == 0 ? "" : ".") + key;
 
             Object val = resBody.get(key);
@@ -406,7 +406,7 @@ public class Profile {
                     addBodyAndProperty((JSONObject) item, properties, id);
                 });
             }
-        }
+        });
     }
 
     protected String escapeParam(Object val, String param) {
@@ -437,6 +437,7 @@ public class Profile {
         }.walk(example, path, 0);
     }
 
+    @SuppressWarnings("NonPublicExported")
     public void addPropertyValue(ApiInfo info, String definitionName, JSONObject examples, Map<Object, Object> properties, Object key, Object value) {
         if (isNullValidation && value == null) {
             if (!examples.isEmpty()) {
@@ -581,7 +582,7 @@ public class Profile {
 
         Object responseFile;
         if (responseBody != null) {
-            responseFile = save(swagger.getDataDir(), responseBody.toString(), fileName, "responses", RESOURCE_TYPE.responses);
+            responseFile = save(swagger.getDataDir(), responseBody, fileName, "responses", RESOURCE_TYPE.responses);
         } else {
             responseFile = Swagger.NULL;
         }

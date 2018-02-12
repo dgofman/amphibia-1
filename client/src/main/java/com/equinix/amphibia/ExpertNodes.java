@@ -79,7 +79,6 @@ public class ExpertNodes {
                     testcaseJSON.element("operationId", testCase.getString("operationId"));
                     testcaseJSON.element("method", testCase.getString("method"));
                     testcaseJSON.element("url path", testCase.getString("path"));
-                    testcaseJSON.element("example", testCase.get("body"));
                     testcaseJSON.element("headers", JSONNull.getInstance());
                     testcaseJSON.element("properties", new JSONObject());
 

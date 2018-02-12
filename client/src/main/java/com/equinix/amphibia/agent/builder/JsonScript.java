@@ -73,7 +73,7 @@ public class JsonScript extends ProjectAbstract {
         interfaces.forEach((item) -> {
             JSONObject interfaceItem = (JSONObject) item;
             if (interfaceItem.containsKey("headers")) {
-                interfacesJson.element(interfaceItem.getString("name"), interfaceItem.getJSONObject("headers"));
+                interfacesJson.element(interfaceItem.getString("id"), interfaceItem.getJSONObject("headers"));
             }
         });
     }
@@ -82,21 +82,19 @@ public class JsonScript extends ProjectAbstract {
     protected void buildResources(JSONArray resources) throws Exception {
         super.buildResources(resources);
 
-        Properties properties = new Properties(globalsJson, projectPropertiesJSON);
-
         JSONArray resourcesJSON = new JSONArray();
         for (Object item : resources) {
             JSONObject resource = (JSONObject) item;
             JSONObject testSuitesJSON = new JSONObject();
             JSONObject resourceJSON = new JSONObject();
             resourceJSON.element("endpoint", resource.getString("endpoint"));
-            resourceJSON.element("headers", interfacesJson.getJSONObject(resource.getString("interface")));
+            resourceJSON.element("headers", interfacesJson.getOrDefault(resource.getString("interfaceId"), null));
             JSONObject testsuites = resource.getJSONObject("testsuites");
             for (Object name : testsuites.keySet()) {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
                 JSONObject testCasesJSON = new JSONObject();
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
-                buildTestCases(testCasesJSON, testSuiteItem.getJSONArray("testcases"), properties);
+                buildTestCases(resource.getString("resourceId"), name.toString(), testCasesJSON, testSuiteItem.getJSONArray("testcases"), properties);
                 testSuitesJSON.element(name.toString(), testCasesJSON);
             }
             resourceJSON.element("testsuites", testSuitesJSON);
@@ -105,7 +103,7 @@ public class JsonScript extends ProjectAbstract {
         jsonOutput.element("resources", resourcesJSON);
     }
 
-    protected void buildTestCases(JSONObject testCasesJSON, JSONArray testcases, Properties properties) throws Exception {
+    protected void buildTestCases(String resourceId, String testSuiteName, JSONObject testCasesJSON, JSONArray testcases, Properties properties) throws Exception {
         for (Object item : testcases) {
             JSONObject testcase = (JSONObject) item;
             JSONObject testCaseJson = new JSONObject();
@@ -121,7 +119,7 @@ public class JsonScript extends ProjectAbstract {
                     testCaseJson.element("path", path);
                 }
 
-                Object body = testcase.get("body");
+                Object body = Properties.getBody(projectDir, resourceId, testSuiteName, testcase.getString("name"), true);
                 if (!isNULL(body)) {
                     body = properties.replace(prettyJson(body));
                 }

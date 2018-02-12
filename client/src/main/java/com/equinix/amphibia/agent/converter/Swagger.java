@@ -360,10 +360,6 @@ public final class Swagger {
         Definition definition = new Definition(doc, this);
         parseDefinition(info, definition, info.apis, properties);
         parseDefinition(info, definition, api, properties);
-        JSONObject body = api.getJSONObject("example");
-        if (body.isNullObject()) {
-            body = definition.getExample();
-        }
 
         String path = info.path;
         for (String name : definition.getParameters().keySet()) {
@@ -374,10 +370,8 @@ public final class Swagger {
         }
 
         final String replacePath = path + definition.getQueries();
-        final Object replaceBody = body == null ? NULL : body;
         config.put("method", info.methodName);
         config.put("path", replacePath);
-        config.put("body", replaceBody);
         config.put("operationId", api.getString("operationId"));
         if (definition.ref != null) {
             config.put("definition", definition.ref.split("#/definitions/")[1]);

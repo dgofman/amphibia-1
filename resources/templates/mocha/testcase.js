@@ -1,5 +1,5 @@
 	it('should test <% TESTCASE_NAME %> - <% SUMMARY %>' , done => {
-		const url = `<% ENDPOINT %>/<% PATH %>`;
+		const url = `<% ENDPOINT %><% PATH %>`;
 		const body = <% BODY %>;
 
 		debug(`<% METHOD %>: ${url}`);

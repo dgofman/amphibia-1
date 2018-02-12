@@ -253,7 +253,6 @@ public final class TreeCollection {
         {"operationId", EDIT},
         {"url path", EDIT_LIMIT},
         {"method", EDIT_LIMIT},
-        {"example", EDIT},
         {"properties", ADD},
         {"headers", ADD}
     };

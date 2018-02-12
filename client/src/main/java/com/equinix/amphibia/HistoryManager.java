@@ -117,8 +117,8 @@ public class HistoryManager {
                 info.testCaseInfo.element(entry.name, entry.value);
             } else if ("operationId".equals(entry.name)) {
                 info.testCaseInfo.element(entry.name, entry.value);
-            } else if ("method".equals(entry.name) || "path".equals(entry.name) || "example".equals(entry.name)) {
-                info.testCaseInfo.element("example".equals(entry.name) ? "body" : entry.name, entry.value);
+            } else if ("method".equals(entry.name) || "path".equals(entry.name)) {
+                info.testCaseInfo.element(entry.name, entry.value);
             } else if ("properties".equals(entry.getParent().toString())) {
                 if (info.testCase != null) { //update profile.json
                     updateValues(entry, info.testCaseInfo.getJSONObject("properties"), info.testCase, "properties");

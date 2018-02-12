@@ -1,9 +1,14 @@
 package com.equinix.amphibia.agent.builder;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
@@ -27,7 +32,9 @@ public class Properties {
     public static final String TESTSUITE = "TestSuite";
     public static final String TESTCASE = "TestCase";
     public static final String TESTSTEP = "TestStep";
-    
+
+    public static final String TESTS_FILE_FORMAT = "data/%s/tests/%s/%s.json";
+
     public static final String[] PROPERTY_NAMES = new String[] {GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
     private static final Logger LOGGER = Logger.getLogger(Properties.class.getName());
@@ -140,17 +147,26 @@ public class Properties {
     }
     
     public static void replace(StringBuilder sb, int begin, int end, Object val) {
-        if (begin > 0 && end < sb.length() - 2) {
+        if (begin > 0 && end < sb.length()) {
             char[] dst = new char[2];
             sb.getChars(begin - 1, begin, dst, 0);
             sb.getChars(end, end + 1, dst, 1);
             if (dst[0] == '`' && dst[1] == '`') {
-                if (val instanceof String) {
-                    begin = begin - 1;
-                    end = end + 1;
-                } else {
-                    begin = begin - 2;
-                    end = end + 2;
+                begin--;
+                end++;
+                if (!(val instanceof String)) {
+                    if (begin > 0) {
+                        sb.getChars(begin - 1, begin, dst, 0);
+                        if (dst[0] == '"') {
+                             begin--;
+                        }
+                    }
+                    if (end < sb.length()) {
+                        sb.getChars(end, end + 1, dst, 1);
+                        if (dst[1] == '"') {
+                             end++;
+                        }
+                    }
                 }
             }
         }
@@ -187,6 +203,36 @@ public class Properties {
             }
         }
         return false;
+    }
+
+    public static String getBody(File projectDir, String resourceId, String testSuiteName, String testCaseName, boolean isRequestBody) throws IOException {
+        String path = String.format(Properties.TESTS_FILE_FORMAT, resourceId, testSuiteName, testCaseName);
+        String body = null;
+        String name = isRequestBody ? "request" : "response";
+        File testFile = new File(projectDir, path);
+        if (testFile.exists()) {
+            JSONObject testJSON = JSONObject.fromObject(IOUtils.toString(new FileInputStream(testFile)));
+            String resonseBodyPath = testJSON.getJSONObject(name).getString("body");
+            LOGGER.info(resonseBodyPath);
+            File responseFile = new File(projectDir, resonseBodyPath);
+            if (resonseBodyPath != null && responseFile.exists()) {
+            	body = IOUtils.toString(new FileInputStream(responseFile));
+                JSONObject properties = testJSON.getJSONObject(name).getJSONObject("properties");
+                StringBuilder sb = new StringBuilder(body);
+                Matcher m = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(body);
+                while (m.find()) {
+                    String key = m.group(1);
+                    if (key.contains("#")) {
+                        continue;
+                    }
+                    Object propValue = properties.getOrDefault(key, null);
+                    int offset = body.length() - sb.length();
+                    Properties.replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue);
+                }
+                body = sb.toString();
+            }
+        }
+        return body;
     }
 
     public Properties cloneProperties() {

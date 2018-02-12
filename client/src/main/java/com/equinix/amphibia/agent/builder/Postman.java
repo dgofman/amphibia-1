@@ -140,8 +140,6 @@ public class Postman extends ProjectAbstract {
     protected void buildResources(JSONArray resources) throws Exception {
         super.buildResources(resources);
 
-        Properties properties = new Properties(globalsJson, projectPropertiesJSON);
-
         Map<String, String> folderList = new LinkedHashMap<>();
         Map<String, String> requestList = new LinkedHashMap<>();
 
@@ -155,7 +153,7 @@ public class Postman extends ProjectAbstract {
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
 
                 Map<String, String> testSuiteRequests = new LinkedHashMap<>();
-                buildTestCases(testSuiteRequests, resource, testSuiteItem, properties, interfacesJson.getJSONObject(iId).getString("basePath"), headers);
+                buildTestCases(testSuiteRequests, resource, name.toString(), testSuiteItem, properties, interfacesJson.getJSONObject(iId).getString("basePath"), headers);
                 requestList.putAll(testSuiteRequests);
 
                 String testSuiteJSON = this.getFileContent(getTemplateFile("postman/folder.json"));
@@ -172,7 +170,7 @@ public class Postman extends ProjectAbstract {
         jsonContent = replace(jsonContent, "<% REQUESTS %>", String.join(",\n", requestList.values()));
     }
 
-    protected void buildTestCases(Map<String, String> testSuiteRequests, JSONObject resource, JSONObject testSuiteItem, Properties properties, String basePath, String headers) throws Exception {
+    protected void buildTestCases(Map<String, String> testSuiteRequests, JSONObject resource, String testSuiteName, JSONObject testSuiteItem, Properties properties, String basePath, String headers) throws Exception {
         JSONArray testcases = testSuiteItem.getJSONArray("testcases");
         String endpoint = "{{" + resource.getString("endpoint") + "}}";
         for (Object item : testcases) {
@@ -194,7 +192,7 @@ public class Postman extends ProjectAbstract {
                     testcase = replace(testcase, "<% PATH %>", basePath + path);
                 }
 
-                Object body = testCaseItem.get("body");
+                Object body = Properties.getBody(projectDir, resource.getString("resourceId"), testSuiteName, testCaseItem.getString("name"), true);
                 if (!isNULL(body)) {
                     body = getValue(properties.replace(prettyJson(body).replaceAll("\\n", "\\\\n").replaceAll("\\t", "\\\\t").replaceAll("\\\"", "\\\\\"")));
                 }

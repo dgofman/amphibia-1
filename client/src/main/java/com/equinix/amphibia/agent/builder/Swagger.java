@@ -97,7 +97,7 @@ public class Swagger extends ProjectAbstract {
                     parameterJSON = replace(parameterJSON, "<% PARAM %>", name);
                     parameterJSON = replace(parameterJSON, "<% IN %>", "header");
                     parameterJSON = replace(parameterJSON, "<% NAME %>", key);
-                    parameterJSON = replace(parameterJSON, "<% VALUE %>", getValue(headers.get(key)));
+                    parameterJSON = replace(parameterJSON, "<% VALUE %>", getValue(properties.replace(headers.get(key))));
                     parameters.add(parameterJSON);
 
                     params.add(refJSON.replaceAll("<% PARAM %>", name));
@@ -112,8 +112,6 @@ public class Swagger extends ProjectAbstract {
     protected void buildResources(JSONArray resources) throws Exception {
         super.buildResources(resources);
 
-        Properties properties = new Properties(globalsJson, projectPropertiesJSON);
-
         Map<Object, List<String>> paths = new LinkedHashMap<>();
         Map<Object, String> definitions = new LinkedHashMap<>();
         for (int index = 0; index < resources.size(); index++) {
@@ -123,18 +121,18 @@ public class Swagger extends ProjectAbstract {
             for (Object name : testsuites.keySet()) {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
-                buildTestCases(paths, definitions, name.toString(), testSuiteItem, headerParams, properties);
+                buildTestCases(paths, definitions, resource.getString("resourceId"), name.toString(), testSuiteItem, headerParams);
             }
         }
         List<String> joinPaths = new ArrayList<>();
         paths.keySet().forEach((path) -> {
-            joinPaths.add("\t\t\"/" + path + "\": {\n" + String.join(",\n", paths.get(path)) + "\n\t\t}");
+            joinPaths.add("\t\t\"" + path + "\": {\n" + String.join(",\n", paths.get(path)) + "\n\t\t}");
         });
         swaggerJSON = replace(swaggerJSON, "<% PATHS %>", String.join(",\n", joinPaths));
         swaggerJSON = replace(swaggerJSON, "<% DEFINITIONS %>", String.join(",\n", definitions.values()));
     }
 
-    protected void buildTestCases(Map<Object, List<String>> paths, Map<Object, String> definitions, String testSuiteName, JSONObject testSuiteItem, List<String> headerParams, Properties properties) throws Exception {
+    protected void buildTestCases(Map<Object, List<String>> paths, Map<Object, String> definitions, String resourceId, String testSuiteName, JSONObject testSuiteItem, List<String> headerParams) throws Exception {
         JSONArray testcases = testSuiteItem.getJSONArray("testcases");
         for (Object item : testcases) {
             JSONObject testcase = (JSONObject) item;
@@ -184,7 +182,7 @@ public class Swagger extends ProjectAbstract {
                     }
                     path = values[0];
   
-                    Object body = testcase.get("body");
+                    Object body = Properties.getBody(projectDir, resourceId, testSuiteName, testcase.getString("name"), true);
                     if (!isNULL(body)) {
                         body = properties.replace(prettyJson(body));
                         String bodyJSON = this.getFileContent(getTemplateFile("swagger/body.json"));

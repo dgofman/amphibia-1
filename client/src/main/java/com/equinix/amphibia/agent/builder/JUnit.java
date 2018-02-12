@@ -145,8 +145,6 @@ public class JUnit extends ProjectAbstract {
     protected void buildResources(JSONArray resources) throws Exception {
         super.buildResources(resources);
 
-        Properties properties = new Properties(globalsJson, projectPropertiesJSON);
-
         List<String> testLists = new ArrayList<>();
         for (Object item : resources) {
             JSONObject resource = (JSONObject) item;
@@ -164,7 +162,7 @@ public class JUnit extends ProjectAbstract {
                 test = replace(test, "<% INTERFACE %>", interfaceItem != null ? interfaceItem.getString("name") : "");
 
                 List<String> testCaseList = new ArrayList<>();
-                buildTestCases(testCaseList, testSuiteItem.getJSONArray("testcases"), properties);
+                buildTestCases(resource.getString("resourceId"), testSuiteName, testCaseList, testSuiteItem.getJSONArray("testcases"), properties);
                 test = replace(test, "<% TESTCASES %>", String.join("\n\n", testCaseList));
                 testLists.add(test);
             }
@@ -172,7 +170,7 @@ public class JUnit extends ProjectAbstract {
         tests = replace(tests, "<% TESTS %>", String.join("\n\n", testLists));
     }
 
-    protected void buildTestCases(List<String> testCaseList, JSONArray testcases, Properties properties) throws Exception {
+    protected void buildTestCases(String resourceId, String testSuiteName, List<String> testCaseList, JSONArray testcases, Properties properties) throws Exception {
         for (Object item : testcases) {
             JSONObject testCaseItem = (JSONObject) item;
             if ("restrequest".equals(testCaseItem.get("type"))) {
@@ -191,7 +189,7 @@ public class JUnit extends ProjectAbstract {
                     testcase = replace(testcase, "<% PATH %>", path);
                 }
 
-                Object body = testCaseItem.get("body");
+                Object body = Properties.getBody(projectDir, resourceId, testSuiteName, testCaseItem.getString("name"), true);
                 if (!isNULL(body)) {
                     body = getValue(properties.replace(toJson(body)));
                 }

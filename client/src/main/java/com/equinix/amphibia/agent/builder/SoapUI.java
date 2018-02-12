@@ -212,14 +212,14 @@ public class SoapUI extends ProjectAbstract {
                 List<String> testCaseList = new ArrayList<>();
                 String testSuiteXML = this.getFileContent(getTemplateFile("soapui/testSuite.xml"));
                 testSuiteXML = replace(testSuiteXML, "<% TESTSUITE_NAME %>", name.toString());
-                buildTestCases(testCaseList, resource, headers, testSuiteItem);
+                buildTestCases(name.toString(), testCaseList, resource, headers, testSuiteItem);
                 testSuiteXML = replace(testSuiteXML, "<% TESTCASES %>", String.join("\n", testCaseList));
-                JSONObject properties = testSuiteItem.getJSONObject("properties");
+                JSONObject props = testSuiteItem.getJSONObject("properties");
                 List<String> propertyList = new ArrayList<>();
-                for (Object key : properties.keySet()) {
+                for (Object key : props.keySet()) {
                     String propertyXML = this.getFileContent(getTemplateFile("soapui/property.xml"));
                     propertyXML = replace(propertyXML, "<% NAME %>", key);
-                    propertyXML = replace(propertyXML, "<% VALUE %>", properties.get(key));
+                    propertyXML = replace(propertyXML, "<% VALUE %>", props.get(key));
                     propertyList.add(tabs(propertyXML, "\t\t\t"));
                 }
                 testSuiteXML = replace(testSuiteXML, "<% PROPERTIES %>", addProperties(propertyList, "\t\t"));
@@ -229,21 +229,21 @@ public class SoapUI extends ProjectAbstract {
         xmlContent = replace(xmlContent, "<% TESTSUITES %>", String.join("\n", testSuiteList));
     }
 
-    protected void buildTestCases(List<String> testCaseList, JSONObject resourceItem, JSONObject headers, JSONObject testSuiteItem) throws Exception {
+    protected void buildTestCases(String testSuiteName, List<String> testCaseList, JSONObject resourceItem, JSONObject headers, JSONObject testSuiteItem) throws Exception {
         JSONArray testcases = testSuiteItem.getJSONArray("testcases");
         for (Object item : testcases) {
             JSONObject testCaseItem = (JSONObject) item;
             List<String> testStepList = new ArrayList<>();
             String testCaseXML = this.getFileContent(getTemplateFile("soapui/testCase.xml"));
             testCaseXML = replace(testCaseXML, "<% TESTCASE_NAME %>", testCaseItem.get("name"));
-            buildTestSteps(testStepList, resourceItem, headers, testCaseItem);
+            buildTestSteps(testSuiteName, testStepList, resourceItem, headers, testCaseItem);
             testCaseXML = replace(testCaseXML, "<% TEST_STEPS %>", String.join("\n", testStepList));
-            JSONObject properties = testCaseItem.getJSONObject("properties");
+            JSONObject props = testCaseItem.getJSONObject("properties");
             List<String> propertyList = new ArrayList<>();
-            for (Object key : properties.keySet()) {
+            for (Object key : props.keySet()) {
                 String propertyXML = this.getFileContent(getTemplateFile("soapui/property.xml"));
                 propertyXML = replace(propertyXML, "<% NAME %>", key);
-                propertyXML = replace(propertyXML, "<% VALUE %>", properties.get(key));
+                propertyXML = replace(propertyXML, "<% VALUE %>", props.get(key));
                 propertyList.add(tabs(propertyXML, "\t\t\t\t"));
             }
             testCaseXML = replace(testCaseXML, "<% PROPERTIES %>", addProperties(propertyList, "\t\t\t"));
@@ -251,7 +251,7 @@ public class SoapUI extends ProjectAbstract {
         }
     }
 
-    protected void buildTestSteps(List<String> testStepList, JSONObject resourceItem, JSONObject headers, JSONObject testCaseItem) throws Exception {
+    protected void buildTestSteps(String testSuiteName, List<String> testStepList, JSONObject resourceItem, JSONObject headers, JSONObject testCaseItem) throws Exception {
         String type = (String) testCaseItem.get("type");
         String testStepXML = this.getFileContent(getTemplateFile("soapui/teststeps/" + type + ".xml"));
 
@@ -278,6 +278,8 @@ public class SoapUI extends ProjectAbstract {
             }
             assertionList.add(assertionXML);
         }
+        Object body = Properties.getBody(projectDir, resourceItem.getString("resourceId"), testSuiteName, testCaseItem.getString("name"), true);
+        testStepXML = replace(testStepXML, "<% BODY %>", body != null ? body : "");
         testStepXML = replace(testStepXML, "<% ASSERTIONS %>", String.join("\n", assertionList));
 
         testStepList.add(testStepXML);
