@@ -9,27 +9,5 @@
 	"projectProperties": {
 	},
 	"testSuiteProperties": {
-	},
-	"asserts": [
-		{
-			"range": [405, 405],
-			"status": "UNKNOWN"
-		},
-		{
-			"range": [200, 226],
-			"status": "OK"
-		},
-		{
-			"range": [300, 308],
-			"status": "MOVED"
-		},
-		{
-			"range": [400, 451],
-			"status": "FAILED"
-		},
-		{
-			"range": [500, 511],
-			"status": "FAILED"
-		}
-	]
+	}
 }

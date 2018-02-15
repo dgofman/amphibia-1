@@ -156,7 +156,7 @@ public class Swagger extends ProjectAbstract {
                     String[] values = path.toString().replaceAll("&amp;", "&").split("\\?");
                     for (int i = 0; i < values.length; i++) {
                         StringBuilder sb = new StringBuilder(values[i]);
-                        Matcher m = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(values[i]);
+                        Matcher m = Properties.PATTERN_1.matcher(values[i]);
                         while (m.find()) {
                             JSONObject source = properties.getProperty(m.group(1));
                             if (source == null) {

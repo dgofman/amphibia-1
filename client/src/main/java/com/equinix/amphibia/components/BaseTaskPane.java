@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -66,12 +67,14 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
     protected int defaultDividerLocation;
 
     protected String propertyChangeName;
+    protected Timer refreshTimer;
     
     /**
      * Creates new form BaseTaskPane
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public BaseTaskPane() {
+        refreshTimer = new Timer();
         propertyChangeName = Amphibia.P_DIVIDER + getClass().getSimpleName();
         bundle = Amphibia.getBundle();
         DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode();
@@ -203,9 +206,17 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
         if (parent.getChildCount() > 0) {
             treeProblemsModel.nodesWereInserted(parent, new int[]{parent.getChildCount() - 1});
         }
-        java.awt.EventQueue.invokeLater(() -> {
-            tree.updateUI();
-        });
+        refreshTimer.cancel();
+        refreshTimer = new Timer();
+        refreshTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                java.awt.EventQueue.invokeLater(() -> {
+                    tree.updateUI();
+                });
+            }
+        }, 500);
+        
         return node;
     }
 

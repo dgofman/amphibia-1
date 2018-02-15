@@ -8,6 +8,8 @@ package com.equinix.amphibia.components;
 import static com.equinix.amphibia.Amphibia.getUserPreferences;
 import static com.equinix.amphibia.components.TreeCollection.TYPE.*;
 
+import com.equinix.amphibia.agent.builder.Properties;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
 
@@ -24,7 +26,8 @@ import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-import com.equinix.amphibia.agent.builder.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import net.sf.json.JSONNull;
@@ -67,6 +70,9 @@ public class TreeIconNode extends DefaultMutableTreeNode {
     public static final int REPORT_SKIPPED_STATE = 4;
     public static final int REPORT_ERROR_STATE = 5;
     public static final int REPORT_FAILED_STATE = 6;
+    
+    private static final Map<String, Icon> ICONS = new HashMap<>();
+
 
     static {
         byte[] data = userPreferences.getByteArray(Amphibia.P_SELECTED_NODE, null);
@@ -351,6 +357,8 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                     json = IO.prettyJson(json);
                     if (testStep != null && testStep.containsKey("response")) {
                         json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
+                    } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
+                        json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
                     } else {
                         json = properties.replace(json);
                     }
@@ -427,10 +435,15 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
         private void loadIcon(String iconName) {
             String path = "/com/equinix/amphibia/icons/" + iconName;
-            try {
-                icon = new ImageIcon(TreeIconNode.class.getResource(path));
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, path, e);
+            if (ICONS.containsKey(path)) {
+                icon = ICONS.get(path);
+            } else {
+                try {
+                    icon = new ImageIcon(TreeIconNode.class.getResource(path));
+                    ICONS.put(path, icon);
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, path, e);
+                }
             }
         }
 

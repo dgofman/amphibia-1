@@ -894,7 +894,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
                 resourceModel.addRow(new String[]{"", "", ""});
             }
             resourceModel.setValueAt(fileOrUrl, dataModelIndex, 0);
-            resourceModel.setValueAt(json.getString("basePath"), dataModelIndex, 1);
+            resourceModel.setValueAt(json.getOrDefault("basePath", "/"), dataModelIndex, 1);
             resourceDocType.put(dataModelIndex, RESOURCE_TYPE_URL);
             tblResources.setRowSelectionInterval(0, dataModelIndex);
         } catch (Exception e) {

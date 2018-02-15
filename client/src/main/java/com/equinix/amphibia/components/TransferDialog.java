@@ -7,16 +7,17 @@ package com.equinix.amphibia.components;
 
 import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.*;
 
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,12 +27,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -66,14 +66,14 @@ public class TransferDialog extends javax.swing.JPanel {
     private JButton cancelButton;
     private ResourceBundle bundle;
     private Editor.Entry entry;
-
+    private TreeIconNode node;
+    private JSONObject bodyJSON;
+    
     private final MainPanel mainPanel;
     private final DefaultComboBoxModel targetModel;
 
     public final DefaultMutableTreeNode treeNode;
     public final DefaultTreeModel treeModel;
-    
-    private static final Logger logger = Amphibia.getLogger(TransferDialog.class.getName());
 
     /**
      * Creates new form TransferDialog
@@ -122,22 +122,23 @@ public class TransferDialog extends javax.swing.JPanel {
 
         applyButton = new JButton(bundle.getString("apply"));
         applyButton.addActionListener((ActionEvent evt) -> {
-            TreeIconNode node = MainPanel.selectedNode;
+            lblError.setText("");
             JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
             JSONObject transfer = json.containsKey("transfer") ? json.getJSONObject("transfer") : new JSONObject();
-            Object value = null;
+            Object value = null;            
             if (this.rbAssignValue.isSelected()) {
                 String dataType = cmbDataType.getSelectedItem().toString();
                 try {
                     value = ResourceEditDialog.getValue(dataType, txtEditor.getText().trim());
                 } catch (Exception ex) {
-                    lblError.setText(String.format(bundle.getString("error_convert"), dataType));
-                    lblError.setVisible(true);
-                    logger.log(Level.SEVERE, ex.toString(), ex);
+                    addError(String.format(bundle.getString("error_convert"), dataType), ex);
+                    return;
                 }
             } else if (!txtPath.getText().isEmpty()) {
                 value = txtPath.getText();
             }
+            
+            
             if (value == null) {
                 transfer.remove(cmbTarget.getSelectedItem());
             } else {
@@ -148,12 +149,12 @@ public class TransferDialog extends javax.swing.JPanel {
             } else {
                 json.element("transfer", transfer);
             }
+            
             saveNodeValue(node);
             dialog.setVisible(false);
         });
         deleteButton = new JButton(bundle.getString("delete"));
         deleteButton.addActionListener((ActionEvent evt) -> {
-            TreeIconNode node = MainPanel.selectedNode;
             JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
             JSONObject transfer = json.containsKey("transfer") ? json.getJSONObject("transfer") : new JSONObject();
             transfer.remove(cmbTarget.getSelectedItem());
@@ -172,7 +173,7 @@ public class TransferDialog extends javax.swing.JPanel {
 
         optionPane = new JOptionPane(this);
         dialog = Amphibia.createDialog(optionPane, true);
-        dialog.setSize(new Dimension(610, 450));
+        dialog.setSize(new Dimension(800, 650));
         java.awt.EventQueue.invokeLater(() -> {
             dialog.setLocationRelativeTo(mainPanel);
         });
@@ -184,9 +185,10 @@ public class TransferDialog extends javax.swing.JPanel {
 
     public void openDialog(TreeIconNode node, Editor.Entry entry) {
         this.entry = entry;
+        this.node = node;
+        JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
         Object pathValue = null;
         if (entry.getType() == EDIT) {
-            JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
             JSONObject transfer = json.containsKey("transfer") ? json.getJSONObject("transfer") : new JSONObject();
             if (transfer.containsKey(entry.name)) {
                 pathValue = transfer.get(entry.name);
@@ -195,38 +197,16 @@ public class TransferDialog extends javax.swing.JPanel {
         } else {
             optionPane.setOptions(new Object[]{applyButton, cancelButton});
         }
+        lblError.setText("");
         txtPath.setText("");
         txtEditor.setText("");
-        targetModel.removeAllElements();
-        treeNode.removeAllChildren();
-        JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
-        ivailableProperties.keySet().forEach((key) -> {
-            targetModel.addElement(key);
-            if (entry.getType() == EDIT && key.toString().equals(entry.name)) {
-                cmbTarget.setSelectedIndex(targetModel.getSize() - 1);
-            }
-        });
-        String path = node.info.testCase.getString("path");
-        File test = IO.getFile(node.getCollection(), path);
-        if (test.exists()) {
-            JSONObject testJSON = (JSONObject) IO.getJSON(node.getCollection(), path, mainPanel.editor);
-            if (testJSON != null) {
-                Object body = testJSON.getJSONObject("response").get("body");
-                if (!IO.isNULL(body) && !body.toString().isEmpty()) {
-                    JSON bodyJSON = IO.getJSON(node.getCollection(), body.toString(), mainPanel.editor);
-                    if (bodyJSON != null) {
-                        buildTree(treeNode, bodyJSON);
-                        java.awt.EventQueue.invokeLater(() -> {
-                            for (int i = 0; i < treeSchema.getRowCount(); i++) {
-                                treeSchema.expandRow(i);
-                            }
-                        });
-                    }
-                }
-            }
-        }
-        treeModel.reload(treeNode);
-        lblError.setVisible(false);
+        
+        buildTargetModel();
+        
+        Object path = node.jsonObject().getJSONObject("response").getOrDefault("body", null);      
+        txtBody.setText(String.valueOf(path));
+        buildTree(path);
+        
         if (entry.getType() == ADD || (pathValue instanceof String && pathValue.toString().startsWith("/"))) {
             txtPath.setText(String.valueOf(pathValue));
 
@@ -249,19 +229,71 @@ public class TransferDialog extends javax.swing.JPanel {
                 txtEditor.setText(String.valueOf(pathValue));
             }
             cmbDataType.setSelectedItem(ResourceEditDialog.getType(pathValue));
-            rbAssignValue.setSelected(true);
-            rbAssignValueActionPerformed(null);
         }
         
         cmbDataTypeItemStateChanged(null);
         dialog.setVisible(true);
     }
-
-    private void buildTree(DefaultMutableTreeNode node, JSON json) {
+    
+    private void addError(String error, Exception ex) {
+        lblError.setText(error);
+        mainPanel.addError(ex);
+    }
+    
+    private void buildTargetModel() {
+        targetModel.removeAllElements();
+        JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
+        ivailableProperties.keySet().forEach((key) -> {
+            targetModel.addElement(key);
+            if (entry.getType() == EDIT && key.toString().equals(entry.name)) {
+                cmbTarget.setSelectedIndex(targetModel.getSize() - 1);
+            }
+        });
+        
+        if (chbReqProperties.isSelected()) {
+            JSONObject properties = (JSONObject) node.jsonObject().getJSONObject("request").getOrDefault("properties", new JSONObject());
+            properties.keySet().forEach((key) -> {
+                targetModel.addElement(key);
+            });
+        }
+        if (chbResProperties.isSelected()) {
+            JSONObject properties = (JSONObject) node.jsonObject().getJSONObject("response").getOrDefault("properties", new JSONObject());
+            properties.keySet().forEach((key) -> {
+                targetModel.addElement(key);
+            });
+        }
+    }
+    
+    private void buildTree(Object path) {
+        treeNode.removeAllChildren();
+        if (path != null) {
+            File test = IO.getFile(node.getCollection(), (String) path);
+            if (test.exists()) {
+                bodyJSON = (JSONObject) IO.getJSON(node.getCollection(), path.toString(), mainPanel.editor);
+                if (bodyJSON != null) {
+                    if (bodyJSON != null) {
+                        rbSelectPropertyPath.setSelected(true);
+                        buildTreeNode(treeNode, bodyJSON);
+                        java.awt.EventQueue.invokeLater(() -> {
+                            for (int i = 0; i < treeSchema.getRowCount(); i++) {
+                                treeSchema.expandRow(i);
+                            }
+                        });
+                    }
+                }
+            }
+        } else {
+            rbAssignValue.setSelected(true);
+        }
+        treeModel.reload(treeNode);
+        rbAssignValueActionPerformed(null);
+    }
+    
+    private void buildTreeNode(DefaultMutableTreeNode node, JSON json) {
         if (json instanceof JSONArray) {
             ((JSONArray) json).forEach((item) -> {
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTree(node, (JSON) item);
+                    buildTreeNode(node, (JSON) item);
                 } else {
                     node.add(new DefaultMutableTreeNode(item));
                 }
@@ -273,7 +305,7 @@ public class TransferDialog extends javax.swing.JPanel {
                 node.add(child);
                 Object item = parent.get(key);
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTree(child, (JSON) item);
+                    buildTreeNode(child, (JSON) item);
                 }
             });
         }
@@ -292,8 +324,13 @@ public class TransferDialog extends javax.swing.JPanel {
         rbgPropertyPath = new ButtonGroup();
         pnlHeader = new JPanel();
         pnlGrid = new JPanel();
+        lblBody = new JLabel();
+        txtBody = new JTextField();
         lblTarget = new JLabel();
         cmbTarget = new JComboBox<>();
+        pnlProperties = new JPanel();
+        chbReqProperties = new JCheckBox();
+        chbResProperties = new JCheckBox();
         lblPath = new JLabel();
         txtPath = new JTextField();
         pnlPropertyPath = new JPanel();
@@ -316,14 +353,36 @@ public class TransferDialog extends javax.swing.JPanel {
         setLayout(new BorderLayout());
 
         pnlHeader.setBorder(BorderFactory.createEmptyBorder(1, 1, 5, 1));
-        pnlHeader.setLayout(new BorderLayout(5, 5));
+        pnlHeader.setLayout(new BorderLayout());
 
-        pnlGrid.setLayout(new GridBagLayout());
+        GridBagLayout pnlGridLayout = new GridBagLayout();
+        pnlGridLayout.columnWidths = new int[] {0, 5, 0};
+        pnlGridLayout.rowHeights = new int[] {0, 5, 0, 5, 0, 5, 0, 5, 0};
+        pnlGrid.setLayout(pnlGridLayout);
+
+        lblBody.setFont(new Font("Tahoma", 1, 11)); // NOI18N
+        ResourceBundle bundle = ResourceBundle.getBundle("com/equinix/amphibia/messages"); // NOI18N
+        lblBody.setText(bundle.getString("responseBody")); // NOI18N
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.ipadx = 5;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlGrid.add(lblBody, gridBagConstraints);
+
+        txtBody.setEditable(false);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        pnlGrid.add(txtBody, gridBagConstraints);
 
         lblTarget.setFont(new Font("Tahoma", 1, 11)); // NOI18N
-        ResourceBundle bundle = ResourceBundle.getBundle("com/equinix/amphibia/messages"); // NOI18N
         lblTarget.setText(bundle.getString("targetProperty")); // NOI18N
         gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.gridwidth = GridBagConstraints.RELATIVE;
         gridBagConstraints.ipadx = 5;
         gridBagConstraints.anchor = GridBagConstraints.WEST;
@@ -332,19 +391,49 @@ public class TransferDialog extends javax.swing.JPanel {
 
         cmbTarget.setModel(this.targetModel);
         gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         pnlGrid.add(cmbTarget, gridBagConstraints);
 
+        pnlProperties.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+        chbReqProperties.setSelected(true);
+        chbReqProperties.setText(bundle.getString("reqProperties")); // NOI18N
+        chbReqProperties.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                chbReqPropertiesActionPerformed(evt);
+            }
+        });
+        pnlProperties.add(chbReqProperties);
+
+        chbResProperties.setSelected(true);
+        chbResProperties.setText(bundle.getString("resProperties")); // NOI18N
+        chbResProperties.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                chbResPropertiesActionPerformed(evt);
+            }
+        });
+        pnlProperties.add(chbResProperties);
+
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        pnlGrid.add(pnlProperties, gridBagConstraints);
+
         lblPath.setFont(new Font("Tahoma", 1, 11)); // NOI18N
         lblPath.setText(bundle.getString("propertyPath")); // NOI18N
         gridBagConstraints = new GridBagConstraints();
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
         gridBagConstraints.ipadx = 5;
         gridBagConstraints.anchor = GridBagConstraints.WEST;
         pnlGrid.add(lblPath, gridBagConstraints);
         gridBagConstraints = new GridBagConstraints();
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 7;
         gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new Insets(5, 0, 5, 0);
@@ -398,8 +487,7 @@ public class TransferDialog extends javax.swing.JPanel {
 
         pnlValue.add(splEditor, BorderLayout.CENTER);
 
-        pnlFooter.setPreferredSize(new Dimension(603, 60));
-        pnlFooter.setLayout(new GridLayout(2, 0));
+        pnlFooter.setLayout(new BorderLayout());
 
         lblDataType.setText(bundle.getString("dataType")); // NOI18N
         pnlDataType.add(lblDataType);
@@ -417,14 +505,15 @@ public class TransferDialog extends javax.swing.JPanel {
         });
         pnlDataType.add(cmbDataType);
 
-        pnlFooter.add(pnlDataType);
+        pnlFooter.add(pnlDataType, BorderLayout.NORTH);
 
+        lblError.setFont(new Font("Tahoma", 0, 12)); // NOI18N
         lblError.setForeground(new Color(255, 0, 0));
         lblError.setHorizontalAlignment(SwingConstants.CENTER);
-        lblError.setText(bundle.getString("error_convert")); // NOI18N
-        pnlFooter.add(lblError);
+        lblError.setBorder(BorderFactory.createEmptyBorder(5, 1, 5, 1));
+        pnlFooter.add(lblError, BorderLayout.CENTER);
 
-        pnlValue.add(pnlFooter, BorderLayout.PAGE_END);
+        pnlValue.add(pnlFooter, BorderLayout.SOUTH);
 
         pnlCenter.add(pnlValue);
 
@@ -450,6 +539,7 @@ public class TransferDialog extends javax.swing.JPanel {
 
     private void rbAssignValueActionPerformed(ActionEvent evt) {//GEN-FIRST:event_rbAssignValueActionPerformed
         txtPath.setEnabled(false);
+        cmbDataType.setEnabled(true);
         pnlValue.setVisible(rbAssignValue.isSelected());
         spnSchema.setVisible(!rbAssignValue.isSelected());
     }//GEN-LAST:event_rbAssignValueActionPerformed
@@ -469,16 +559,27 @@ public class TransferDialog extends javax.swing.JPanel {
                     new String[] {"Global", "Project", "TestSuite", "TestCase", "TestStep"},
                     "TestCase");
                 if (s != null && !s.isEmpty()) {
-                    txtEditor.setText("${#" + s + "#...}");
+                    txtEditor.setText("${#" + s + "#" + cmbTarget.getSelectedItem() + "}");
                 }
             });
         }
     }//GEN-LAST:event_cmbDataTypeActionPerformed
 
+    private void chbReqPropertiesActionPerformed(ActionEvent evt) {//GEN-FIRST:event_chbReqPropertiesActionPerformed
+        buildTargetModel();
+    }//GEN-LAST:event_chbReqPropertiesActionPerformed
+
+    private void chbResPropertiesActionPerformed(ActionEvent evt) {//GEN-FIRST:event_chbResPropertiesActionPerformed
+        buildTargetModel();
+    }//GEN-LAST:event_chbResPropertiesActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    JCheckBox chbReqProperties;
+    JCheckBox chbResProperties;
     JComboBox<String> cmbDataType;
     JComboBox<String> cmbTarget;
+    JLabel lblBody;
     JLabel lblDataType;
     JLabel lblError;
     JLabel lblPath;
@@ -488,6 +589,7 @@ public class TransferDialog extends javax.swing.JPanel {
     JPanel pnlFooter;
     JPanel pnlGrid;
     JPanel pnlHeader;
+    JPanel pnlProperties;
     JPanel pnlPropertyPath;
     JPanel pnlValue;
     JRadioButton rbAssignValue;
@@ -497,6 +599,7 @@ public class TransferDialog extends javax.swing.JPanel {
     JScrollPane splEditor;
     JScrollPane spnSchema;
     JTree treeSchema;
+    JTextField txtBody;
     JTextArea txtEditor;
     JTextField txtPath;
     // End of variables declaration//GEN-END:variables

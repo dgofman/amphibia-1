@@ -1,6 +1,6 @@
 /*
  * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
+ * To change this template testFile, choose Tools | Templates
  * and open the template in the editor.
  */
 package com.equinix.amphibia.components;
@@ -9,6 +9,7 @@ import static com.equinix.amphibia.components.Editor.Entry;
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
+import com.equinix.amphibia.agent.builder.Properties;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -16,13 +17,15 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -41,6 +44,8 @@ import javax.swing.UIManager;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 
@@ -58,7 +63,11 @@ public final class ReferenceDialog extends javax.swing.JPanel {
     private JButton applyButton;
     private JButton cancelButton;
     private ResourceBundle bundle;
+    private String originalPreviewBody;
+    private JSONObject newProperties;
     private final DefaultComboBoxModel<ComboItem> referenceModel;
+
+    private static final String ASSERTS_DIR_FORMAT = "data/%s/asserts";
 
     /**
      * Creates new form TableEditDialog
@@ -68,6 +77,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
     public ReferenceDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
 
+        newProperties = new JSONObject();
         referenceModel = new DefaultComboBoxModel<>();
 
         initComponents();
@@ -76,23 +86,88 @@ public final class ReferenceDialog extends javax.swing.JPanel {
 
         applyButton = new JButton(bundle.getString("apply"));
         applyButton.addActionListener((ActionEvent evt) -> {
+            lblError.setText("");
             ComboItem item = (ComboItem) cmbPath.getSelectedItem();
+            TreeIconNode node = entry.node;
+            boolean isTestCase = node.getType() == TreeCollection.TYPE.TESTCASE;
             ((JSONObject) entry.json).element(entry.name, item.file != null ? item.label : JSONNull.getInstance());
-            String[] contents = null;
+
+            try {
+                String parent = entry.getParent().toString();
+                if ("request|response".contains(parent)) {
+                    File testFile = IO.getFile(collection, node.jsonObject().getString("file"));
+                    JSONObject testJSON = (JSONObject) IO.getJSON(testFile);
+                    JSONObject testReqOrRes = testJSON.getJSONObject(parent);
+                    final int[] isModified = new int[]{0};
+                    JSONObject sourceJSON;
+                    if (isTestCase) {
+                        sourceJSON = testJSON;
+                    } else {
+                        sourceJSON = node.jsonObject();
+                    }
+                    JSONObject reqOrRes = (JSONObject) sourceJSON.getOrDefault(parent, new JSONObject());
+
+                    if (!newProperties.isEmpty()) {
+                        JSONObject testProperties = testReqOrRes.getJSONObject("properties");
+                        JSONObject properties = (JSONObject) reqOrRes.getOrDefault("properties", new JSONObject());
+                        newProperties.keySet().forEach((key) -> {
+                            if (txtPreview.getText().contains("`${#" + key + "}`")) {
+                                Object val1 = testProperties.getOrDefault(key, null);
+                                Object val2 = newProperties.get(key);
+                                if ((val1 == null && val2 != null) || (val1 != null && !val1.equals(val2))) {
+                                    isModified[0] = 1;
+                                    properties.put(key, val2);
+                                }
+                            }
+                        });
+                        if (properties.isEmpty() && !isTestCase) {
+                            reqOrRes.remove("properties");
+                        } else {
+                            reqOrRes.put("properties", properties);
+                        }
+                    }
+
+                    if (!item.label.equals(testReqOrRes.getOrDefault("body", null)) &&
+                        !item.label.equals(reqOrRes.getOrDefault("body", null))) {
+                        isModified[0] = 1;
+                        reqOrRes.put("body", item.label);
+                    }
+
+                    if (isModified[0] == 1) {
+                        if (reqOrRes.isEmpty() && !isTestCase) {
+                            sourceJSON.remove(parent);
+                        } else {
+                            sourceJSON.put(parent, reqOrRes);
+                        }
+
+                        if (isTestCase) {
+                            try {
+                                String[] contents = IO.write(IO.prettyJson(testJSON.toString()), testFile, true);
+                                mainPanel.history.addHistory(testFile.getAbsolutePath(), contents[0], contents[1]);
+                            } catch (Exception ex) {
+                                addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
+                return;
+            }
+
             if (chbEdit.isSelected() && item.file != null && item.file.exists()) {
                 try {
-                    contents = IO.write(txtPreview.getText(), item.file, true);
+                    String[] contents = IO.write(txtPreview.getText(), item.file, true);
+                    mainPanel.history.addHistory(item.file.getAbsolutePath(), contents[0], contents[1]);
                 } catch (Exception ex) {
-                    lblError.setText(String.format(bundle.getString("error_convert"), "JSON"));
+                    addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
                     return;
                 }
             }
-            if (contents != null) {
-                mainPanel.history.addHistory(item.file.getAbsolutePath(), contents[0], contents[1]);
-            }
+
             mainPanel.history.saveEntry(entry, collection);
             mainPanel.reloadCollection(collection);
-            lblError.setText("");
             dialog.setVisible(false);
         });
         cancelButton = new JButton(bundle.getString("cancel"));
@@ -109,29 +184,40 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         });
     }
 
-    private Object[] initDialog(TreeCollection collection, Entry entry) {
+    private void addError(String error, Exception ex) {
+        lblError.setText(error);
+        mainPanel.addError(ex);
+    }
+
+    private boolean initDialog(TreeCollection collection, Entry entry) {
         this.collection = collection;
         this.entry = entry;
         txtPath.setVisible(true);
         cmbPath.setVisible(false);
+        pnlFooter.setVisible(false);
         lblError.setText("");
-        txtPreview.setEnabled(true);
         chbEdit.setSelected(false);
+        chbStoreValues.setSelected(false);
+        chbStoreValues.setEnabled(false);
+        txtPreview.setEditable(false);
+        txtPreview.setEnabled(true);
         txtPreview.setBackground(UIManager.getColor("TextArea.background"));
-        txtPreview.setEditable(MainPanel.selectedNode.getType() == TreeCollection.TYPE.TEST_ITEM);
-        Object[] info = getFileInfo();
-        if (info != null) {
-            txtPath.setText(String.valueOf(entry.value));
-            txtName.setText(entry.name);
-            reviewPath((File) info[2]);
-        } else {
+
+        if (entry.node.info == null) {
             mainPanel.resourceEditDialog.openEditDialog(entry, entry.value, true);
+            return false;
+        } else {
+            String filePath = (String) entry.value;
+            txtPath.setText(filePath);
+            txtName.setText(entry.name);
+            reviewPath(filePath != null ? IO.getFile(filePath) : null);
+            return true;
         }
-        return info;
     }
 
     private void reviewPath(File file) {
         if (file != null && file.exists()) {
+            newProperties = new JSONObject();
             Amphibia.setText(txtPreview, splPreview, IO.readFile(file, mainPanel.editor));
         } else {
             txtPreview.setText("");
@@ -140,7 +226,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
 
     @SuppressWarnings("NonPublicExported")
     public void openViewDialog(TreeCollection collection, Entry entry) {
-        if (initDialog(collection, entry) == null) {
+        if (!initDialog(collection, entry)) {
             return;
         }
         optionPane.setOptions(null);
@@ -149,36 +235,54 @@ public final class ReferenceDialog extends javax.swing.JPanel {
 
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(TreeCollection collection, Entry entry) {
-        Object[] info = initDialog(collection, entry);
-        if (info == null) {
+        if (!initDialog(collection, entry)) {
             return;
         }
+        TreeIconNode node = entry.node;
         optionPane.setOptions(new Object[]{applyButton, cancelButton});
- 
-        if (info[0] != null) { //path
-            referenceModel.removeAllElements();
-            referenceModel.addElement(new ComboItem("NULL"));
-            referenceModel.addElement(new ComboItem(bundle.getString("browse")));
+        newProperties = new JSONObject();
+        
+        referenceModel.removeAllElements();
+        referenceModel.addElement(new ComboItem("NULL"));
+        referenceModel.addElement(new ComboItem(bundle.getString("browse")));
 
-            txtPath.setVisible(false);
-            cmbPath.setVisible(true);
-            cmbPath.setSelectedIndex(0);
-            File dir = (File) info[1];
-            if (dir.exists()) {
-                for (String file : dir.list()) {
-                    String path = info[0] + "/" + file;
-                    referenceModel.addElement(new ComboItem(path, IO.newFile(dir, file)));
-                    if (path.equals(entry.value)) {
-                        cmbPath.setSelectedIndex(referenceModel.getSize() - 1);
-                    }
-                }
+        int selectedIndex = 0;
+        String resourceId = node.info.resource.getString("resourceId");
+        String testSuiteName = node.info.testSuite.getString("name");
+        String resoursePath = String.format("data/%s/requests/%s/", resourceId, testSuiteName);
+        if ("response".equals(entry.getParent().toString())) {
+            resoursePath = String.format("data/%s/responses/%s/", resourceId, testSuiteName);
+            String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourceId);
+            for (String fileName : IO.getFile(node.getCollection(), assertsPath).list()) {
+                String path = assertsPath + "/" + fileName;
+                referenceModel.addElement(new ComboItem(path, IO.getFile(node.getCollection(), path)));
             }
-            if (cmbPath.getSelectedIndex() == 0 && entry.value instanceof String) {
-                cmbPath.insertItemAt(new ComboItem(entry.value), 2);
-                cmbPath.setSelectedIndex(2);
-            }
-            isPreviewEnabled();
         }
+        
+        String filePath = (String) entry.value;
+        if (filePath != null) {
+            if (!filePath.contains(resoursePath)) {
+                selectedIndex = referenceModel.getSize();
+                referenceModel.addElement(new ComboItem(filePath, IO.getFile(filePath)));
+            }
+        }
+        
+        File resourseDir = IO.getFile(collection, resoursePath);
+        for (String fileName : resourseDir.list()) {
+            String path = resoursePath + fileName;
+            if (path.equals(filePath)) {
+                selectedIndex = referenceModel.getSize();
+            }
+            referenceModel.addElement(new ComboItem(path, IO.newFile(resourseDir, fileName)));
+        }
+
+        cmbPath.setSelectedIndex(selectedIndex);
+        isPreviewEnabled();
+
+        txtPath.setVisible(false);
+        cmbPath.setVisible(true);
+        pnlFooter.setVisible(true);
+
         dialog.setVisible(true);
     }
 
@@ -186,58 +290,6 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         txtPreview.setEnabled(cmbPath.getSelectedIndex() > 0);
         txtPreview.setBackground(UIManager.getColor(txtPreview.isEnabled() ? "TextArea.background" : "TextArea.disabledBackground"));
         return txtPreview.isEnabled();
-    }
-
-    public Object[] getFileInfo() {
-        TreeIconNode.ResourceInfo info = MainPanel.selectedNode.info;
-        if (info == null) {
-            return null;
-        }
-        String dirPath = "data/%s/%s/%s";
-        String resourceId = info.resource.getString("resourceId");
-        String testSuiteName = info.testSuite.getString("name");
-        if ("file".equals(entry.name)) {
-            File file = IO.getFile(collection, entry.value.toString());
-            if (!file.exists()) {
-                file = IO.newFile(entry.value.toString());
-            }
-            return new Object[]{null, file.getParentFile(), file};
-        } else if ("request".equals(entry.getParent().toString())) {
-            switch (entry.name) {
-                case "body":
-                    dirPath = String.format(dirPath, resourceId, "requests", testSuiteName);
-                    break;
-                case "schema":
-                    dirPath = String.format(dirPath, resourceId, "schemas", "requests");
-                    break;
-                default:
-                    return new Object[]{};
-            }
-        } else {
-            switch (entry.name) {
-                case "body":
-                    dirPath = String.format(dirPath, resourceId, "responses", testSuiteName);
-                    break;
-                case "schema":
-                    dirPath = String.format(dirPath, resourceId, "schemas", "responses");
-                    break;
-                case "asserts":
-                    dirPath = String.format(dirPath, resourceId, "schemas", "asserts");
-                    break;
-                default:
-                    return null;
-            }
-        }
-        File file;
-        if (entry.value instanceof String && !entry.value.toString().isEmpty()) {
-            file = IO.getFile(collection, entry.value.toString());
-            if (!file.exists()) {
-                file = IO.newFile(entry.value.toString());
-            }
-        } else {
-            return new Object[]{dirPath, IO.getFile(collection, dirPath), null};
-        }
-        return new Object[]{dirPath, file.getParentFile(), file};
     }
 
     /**
@@ -262,6 +314,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         txtPreview = new JTextArea();
         pnlFooter = new JPanel();
         chbEdit = new JCheckBox();
+        chbStoreValues = new JCheckBox();
         lblError = new JLabel();
 
         setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 10));
@@ -313,6 +366,11 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             public void popupMenuWillBecomeVisible(PopupMenuEvent evt) {
             }
         });
+        cmbPath.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                cmbPathActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
@@ -326,13 +384,18 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         lblPreview.setText(bundle.getString("preview")); // NOI18N
         pnlBottom.add(lblPreview, BorderLayout.NORTH);
 
+        txtPreview.addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent evt) {
+                txtPreviewKeyPressed(evt);
+            }
+        });
         splPreview.setViewportView(txtPreview);
 
         pnlBottom.add(splPreview, BorderLayout.CENTER);
 
         add(pnlBottom, BorderLayout.CENTER);
 
-        pnlFooter.setLayout(new GridLayout(2, 0));
+        pnlFooter.setLayout(new BorderLayout());
 
         chbEdit.setText(bundle.getString("enableEdit")); // NOI18N
         chbEdit.addActionListener(new ActionListener() {
@@ -340,13 +403,22 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 chbEditActionPerformed(evt);
             }
         });
-        pnlFooter.add(chbEdit);
+        pnlFooter.add(chbEdit, BorderLayout.WEST);
+
+        chbStoreValues.setText(bundle.getString("storeValues")); // NOI18N
+        chbStoreValues.setEnabled(false);
+        chbStoreValues.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                chbStoreValuesActionPerformed(evt);
+            }
+        });
+        pnlFooter.add(chbStoreValues, BorderLayout.CENTER);
 
         lblError.setFont(new Font("Tahoma", 0, 12)); // NOI18N
         lblError.setForeground(new Color(255, 0, 0));
         lblError.setHorizontalAlignment(SwingConstants.CENTER);
         lblError.setBorder(BorderFactory.createEmptyBorder(5, 1, 5, 1));
-        pnlFooter.add(lblError);
+        pnlFooter.add(lblError, BorderLayout.SOUTH);
 
         add(pnlFooter, BorderLayout.SOUTH);
     }// </editor-fold>//GEN-END:initComponents
@@ -355,14 +427,11 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         isPreviewEnabled();
         java.awt.EventQueue.invokeLater(() -> {
             if (cmbPath.getSelectedIndex() == 1) {
-                Object[] info = getFileInfo();
-                File dir = ((File) info[1]);
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
+                String resourceId = entry.node.info.resource.getString("resourceId");
+                String dir = entry.value != null ? (String) entry.value :  String.format("data/%s/", resourceId);
                 JFileChooser jc = new JFileChooser();
                 jc.setFileFilter(new FileNameExtensionFilter("JSON File", "json", "text"));
-                jc.setCurrentDirectory(dir);
+                jc.setCurrentDirectory(IO.getFile(dir));
                 int rVal = jc.showSaveDialog(null);
                 if (rVal == JFileChooser.CANCEL_OPTION) {
                     cmbPath.setSelectedIndex(0);
@@ -387,7 +456,6 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                         }
                         referenceModel.addElement(new ComboItem(relPath, jc.getSelectedFile()));
                         cmbPath.setSelectedIndex(referenceModel.getSize() - 1);
-                        txtPreview.setEditable(true);
                     } catch (IOException ex) {
                         mainPanel.addError(ex);
                     }
@@ -402,10 +470,70 @@ public final class ReferenceDialog extends javax.swing.JPanel {
 
     private void chbEditActionPerformed(ActionEvent evt) {//GEN-FIRST:event_chbEditActionPerformed
         txtPreview.setEditable(chbEdit.isSelected());
+        chbStoreValues.setEnabled(chbEdit.isSelected());
+        if (chbEdit.isSelected()) {
+            chbStoreValues.setSelected(false);
+        }
     }//GEN-LAST:event_chbEditActionPerformed
+
+    private void chbStoreValuesActionPerformed(ActionEvent evt) {//GEN-FIRST:event_chbStoreValuesActionPerformed
+        try {
+            String text;
+            if (chbStoreValues.isSelected()) {
+                originalPreviewBody = txtPreview.getText();
+                String resourseId = entry.node.info.resource.getString("resourceId");
+                String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourseId);
+                boolean isAssertDir = cmbPath.getSelectedItem().toString().startsWith(assertsPath);
+                JSON newJSON = IO.toJSON(originalPreviewBody);
+
+                StringBuilder sb = new StringBuilder(isAssertDir ? "assert" : "");
+                new Object() {
+                    void walk(JSON json, StringBuilder sb) {
+                        if (json instanceof JSONArray) {
+                            ((JSONArray) json).forEach((item) -> {
+                                walk((JSON) item, sb);
+                            });
+                        } else {
+                            JSONObject obj = (JSONObject) json;
+                            obj.keySet().forEach((key) -> {
+                                Object value = obj.get(key);
+                                StringBuilder ids = new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(key);
+                                if (value instanceof JSON) {
+                                    walk((JSON) value, ids);
+                                } else {
+                                    Matcher m = Properties.PATTERN_2.matcher(String.valueOf(value));
+                                    if (!m.find()) {
+                                        newProperties.put(ids.toString(), value);
+                                    }
+                                    obj.put(key, "`${#" + ids.toString() + "}`");
+                                }
+                            });
+                        }
+                    }
+                }.walk(newJSON, sb);
+                text = IO.prettyJson(newJSON.toString());
+            } else {
+                text = originalPreviewBody;
+            }
+            Amphibia.setText(txtPreview, splPreview, text);
+        } catch (Exception ex) {
+            chbStoreValues.setSelected(false);
+            addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
+        }
+    }//GEN-LAST:event_chbStoreValuesActionPerformed
+
+    private void txtPreviewKeyPressed(KeyEvent evt) {//GEN-FIRST:event_txtPreviewKeyPressed
+        chbStoreValues.setSelected(false);
+    }//GEN-LAST:event_txtPreviewKeyPressed
+
+    private void cmbPathActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cmbPathActionPerformed
+        chbStoreValues.setSelected(false);
+        newProperties = new JSONObject();
+    }//GEN-LAST:event_cmbPathActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     JCheckBox chbEdit;
+    JCheckBox chbStoreValues;
     JComboBox cmbPath;
     JLabel lblError;
     JLabel lblName;

@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -95,19 +93,6 @@ public final class Swagger {
         return ((String) scriptEngine.get("result")).replaceAll(" {4}", "\t");
     }
 
-    public static String escapeJson(Map<?, ?> value) throws Exception {
-        return escapeJson(getJson(value));
-    }
-
-    public static String escapeJson(String output) throws Exception {
-        Pattern p = Pattern.compile("(\\\"'\\$\\{#)(.*)(}'\")");
-        Matcher m = p.matcher(output);
-        if (m.find()) {
-            output = m.replaceAll("\\$\\{#$2}");
-        }
-        return output;
-    }
-
     protected void parse(int index, String inputParam, boolean isURL, String propertiesFile) throws Exception {
         String host = doc.getString("host");
         if (!host.startsWith("http")) {
@@ -174,7 +159,7 @@ public final class Swagger {
         output.put("hosts", hosts);
         
         JSONArray interfaces = output.containsKey("interfaces") ? output.getJSONArray("interfaces") : new JSONArray();
-        String interfaceBasePath = doc.getString("basePath");
+        String interfaceBasePath = (String) doc.getOrDefault("basePath", "/");
         String interfaceName = interfaceBasePath;
         String interfaceId = UUID.randomUUID().toString();
         String param = cmd.getOptionValue(Converter.INTERFACES);
@@ -192,7 +177,7 @@ public final class Swagger {
             headers.put("CONTENT-TYPE", "application/json");
         }
         
-        final String name = interfaceName;
+        final String name = "/".equals(interfaceName) ? "interface" + (index + 1) : interfaceName;
         final JSONObject hs = headers;
         
         hs.keySet().forEach((key) -> {

@@ -28,7 +28,7 @@ import net.sf.json.JSONObject;
  */
 @SuppressWarnings("NonPublicExported")
 public final class TreeCollection {
-
+    
     private File projectFile;
     private File profileFile;
     private File backupProfileFile;
@@ -108,8 +108,7 @@ public final class TreeCollection {
         {"headers", null, VIEW},
         {"globalProperties", null, VIEW},
         {"projectProperties", null, VIEW},
-        {"testSuiteProperties", null, VIEW},
-        {"asserts", null, VIEW}
+        {"testSuiteProperties", null, VIEW}
     };
 
     public static final Object[][] PROFILE_PROPERTIES = new Object[][]{
@@ -141,20 +140,17 @@ public final class TreeCollection {
         {"method", VIEW},
         {"url", VIEW},
         {"interface", VIEW},
-        {"transfer", TRANSFER, EDIT},
         {"headers", ADD},
         {"properties", ADD},
+        {"transfer", TRANSFER, EDIT},
         {"request", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT}
+            {"properties", ADD}
         }},
         {"response", new Object[][]{
-            {"transfer", TRANSFER, EDIT},
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT},
-            {"asserts", REFERENCE_EDIT}
+            //{"asserts", REFERENCE_EDIT},
+            {"properties", ADD}
         }},
         {"available-properties", null, VIEW},
         {"teststeps", ADD_RESOURCES, REFERENCE_EDIT}
@@ -168,17 +164,15 @@ public final class TreeCollection {
         {"url", VIEW},
         {"headers", ADD},
         {"properties", ADD},
+        {"transfer", TRANSFER, EDIT},
         {"request", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT}
+            {"properties", ADD}
         }},
         {"response", new Object[][]{
-            {"transfer", TRANSFER, EDIT},
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT},
-            {"asserts", REFERENCE_EDIT}
+            //{"asserts", REFERENCE_EDIT},
+            {"properties", ADD}
         }},
         {"available-properties", null, VIEW}
     };
@@ -192,48 +186,41 @@ public final class TreeCollection {
         {"url", VIEW},
         {"headers", ADD},
         {"properties", ADD},
+        {"transfer", TRANSFER, EDIT},
         {"request", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT}
+            {"properties", ADD}
         }},
         {"response", new Object[][]{
-            {"transfer", TRANSFER, EDIT},
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT},
-            {"asserts", REFERENCE_EDIT}
+            //{"asserts", REFERENCE_EDIT},
+            {"properties", ADD}
         }},
         {"available-properties", null, VIEW}
     };
                 
     public static final Object[][] TEST_ITEM_PROPERTIES = new Object[][]{
-        {"defaultName", EDIT_LIMIT},
         {"file", REFERENCE_EDIT},
         {"request", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT}
+            {"properties", ADD}
         }},
         {"response", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT},
-            {"asserts", REFERENCE_EDIT}
+            //{"asserts", REFERENCE_EDIT},
+            {"properties", ADD}
         }}
     };
     
     public static final Object[][] LINK_PROPERTIES = new Object[][] {
         {"request", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT}
+            {"properties", ADD}
         }},
         {"response", new Object[][]{
-            {"properties", ADD},
             {"body", REFERENCE_EDIT},
-            {"schema", REFERENCE_EDIT},
-            {"asserts", REFERENCE_EDIT}
+            //{"asserts", REFERENCE_EDIT},
+            {"properties", ADD}
         }}
     };
     

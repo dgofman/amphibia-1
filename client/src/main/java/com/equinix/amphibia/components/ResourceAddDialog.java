@@ -122,6 +122,9 @@ public final class ResourceAddDialog extends javax.swing.JPanel {
                 Component c = super.getTreeCellRendererComponent(tree, value, selected, expanded, isLeaf, row, hasFocus);
                 if (userObject instanceof TreeIconNode.TreeIconUserObject) {
                     TreeIconNode.TreeIconUserObject node = (TreeIconNode.TreeIconUserObject) userObject;
+                    if (selected && treeCommon.isEnabled()) {
+                        txtTestStepName.setText(node.getTooltip());
+                    }
                     setToolTipText(node.getTooltip());
                     setIcon(node.getIcon());
                 }
@@ -288,9 +291,8 @@ public final class ResourceAddDialog extends javax.swing.JPanel {
             treeCommon.setSelectionPath(new TreePath(treeSelectedNode.getPath()));
         }
 
-        if (selectedNode.info.testStepInfo != null) {
-             txtTestStepName.setText(selectedNode.info.testStepInfo.getString("defaultName"));
-        }
+        rbnCreateTestStep.setSelected(true);
+        txtTestStepName.setText("");
         testStepDialog.setVisible(true);
     }
     

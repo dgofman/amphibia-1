@@ -336,8 +336,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             if (cmdInterface.getSelectedItem() != null) {
                 basePath = ((Wizard.ComboItem) cmdInterface.getSelectedItem()).json.getString("basePath");
             }
-            lblURI.setText(((EndPoint) cmdEndpoint.getSelectedItem()).endPointValue + basePath
-                    + (txtPath.getText().startsWith("/") ? "" : "/") + txtPath.getText());
+            lblURI.setText(((EndPoint) cmdEndpoint.getSelectedItem()).endPointValue + Properties.getURL(basePath, txtPath.getText()));
         } else {
             lblURI.setText("http://");
         }

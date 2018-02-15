@@ -34,6 +34,8 @@ public class Properties {
     public static final String TESTSTEP = "TestStep";
 
     public static final String TESTS_FILE_FORMAT = "data/%s/tests/%s/%s.json";
+    public static final Pattern PATTERN_1 = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
+    public static final Pattern PATTERN_2 = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
 
     public static final String[] PROPERTY_NAMES = new String[] {GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
@@ -97,7 +99,7 @@ public class Properties {
         String value = String.valueOf(replace);
         if (replace instanceof String) {
             StringBuilder sb = new StringBuilder(value);
-            Matcher m = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(value);
+            Matcher m = PATTERN_1.matcher(value);
             while (m.find()) {
                 JSONObject source = getProperty(m.group(1));
                 if (source == null) {
@@ -115,7 +117,7 @@ public class Properties {
                 }
             }
             //Replace by hierarchy
-            m = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(value);
+            m = PATTERN_2.matcher(value);
             while (m.find()) {
                 String key = m.group(1);
                 if (key.contains("#")) {
@@ -219,7 +221,7 @@ public class Properties {
             	body = IOUtils.toString(new FileInputStream(responseFile));
                 JSONObject properties = testJSON.getJSONObject(name).getJSONObject("properties");
                 StringBuilder sb = new StringBuilder(body);
-                Matcher m = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE).matcher(body);
+                Matcher m = PATTERN_2.matcher(body);
                 while (m.find()) {
                     String key = m.group(1);
                     if (key.contains("#")) {
@@ -241,6 +243,16 @@ public class Properties {
         clone.testcase = cloneJSON(testcase);
         clone.teststep = cloneJSON(teststep);
         return clone;
+    }
+    
+    public static String getURL(String basePath, String path) {
+        int len = basePath.length();
+        path = (path.startsWith("/") ? "" : "/") + path;
+        if (len > 0 && basePath.charAt(len - 1) == '/') {
+            return basePath.substring(0, len - 1) + path;
+        } else {
+            return basePath + path;
+        }
     }
     
     public JSONObject cloneJSON(JSONObject json) {

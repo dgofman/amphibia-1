@@ -189,7 +189,7 @@ public class Postman extends ProjectAbstract {
                 Object path = testCaseItem.get("path");
                 if (path != null) {
                     path = properties.replace(path.toString()).replaceAll("&amp;", "&");
-                    testcase = replace(testcase, "<% PATH %>", basePath + path);
+                    testcase = replace(testcase, "<% PATH %>", Properties.getURL(basePath, path.toString()));
                 }
 
                 Object body = Properties.getBody(projectDir, resource.getString("resourceId"), testSuiteName, testCaseItem.getString("name"), true);

@@ -853,7 +853,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             testcaseJSON.element("transfer", transferProps);
                         }
 
-                        String url = "${#Global#" + resource.getString("endpoint") + "}" + interfaceJSON.getString("basePath") + info.testCaseInfo.getString("path");
+                        String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
 
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
                         testCaseInfo.properties.setTestCase(IO.toJSONObject(testcase.getOrDefault("properties", new JSONObject())));

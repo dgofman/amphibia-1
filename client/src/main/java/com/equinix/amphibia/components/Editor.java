@@ -510,6 +510,7 @@ public final class Editor extends BaseTaskPane {
         historyModel.getDataVector().clear();
         historyModel.fireTableStructureChanged();
         resetHistory();
+        loadHistory();
     }
 
     /**

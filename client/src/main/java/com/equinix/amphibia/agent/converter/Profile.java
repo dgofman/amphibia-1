@@ -185,7 +185,6 @@ public class Profile {
         Map<Object, Object> body = new LinkedHashMap<>();
 
         Map<String, Object> teststep = new LinkedHashMap<>();
-        teststep.put("defaultName", info.testCaseName);
         Map<String, Object> step = addStep(info, testFile, api, body);
         Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
         if (request != null) {
@@ -494,7 +493,7 @@ public class Profile {
         addTestStepProperties(info, api, requestProperties, body);
 
         if (!body.isEmpty()) {
-            requestBody = save(swagger.getDataDir(), Swagger.escapeJson(body), fileName, "requests",
+            requestBody = save(swagger.getDataDir(), Swagger.getJson(body), fileName, "requests",
                     RESOURCE_TYPE.requests);
         }
 
@@ -522,7 +521,7 @@ public class Profile {
                         addBodyAndProperties(info, schema.getString("$ref"), responseProperties, resBody);
                     }
                     if (!resBody.isEmpty()) {
-                        responseJSON = Swagger.escapeJson(resBody);
+                        responseJSON = Swagger.getJson(resBody);
                     } else {
                         JSONObject examples = new JSONObject();
                         if (response.containsKey("examples")) {
@@ -539,7 +538,7 @@ public class Profile {
                             }
                         }
                         if (!resBody.isEmpty()) {
-                            responseJSON = Swagger.escapeJson(resBody);
+                            responseJSON = Swagger.getJson(resBody);
                         } else {
                             String example;
                             if (examples.containsKey("application/json")) {
@@ -559,7 +558,7 @@ public class Profile {
                             }
                             addBodyAndProperty(resBody, responseProperties, "assert");
                             if (!resBody.isEmpty()) {
-                                responseJSON = Swagger.escapeJson(resBody);
+                                responseJSON = Swagger.getJson(resBody);
                             }
                         }
                     }
@@ -594,14 +593,12 @@ public class Profile {
             {
                 put("properties", requestProperties);
                 put("body", reqBody);
-                put("schema", reqSchema);
             }
         });
         step.put("response", new LinkedHashMap<Object, Object>() {
             {
                 put("properties", responseProperties);
                 put("body", responseFile);
-                put("schema", resSchema);
                 put("asserts", new ArrayList<>());
             }
         });
