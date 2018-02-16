@@ -286,6 +286,8 @@ public final class MainPanel extends javax.swing.JPanel {
                         popup.show(treeNav, e.getX(), e.getY());
                     } else if (e.getClickCount() == 2 && amphibia.btnAddToWizard.isEnabled()) {
                         wizard.addWizardTab();
+                    } else {
+                        tabRight.setSelectedIndex(0);
                     }
                 }
             }
@@ -319,6 +321,8 @@ public final class MainPanel extends javax.swing.JPanel {
                         popup.show(debugTreeNav, e.getX(), e.getY());
                     } else if (e.getClickCount() == 2 && amphibia.btnAddToWizard.isEnabled()) {
                         wizard.addWizardTab();
+                    }  else {
+                        tabRight.setSelectedIndex(0);
                     }
                 }
             }
