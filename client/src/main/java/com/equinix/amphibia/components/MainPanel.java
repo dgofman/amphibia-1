@@ -842,6 +842,8 @@ public final class MainPanel extends javax.swing.JPanel {
                         testCaseProperties.keySet().forEach((key) -> {
                             testCaseAvailableProperties.put(key, "${#TestCase#" + key + "}");
                         });
+                        
+                        JSONObject testCaseTransfer = new JSONObject();
                         if (testcase.containsKey("transfer")) {
                             JSONObject transferProps = testcase.getJSONObject("transfer");
                             transferProps.keySet().forEach((key) -> {
@@ -853,8 +855,8 @@ public final class MainPanel extends javax.swing.JPanel {
                                     values = "${#TestCase:" + transferProps.get(key) + "}";
                                 }
                                 testCaseAvailableProperties.put(key, values);
-                            });
-                            testcaseJSON.element("transfer", transferProps);
+                                testCaseTransfer.put(key, transferProps.get(key));
+                            });                            
                         }
 
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
@@ -863,7 +865,7 @@ public final class MainPanel extends javax.swing.JPanel {
                         testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
 
                         String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
-                        
+
                         testcaseJSON.element("name", testcase.getString("name"));
                         testcaseJSON.element("disabled", testcase.get("disabled") == Boolean.TRUE);
                         testcaseJSON.element("file", path);
@@ -1004,6 +1006,8 @@ public final class MainPanel extends javax.swing.JPanel {
                                         values = "${#TestStep#" + step.getString("name") + ":" + transferProps.get(key) + "}";
                                     }
                                     testCaseAvailableProperties.put(key, values);
+                                    
+                                    testCaseTransfer.put("${#TestStep#" + step.getString("name") + ":" + key + "}" , transferProps.get(key));
                                 });
                                 testStepJSON.getJSONObject("response").element("transfer", transferProps);
                             }
@@ -1041,6 +1045,7 @@ public final class MainPanel extends javax.swing.JPanel {
 
                             debugTestCaseNode.add(new TreeIconNode(testStepNode, null).addJSON(step));
                         });
+                        testcaseJSON.element("transfer", testCaseTransfer);
                         testcaseJSON.element("teststeps", teststeps);
                         testcaseJSON.element("available-properties", testCaseAvailableProperties);
                         testcaseNode.addJSON(testcaseJSON);

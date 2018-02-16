@@ -496,12 +496,16 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                         if (json instanceof JSONArray) {
                             JSONArray array = ((JSONArray) json);
                             for (int i = 0; i < array.size(); i++) {
+                                StringBuilder ids = sb;
+                                if (array.size() > 1) {
+                                    ids = new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(i);
+                                }
                                 Object value = array.get(i);
                                 if (value instanceof JSON) {
-                                    walk((JSON) value, new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(i));
+                                    walk((JSON) value, ids);
                                 } else {
-                                    newProperties.put(sb.toString() + "." + i, value);
-                                    array.set(i, "`${#" + sb.toString() + "." + i + "}`");
+                                    newProperties.put(ids.toString(), value);
+                                    array.set(i, "`${#" + ids.toString() + "}`");
                                 }
                             }
                         } else {

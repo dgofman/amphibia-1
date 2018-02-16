@@ -26,7 +26,10 @@ import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
@@ -48,6 +51,7 @@ import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -68,12 +72,17 @@ public class TransferDialog extends javax.swing.JPanel {
     private Editor.Entry entry;
     private TreeIconNode node;
     private JSONObject bodyJSON;
+    private TreeNode[] selectedTreeNode;
+    private Object transferName;
+    private Object transferValue;
     
     private final MainPanel mainPanel;
     private final DefaultComboBoxModel targetModel;
 
     public final DefaultMutableTreeNode treeNode;
     public final DefaultTreeModel treeModel;
+    
+    public static final Pattern PATTERN_1 = Pattern.compile("\\$\\{#(.*?)#(.*?):(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
 
     /**
      * Creates new form TransferDialog
@@ -87,6 +96,8 @@ public class TransferDialog extends javax.swing.JPanel {
         treeModel = new DefaultTreeModel(treeNode);
 
         initComponents();
+        
+        Amphibia.addUndoManager(txtEditor);
 
         treeSchema.setShowsRootHandles(true);
         treeSchema.setRootVisible(false);
@@ -186,14 +197,16 @@ public class TransferDialog extends javax.swing.JPanel {
     public void openDialog(TreeIconNode node, Editor.Entry entry) {
         this.entry = entry;
         this.node = node;
-        JSONObject json = node.getType() == TreeCollection.TYPE.TESTCASE ? node.info.testCase : node.info.testStep;
-        Object pathValue = null;
+        transferName = entry.name;
+        transferValue = null;
         if (entry.getType() == EDIT) {
-            JSONObject transfer = json.containsKey("transfer") ? json.getJSONObject("transfer") : new JSONObject();
-            if (transfer.containsKey(entry.name)) {
-                pathValue = transfer.get(entry.name);
-            }
             optionPane.setOptions(new Object[]{applyButton, deleteButton, cancelButton});
+            Matcher m = PATTERN_1.matcher(entry.name);
+            if (m.find()) {
+                transferName = m.group(3);
+                optionPane.setOptions(null);
+            }
+            transferValue = ((JSONObject)entry.json).getOrDefault(entry.name, null);
         } else {
             optionPane.setOptions(new Object[]{applyButton, cancelButton});
         }
@@ -205,14 +218,18 @@ public class TransferDialog extends javax.swing.JPanel {
         
         Object path = node.jsonObject().getJSONObject("response").getOrDefault("body", null);      
         txtBody.setText(String.valueOf(path));
-        buildTree(path);
+        String[] treePath = new String[0];
+        if (transferValue instanceof String && transferValue.toString().startsWith("/")) {
+            treePath = transferValue.toString().split("/");
+        }
+        buildTree(path, Arrays.toString(treePath));
         
-        if (entry.getType() == ADD || (pathValue instanceof String && pathValue.toString().startsWith("/"))) {
-            txtPath.setText(String.valueOf(pathValue));
+        if (entry.getType() == ADD || treePath.length > 0) {
+            txtPath.setText(String.valueOf(transferValue));
 
-            boolean b = treeNode.getChildCount() > 0;
-            rbSelectPropertyPath.setEnabled(b);
-            if (b) {
+            rbSelectPropertyPath.setEnabled(treeNode.getChildCount() > 0);
+
+            if (!treeSchema.isSelectionEmpty()) {
                 rbSelectPropertyPath.setSelected(true);
                 rbSelectPropertyPathActionPerformed(null);
             } else {
@@ -220,17 +237,20 @@ public class TransferDialog extends javax.swing.JPanel {
                 rbrEnterPropertyPathActionPerformed(null);
             }
         } else {
-            if (pathValue instanceof JSON) {
+            rbAssignValue.setSelected(true);
+            rbAssignValueActionPerformed(null);
+            if (transferValue instanceof JSON) {
                 try {
-                    txtEditor.setText(IO.prettyJson(((JSON) pathValue).toString()));
+                    txtEditor.setText(IO.prettyJson(((JSON) transferValue).toString()));
                 } catch (Exception ex) {
                 }
             } else {
-                txtEditor.setText(String.valueOf(pathValue));
+                txtEditor.setText(transferValue != null ? String.valueOf(transferValue) : "");
             }
-            cmbDataType.setSelectedItem(ResourceEditDialog.getType(pathValue));
+            cmbDataType.setSelectedItem(ResourceEditDialog.getType(transferValue));
         }
         
+        Amphibia.resetUndoManager(txtEditor);
         cmbDataTypeItemStateChanged(null);
         dialog.setVisible(true);
     }
@@ -245,7 +265,7 @@ public class TransferDialog extends javax.swing.JPanel {
         JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
         ivailableProperties.keySet().forEach((key) -> {
             targetModel.addElement(key);
-            if (entry.getType() == EDIT && key.toString().equals(entry.name)) {
+            if (entry.getType() == EDIT && key.toString().equals(transferName)) {
                 cmbTarget.setSelectedIndex(targetModel.getSize() - 1);
             }
         });
@@ -264,7 +284,8 @@ public class TransferDialog extends javax.swing.JPanel {
         }
     }
     
-    private void buildTree(Object path) {
+    private void buildTree(Object path, String treePath) {
+        selectedTreeNode = null;
         treeNode.removeAllChildren();
         if (path != null) {
             File test = IO.getFile(node.getCollection(), (String) path);
@@ -273,7 +294,7 @@ public class TransferDialog extends javax.swing.JPanel {
                 if (bodyJSON != null) {
                     if (bodyJSON != null) {
                         rbSelectPropertyPath.setSelected(true);
-                        buildTreeNode(treeNode, bodyJSON);
+                        buildTreeNode(treeNode, bodyJSON, treePath);
                         java.awt.EventQueue.invokeLater(() -> {
                             for (int i = 0; i < treeSchema.getRowCount(); i++) {
                                 treeSchema.expandRow(i);
@@ -286,16 +307,23 @@ public class TransferDialog extends javax.swing.JPanel {
             rbAssignValue.setSelected(true);
         }
         treeModel.reload(treeNode);
+        if (selectedTreeNode != null) {
+            treeSchema.setSelectionPath(new TreePath(selectedTreeNode));
+        }
         rbAssignValueActionPerformed(null);
     }
     
-    private void buildTreeNode(DefaultMutableTreeNode node, JSON json) {
+    private void buildTreeNode(DefaultMutableTreeNode node, JSON json, String treePath) {
         if (json instanceof JSONArray) {
             ((JSONArray) json).forEach((item) -> {
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTreeNode(node, (JSON) item);
+                    buildTreeNode(node, (JSON) item, treePath);
                 } else {
-                    node.add(new DefaultMutableTreeNode(item));
+                    DefaultMutableTreeNode child = new DefaultMutableTreeNode(item);
+                    node.add(child);
+                    if(Arrays.toString(child.getPath()).equals(treePath)) {
+                        selectedTreeNode = child.getPath();
+                    }
                 }
             });
         } else {
@@ -303,9 +331,12 @@ public class TransferDialog extends javax.swing.JPanel {
             parent.keySet().forEach((key) -> {
                 DefaultMutableTreeNode child = new DefaultMutableTreeNode(key);
                 node.add(child);
+                if(Arrays.toString(child.getPath()).equals(treePath)) {
+                    selectedTreeNode = child.getPath();
+                }
                 Object item = parent.get(key);
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTreeNode(child, (JSON) item);
+                    buildTreeNode(child, (JSON) item, treePath);
                 }
             });
         }
