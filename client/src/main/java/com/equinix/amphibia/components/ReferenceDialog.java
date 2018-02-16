@@ -82,6 +82,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
 
         initComponents();
 
+        Amphibia.addUndoManager(txtPreview);
+
         bundle = Amphibia.getBundle();
 
         applyButton = new JButton(bundle.getString("apply"));
@@ -222,6 +224,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         } else {
             txtPreview.setText("");
         }
+        Amphibia.resetUndoManager(txtPreview);
     }
 
     @SuppressWarnings("NonPublicExported")
@@ -480,6 +483,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         try {
             String text;
             if (chbStoreValues.isSelected()) {
+                lblError.setText("");
                 originalPreviewBody = txtPreview.getText();
                 String resourseId = entry.node.info.resource.getString("resourceId");
                 String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourseId);
@@ -490,14 +494,21 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 new Object() {
                     void walk(JSON json, StringBuilder sb) {
                         if (json instanceof JSONArray) {
-                            ((JSONArray) json).forEach((item) -> {
-                                walk((JSON) item, sb);
-                            });
+                            JSONArray array = ((JSONArray) json);
+                            for (int i = 0; i < array.size(); i++) {
+                                Object value = array.get(i);
+                                if (value instanceof JSON) {
+                                    walk((JSON) value, new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(i));
+                                } else {
+                                    newProperties.put(sb.toString() + "." + i, value);
+                                    array.set(i, "`${#" + sb.toString() + "." + i + "}`");
+                                }
+                            }
                         } else {
                             JSONObject obj = (JSONObject) json;
                             obj.keySet().forEach((key) -> {
-                                Object value = obj.get(key);
                                 StringBuilder ids = new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(key);
+                                Object value = obj.get(key);
                                 if (value instanceof JSON) {
                                     walk((JSON) value, ids);
                                 } else {

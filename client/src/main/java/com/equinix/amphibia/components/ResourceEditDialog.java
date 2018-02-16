@@ -86,6 +86,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         this.mainPanel = mainPanel;
 
         initComponents();
+        
+        Amphibia.addUndoManager(txtEditor);
 
         bundle = Amphibia.getBundle();
 
@@ -277,6 +279,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         txtEditor.setBackground(UIManager.getColor("TextArea.background"));
         txtEditor.setText(value);
         Amphibia.setText(txtEditor, splEditor, null);
+        Amphibia.resetUndoManager(txtEditor);
         dialog.setVisible(true);
     }
 
@@ -322,6 +325,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             cmbDataType.setVisible(false);
         }
         Amphibia.setText(txtEditor, splEditor, null);
+        Amphibia.resetUndoManager(txtEditor);
         lblError.setVisible(false);
         dialog.setVisible(true);
     }

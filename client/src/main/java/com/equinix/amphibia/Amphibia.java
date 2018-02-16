@@ -59,13 +59,18 @@ import java.util.logging.Logger;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.prefs.Preferences;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -88,10 +93,13 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
+import javax.swing.event.UndoableEditEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -1726,6 +1734,54 @@ public final class Amphibia extends JFrame {
     public SelectedEnvironment getSelectedEnvironment() {
         SelectedEnvironment env = (SelectedEnvironment) cmbEnvironment.getSelectedItem();
         return env != null && env.columnIndex != -1 ? env : null;
+    }
+    
+    public static void resetUndoManager(JTextComponent text) {
+        Action action = text.getActionMap().get("Reset");
+        action.actionPerformed(new ActionEvent(text, ActionEvent.ACTION_PERFORMED, null));
+    }
+
+    public static void addUndoManager(JTextComponent text) {
+        UndoManager undoManager = new UndoManager();
+        text.getDocument().addUndoableEditListener((UndoableEditEvent e) -> {
+            undoManager.addEdit(e.getEdit());
+        });
+        InputMap im = text.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap am = text.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Undo");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "Redo");
+
+        am.put("Reset", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                undoManager.discardAllEdits();
+            }
+        });
+        am.put("Undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canUndo()) {
+                        undoManager.undo();
+                    }
+                } catch (CannotUndoException ex) {
+                    logger.log(Level.SEVERE, ex.toString(), ex);
+                }
+            }
+        });
+        am.put("Redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (undoManager.canRedo()) {
+                        undoManager.redo();
+                    }
+                } catch (CannotUndoException ex) {
+                    logger.log(Level.SEVERE, ex.toString(), ex);
+                }
+            }
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

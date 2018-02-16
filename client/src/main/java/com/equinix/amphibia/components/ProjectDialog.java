@@ -466,7 +466,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
         pnlNext.add(lblResources);
         lblResources.setBounds(10, 110, 650, 16);
 
-        btnAddResources.setText(bundle.getString("addResources")); // NOI18N
+        btnAddResources.setText(bundle.getString("addResource")); // NOI18N
         btnAddResources.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 btnAddResourcesActionPerformed(evt);

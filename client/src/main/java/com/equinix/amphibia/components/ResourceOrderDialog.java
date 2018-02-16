@@ -50,7 +50,8 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
     private TreeCollection collection;
     
     private MainPanel mainPanel;
-    private JSONArray source;
+    private JSONArray arraySource;
+    private JSONObject jsonSource;
 
     private static final Logger logger = Amphibia.getLogger(ResourceOrderDialog.class.getName());
 
@@ -69,9 +70,17 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
         updateButton = new JButton(bundle.getString("update"));
         updateButton.addActionListener((ActionEvent evt) -> {
             try {
-                source.clear();
-                for (int i = 0; i < resourceModel.size(); i++) {
-                    source.add(((ResourceItem) resourceModel.getElementAt(i)).json);
+                if (arraySource != null) {
+                    arraySource.clear();
+                    for (int i = 0; i < resourceModel.size(); i++) {
+                        arraySource.add(((ResourceItem) resourceModel.getElementAt(i)).json);
+                    }
+                } else {
+                    jsonSource.clear();
+                    for (int i = 0; i < resourceModel.size(); i++) {
+                        ResourceItem item = (ResourceItem) resourceModel.getElementAt(i);
+                        jsonSource.put(item.label, item.json);
+                    }
                 }
                 mainPanel.saveNodeValue((TreeIconNode.ProfileNode)collection.profile);
                 dialog.setVisible(false);
@@ -95,15 +104,21 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
     public void openDialog(TreeIconNode node, int index) {
         this.collection = node.getCollection();
         resourceModel.removeAllElements();
-        if (node.getType() == TreeCollection.TYPE.TESTSUITE) {
-            source = MainPanel.selectedNode.info.testSuite.getJSONArray("testcases");
+        if (node.getType() == TreeCollection.TYPE.COMMON) {
+            jsonSource = collection.profile.jsonObject().getJSONObject("common");
+            jsonSource.keySet().forEach((label) -> {
+                resourceModel.addElement(new ResourceItem(label.toString(), jsonSource.getJSONObject(label.toString())));
+            });
         } else {
-            source = MainPanel.selectedNode.info.testCase.getJSONArray("steps");
+            if (node.getType() == TreeCollection.TYPE.TESTSUITE) {
+                arraySource = node.info.testSuite.getJSONArray("testcases");
+            } else {
+                arraySource = node.info.testCase.getJSONArray("steps");
+            }
+            arraySource.forEach((item) -> {
+                resourceModel.addElement(new ResourceItem((JSONObject)item));
+            });
         }
-        source.forEach((item) -> {
-            ResourceItem element = new ResourceItem((JSONObject)item);
-            resourceModel.addElement(element);
-        });
         lstResource.setSelectedIndex(index);
         txtName.setText(MainPanel.selectedNode.toString());
         dialog.setVisible(true);
@@ -220,6 +235,9 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
             }
         }
         lstResource.setSelectedIndices(newIndeces);
+        if (indeces.length > 0) {
+            lstResource.ensureIndexIsVisible(indeces[0] + 1);
+        }
     }//GEN-LAST:event_btnDownActionPerformed
 
     private void btnUpActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnUpActionPerformed
@@ -235,6 +253,9 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
             }
         }
         lstResource.setSelectedIndices(newIndeces);
+        if (indeces.length > 0) {
+            lstResource.ensureIndexIsVisible(indeces[indeces.length - 1] - 1);
+        }
     }//GEN-LAST:event_btnUpActionPerformed
 
     private void btnRemoveActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnRemoveActionPerformed
@@ -260,11 +281,17 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
         
         int index = lstResource.getSelectedIndex();
         if (index != -1) {
-            JSONObject json = IO.toJSONObject(((ResourceItem) resourceModel.getElementAt(index)).json);
-            String name = Amphibia.instance.inputDialog("testStepName", json.getString("name"), new String[]{}, dialog.getParent());
+            ResourceItem item = (ResourceItem) resourceModel.getElementAt(index);
+            String label = (jsonSource != null) ? item.label : item.json.getString("name");
+            String name = Amphibia.instance.inputDialog("tip_new_name", label, new String[]{}, dialog.getParent());
             if (name != null && !name.isEmpty()) {
-                json.put("name", name);
-                source.add(json);
+                JSONObject json = IO.toJSONObject(item.json);
+                if (jsonSource != null) {
+                    jsonSource.put(name, json);
+                } else {
+                    json.put("name", name);
+                    arraySource.add(json);
+                }
                 dialog.setVisible(false);
                 mainPanel.saveNodeValue((TreeIconNode.ProfileNode)collection.profile);
             }
@@ -293,9 +320,13 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
         public String label;
         public JSONObject json;
 
-        public ResourceItem(JSONObject json) {
+        public ResourceItem(String label, JSONObject json) {
+            this.label = label;
             this.json = json;
-            this.label = json.getString("name");
+        }
+        
+        public ResourceItem(JSONObject json) {
+            this(json.getString("name"), json);
         }
 
         @Override

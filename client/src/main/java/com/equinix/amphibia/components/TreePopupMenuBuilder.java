@@ -13,8 +13,8 @@ import com.equinix.amphibia.IO;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.LinkedHashMap;
 import java.util.ResourceBundle;
-import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
@@ -22,7 +22,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import net.sf.json.JSONArray;
-
+import net.sf.json.JSONObject;
 
 /**
  *
@@ -32,21 +32,17 @@ public final class TreePopupMenuBuilder implements ActionListener {
 
     private final Amphibia amphibia;
     private final MainPanel mainPanel;
-    private final ResourceAddDialog resourcesDialog;
 
     private final ResourceBundle bundle;
 
     private TreeIconNode selectedNode;
-    
+
     private final Preferences userPreferences = getUserPreferences();
-    
-    private static final Logger logger = Amphibia.getLogger(TreePopupMenuBuilder.class.getName());
 
     public TreePopupMenuBuilder(Amphibia amphibia, MainPanel mainPanel) {
         this.amphibia = amphibia;
         this.mainPanel = mainPanel;
         bundle = Amphibia.getBundle();
-        resourcesDialog = new ResourceAddDialog(mainPanel);
     }
 
     @SuppressWarnings("NonPublicExported")
@@ -72,17 +68,23 @@ public final class TreePopupMenuBuilder implements ActionListener {
                 addMenu(popup, "mnuRename", "RENAME:INTERFACE");
                 break;
             case TESTSUITE:
-                addMenu(popup, "addResources", "ADD_TESTCASES");
+                addMenu(popup, "addResource", "ADD_TESTCASES");
+                addMenu(popup, bundle.getString("edit") + "/" + bundle.getString("clone") + "/" + bundle.getString("delete"), "EDIT:" + userObject.getType(), false);
                 addMenu(popup, "disable", "DISABLED").setSelected(!userObject.isEnabled());
                 break;
             case TESTCASE:
                 addMenu(popup, "hideCommon", "HIDE_COMMON").setSelected(info.states.getInt(TreeIconNode.STATE_HIDE_COMMONS) == 1);
-                addMenu(popup, "addResources", "ADD_TESTSTEPS");
+                addMenu(popup, "addResource", "ADD_TESTSTEPS");
             case TEST_STEP_ITEM:
                 addMenu(popup, "addToWizard", "OPEN_TESTCASE");
                 addMenu(popup, "mnuRename", "RENAME:" + userObject.getType());
                 addMenu(popup, bundle.getString("edit") + "/" + bundle.getString("clone") + "/" + bundle.getString("delete"), "EDIT:" + userObject.getType(), false);
                 addMenu(popup, "disable", "DISABLED").setSelected(!userObject.isEnabled());
+                break;
+            case COMMON:
+                addMenu(popup, "addResource", "ADD_COMMON");
+            case LINK:
+                addMenu(popup, bundle.getString("edit") + "/" + bundle.getString("clone") + "/" + bundle.getString("delete"), "EDIT:" + userObject.getType(), false);
                 break;
             default:
                 break;
@@ -147,7 +149,27 @@ public final class TreePopupMenuBuilder implements ActionListener {
                 mainPanel.history.saveEntry(entry, collection);
                 break;
             case "EDIT":
-                mainPanel.resourceOrderDialog.openDialog((TreeIconNode)selectedNode.getParent(), selectedNode.getParent().getIndex(selectedNode));
+                if (selectedNode.getType() == TESTSUITE || selectedNode.getType() == COMMON) {
+                    mainPanel.resourceOrderDialog.openDialog(selectedNode, -1);
+                } else {
+                    mainPanel.resourceOrderDialog.openDialog((TreeIconNode) selectedNode.getParent(), selectedNode.getParent().getIndex(selectedNode));
+                }
+                break;
+            case "ADD_COMMON":
+                JSONObject common = collection.profile.jsonObject().getJSONObject("common");
+                String[] exisitingName = (String[]) common.keySet().toArray(new String[common.keySet().size()]);
+                String commonName = amphibia.inputDialog("tip_new_nameTEST", null, exisitingName);
+                    if (commonName != null && !commonName.isEmpty()) {
+                    common.put(commonName, new LinkedHashMap<Object,Object>() {{
+                        put("request", new LinkedHashMap<Object,Object>() {{
+                            put("properties", new LinkedHashMap<>());
+                        }});
+                        put("response", new LinkedHashMap<Object,Object>() {{
+                            put("properties", new LinkedHashMap<>());
+                        }});
+                    }});
+                    mainPanel.saveNodeValue(collection.profile);
+                }
                 break;
             case "DELETE":
                 int dialogResult = JOptionPane.showConfirmDialog(mainPanel, bundle.getString("tip_deleting"), bundle.getString("title"), JOptionPane.YES_NO_OPTION);

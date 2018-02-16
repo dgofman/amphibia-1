@@ -853,12 +853,12 @@ public final class MainPanel extends javax.swing.JPanel {
                             testcaseJSON.element("transfer", transferProps);
                         }
 
-                        String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
-
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
                         testCaseInfo.properties.setTestCase(IO.toJSONObject(testcase.getOrDefault("properties", new JSONObject())));
                         testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
                         testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
+
+                        String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
                         
                         testcaseJSON.element("name", testcase.getString("name"));
                         testcaseJSON.element("disabled", testcase.get("disabled") == Boolean.TRUE);
@@ -868,11 +868,10 @@ public final class MainPanel extends javax.swing.JPanel {
                         testcaseJSON.element("method", info.testCaseInfo.getString("method"));
                         testcaseJSON.element("url", url);
                         testcaseJSON.element("interface", interfaceJSON.getString("name"));
-                        testcaseJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
-                        String tooltipURL = properties.replace(url).replaceAll("&amp;", "&");
+                        testcaseJSON.element("reqPath", testCaseInfo.properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
                         TreeIconNode testcaseNode = collection.addTreeNode(testsuiteNode, testcase.getString("name"), TESTCASE, false)
                                 .addProperties(TESTCASE_PROPERTIES)
-                                .addTooltip(tooltipURL);
+                                .addTooltip(testCaseInfo.properties.replace(url).replaceAll("&amp;", "&"));
                         testcaseNode.getTreeIconUserObject().setEnabled(testcase.get("disabled") != Boolean.TRUE);
                         testcaseNode.info = testCaseInfo;
                         if (testcase.containsKey("line")) {
@@ -893,8 +892,7 @@ public final class MainPanel extends javax.swing.JPanel {
                         JSONObject ivailableProperties = IO.toJSONObject(testCaseAvailableProperties);
                         testcase.getJSONArray("steps").forEach((item) -> {
                             JSONObject step = (JSONObject) item;
-                            boolean isCommon = step.containsKey("common");
-                            
+
                             TreeIconNode.ResourceInfo stepInfo = testCaseInfo.clone(testcase, step);
 
                             teststeps.add(step.getString("name"));
@@ -912,7 +910,12 @@ public final class MainPanel extends javax.swing.JPanel {
                             final JSONObject requestProp = testStepJSON.getJSONObject("request").getJSONObject("properties");
                             final JSONObject responseProp = testStepJSON.getJSONObject("response").getJSONObject("properties");
 
-                            if (isCommon && common.containsKey(step.getString("common"))) {
+                            boolean isCommon = step.containsKey("common");
+                            if (isCommon && !common.containsKey(step.getString("common"))) {
+                                step.remove("common");
+                                isCommon = false;
+                            }
+                            if (isCommon) {
                                 testStepJSON.element("common", step.getString("common"));
                                 JSONObject commonItem = common.getJSONObject(step.getString("common"));
                                 stepInfo.common = commonItem;
