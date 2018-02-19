@@ -3,11 +3,15 @@
 	"headers": {
 		"CONTENT-TYPE": "application/json"
 	},
-	"globalProperties": {
+	"endpoints": {
 		"RestEndPoint": "http://"
+	},
+	"globalProperties": {
 	},
 	"projectProperties": {
 	},
 	"testSuiteProperties": {
+	},
+	"commons": {
 	}
 }

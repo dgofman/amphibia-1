@@ -168,7 +168,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                         ((JSONObject) entry.json).element(entry.name, json);
                     }
                     json.element(txtName.getText(), value);
-                    Editor.Entry child = entry.add(node, json, txtName.getText(), value, EDIT, null, txtName.getText());
+                    Editor.Entry child = entry.add(node, json, txtName.getText(), value, EDIT, null, entry.rootName);
                     child.isDynamic = true;
                     saveSelectedNode(child);
                 } else {

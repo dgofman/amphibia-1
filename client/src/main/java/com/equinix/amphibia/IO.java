@@ -96,6 +96,10 @@ public class IO {
         return toJSON(readInputStream(is));
     }
     
+    public static JSON getJSON(URI uri) throws Exception {
+        return getJSON(uri.toURL().openStream());
+    }
+    
     public static File getBackupFile(File file) {
         return IO.newFile(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".bak");
     }

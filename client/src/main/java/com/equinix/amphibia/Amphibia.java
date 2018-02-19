@@ -5,6 +5,7 @@
  */
 package com.equinix.amphibia;
 
+import com.equinix.amphibia.components.ExportDialog;
 import com.equinix.amphibia.components.FindDialog;
 import com.equinix.amphibia.components.GlobalVariableDialog;
 import com.equinix.amphibia.components.HelpDialog;
@@ -172,6 +173,7 @@ public final class Amphibia extends JFrame {
 
     private ProjectDialog projectDialog;
     private PreferenceDialog preferenceDialog;
+    private ExportDialog exportDialog;
 
     private static final Logger logger = Amphibia.getLogger(Amphibia.class.getName());
 
@@ -183,6 +185,9 @@ public final class Amphibia extends JFrame {
             instance.requestFocus();
             instance.setAlwaysOnTop(false);
             instance.setVisible(true);
+            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable ex) -> {
+                logger.log(Level.SEVERE, ex.toString(), ex);
+            });
             new Thread() {
                 @Override
                 public void run() {
@@ -330,6 +335,7 @@ public final class Amphibia extends JFrame {
         projectDialog = new ProjectDialog(mainPanel);
         findDialog = new FindDialog(mainPanel);
         preferenceDialog = new PreferenceDialog(mainPanel);
+        exportDialog = new ExportDialog(mainPanel);
         helpDialog = new HelpDialog(mainPanel);
         tipDialog = new TipDialog(mainPanel);
 
@@ -1158,7 +1164,11 @@ public final class Amphibia extends JFrame {
 
         mnuRules.setIcon(new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/rules_16.png"))); // NOI18N
         mnuRules.setText(bundle.getString("mnuRulesFile")); // NOI18N
-        mnuRules.setEnabled(false);
+        mnuRules.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                mnuRulesActionPerformed(evt);
+            }
+        });
         mnuExport.add(mnuRules);
 
         mnuProject.add(mnuExport);
@@ -1612,6 +1622,10 @@ public final class Amphibia extends JFrame {
             }
         }
     }//GEN-LAST:event_cmbEnvironmentActionPerformed
+
+    private void mnuRulesActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuRulesActionPerformed
+        exportDialog.openDialog();
+    }//GEN-LAST:event_mnuRulesActionPerformed
 
     public void export(String type) {
         Amphibia.setWaitOverlay(true);

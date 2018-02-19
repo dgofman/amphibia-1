@@ -256,9 +256,12 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         if ("response".equals(entry.getParent().toString())) {
             resoursePath = String.format("data/%s/responses/%s/", resourceId, testSuiteName);
             String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourceId);
-            for (String fileName : IO.getFile(node.getCollection(), assertsPath).list()) {
-                String path = assertsPath + "/" + fileName;
-                referenceModel.addElement(new ComboItem(path, IO.getFile(node.getCollection(), path)));
+            File dir = IO.getFile(node.getCollection(), assertsPath);
+            if (dir.exists()) {
+                for (String fileName : dir.list()) {
+                    String path = assertsPath + "/" + fileName;
+                    referenceModel.addElement(new ComboItem(path, IO.getFile(node.getCollection(), path)));
+                }
             }
         }
         
