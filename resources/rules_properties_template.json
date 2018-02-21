@@ -1,7 +1,6 @@
 {
 	"version": "1.0.0",
-	"headers": {
-		"CONTENT-TYPE": "application/json"
+	"info": {
 	},
 	"endpoints": {
 		"RestEndPoint": "http://"
@@ -13,5 +12,7 @@
 	"testSuiteProperties": {
 	},
 	"commons": {
+	},
+	"tests": {
 	}
 }
