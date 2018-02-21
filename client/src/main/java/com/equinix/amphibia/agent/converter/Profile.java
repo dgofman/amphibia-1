@@ -45,7 +45,7 @@ public class Profile {
 
     public final Map<String, Boolean> invalidPropertyValues;
 
-    private static final Logger LOGGER = Logger.getLogger(Profile.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Profile.class.getName());
     
     public static final String HTTP_STATUS_CODE = "HTTPStatusCode";
 

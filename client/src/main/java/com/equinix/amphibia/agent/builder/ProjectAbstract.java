@@ -18,6 +18,16 @@ import javax.script.ScriptEngineManager;
 import org.apache.commons.cli.CommandLine;
 
 import com.equinix.amphibia.agent.converter.Profile;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -40,7 +50,53 @@ public abstract class ProjectAbstract {
     protected JSONObject projectPropertiesJSON;
     protected JSONObject interfacesJson;
 
+    private static final File amphibiaHome;
+    private static final ConsoleHandler consoleHandler;
+    private static final FileHandler logFileHandler;
+    
     private final ClassLoader classLoader = getClass().getClassLoader();
+    
+    static {
+        amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
+        amphibiaHome.mkdirs();
+
+        consoleHandler = new ConsoleHandler();
+        FileHandler fileHandler = null;
+        try {
+            fileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath());
+
+            final Formatter formatter = new Formatter() {
+                final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                //System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n");
+
+                @Override
+                public String format(LogRecord record) {
+                    return String.format(Locale.ROOT,
+                            "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n",
+                            record.getMillis(), record.getSourceClassName() + "::" + record.getSourceMethodName(), "",
+                            record.getLevel(), formatMessage(record), getStackTrace(record.getThrown()));
+                }
+
+                private String getStackTrace(Throwable thrown) {
+                    if (thrown == null) {
+                        return "";
+                    }
+                    StringWriter sw = new StringWriter();
+                    PrintWriter printWriter = new PrintWriter(sw);
+                    try {
+                        thrown.printStackTrace(printWriter);
+                    } finally {
+                        printWriter.close();
+                    }
+                    return sw.toString();
+                }
+            };
+            fileHandler.setFormatter(formatter);
+            consoleHandler.setFormatter(formatter);
+        } catch (IOException | SecurityException ex) {
+        }
+        logFileHandler = fileHandler;
+    }
     
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public ProjectAbstract(CommandLine cmd) throws Exception {
@@ -56,6 +112,21 @@ public abstract class ProjectAbstract {
         }
 
         init();
+    }
+    
+    public static File getAmphibiaHome() {
+        return amphibiaHome;
+    }
+    
+    public static Logger getLogger(String className) {
+        return getLogger(Logger.getLogger(className));
+    }
+
+    public static Logger getLogger(Logger logger) {
+        logger.setUseParentHandlers(false);
+        logger.addHandler(logFileHandler);
+        logger.addHandler(consoleHandler);
+        return logger;
     }
 
     public static String getRelativePath(URI file) {

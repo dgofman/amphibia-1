@@ -19,7 +19,7 @@ public class JsonScript extends ProjectAbstract {
     protected File outputFile;
     protected JSONObject jsonOutput;
 
-    private static final Logger LOGGER = Logger.getLogger(Mocha.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Mocha.class.getName());
 
     public JsonScript(CommandLine cmd) throws Exception {
         super(cmd);

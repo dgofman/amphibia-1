@@ -20,7 +20,7 @@ public class Postman extends ProjectAbstract {
 
     public static final String DEFAULT_ENDPOINT = "{{RestEndPoint}}";
     
-    private static final Logger LOGGER = Logger.getLogger(Postman.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Postman.class.getName());
 
     protected String jsonContent;
     protected File outputFile;

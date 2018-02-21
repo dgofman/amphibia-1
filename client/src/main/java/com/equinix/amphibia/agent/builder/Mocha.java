@@ -28,7 +28,7 @@ public class Mocha extends ProjectAbstract {
     protected String packageJSON;
     protected String testsJS;
 
-    private static final Logger LOGGER = Logger.getLogger(Mocha.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Mocha.class.getName());
 
     public Mocha(CommandLine cmd) throws Exception {
         super(cmd);

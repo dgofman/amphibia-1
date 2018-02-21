@@ -29,7 +29,7 @@ public class SoapUI extends ProjectAbstract {
     protected File classpathFile;
     protected File pomFile;
 
-    private static final Logger LOGGER = Logger.getLogger(SoapUI.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(SoapUI.class.getName());
 
     public SoapUI(CommandLine cmd) throws Exception {
         super(cmd);

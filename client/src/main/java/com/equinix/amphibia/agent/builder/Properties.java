@@ -39,7 +39,7 @@ public class Properties {
 
     public static final String[] PROPERTY_NAMES = new String[] {GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
-    private static final Logger LOGGER = Logger.getLogger(Properties.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Properties.class.getName());
 
     private static Object NULL = new Object();
     

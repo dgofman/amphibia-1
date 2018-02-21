@@ -1,5 +1,6 @@
 package com.equinix.amphibia.agent.converter;
 
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class Converter {
 
     private static Map<RESOURCE_TYPE, Object> results;
 
-    private static final Logger LOGGER = Logger.getLogger(Converter.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Converter.class.getName());
 
     public static enum RESOURCE_TYPE {
         project,

@@ -883,7 +883,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
                         }
                     }
                 }
-                File projectFile = IO.newFile(Amphibia.amphibiaHome, "projects" + "/" + Amphibia.generateTime() + "/" + projectName + ".json");
+                File projectFile = IO.newFile(Amphibia.getAmphibiaHome(), "projects" + "/" + Amphibia.generateTime() + "/" + projectName + ".json");
                 collection.setProjectFile(projectFile);
             }
 

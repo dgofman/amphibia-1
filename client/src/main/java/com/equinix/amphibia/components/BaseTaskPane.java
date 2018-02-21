@@ -146,16 +146,18 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
     }
 
     public DefaultMutableTreeNode addWarning(String warning) {
+        logger.log(Level.WARNING, warning);
         return addToTree(warnings, warning);
     }
 
     public DefaultMutableTreeNode addError(String error) {
+        logger.log(Level.SEVERE, error);
         return addToTree(errors, error);
     }
 
     public DefaultMutableTreeNode addError(Throwable ex, String error) {
         logger.log(Level.SEVERE, ex.toString(), ex);
-        return addError(error);
+        return addToTree(errors, error);
     }
 
     public DefaultMutableTreeNode addError(Throwable ex) {

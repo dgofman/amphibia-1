@@ -24,7 +24,7 @@ public class Swagger extends ProjectAbstract {
     protected String swaggerJSON;
     protected Map<Integer, List<String>> interfaceMap;
 
-    private static final Logger LOGGER = Logger.getLogger(Swagger.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Swagger.class.getName());
 
     public Swagger(CommandLine cmd) throws Exception {
         super(cmd);

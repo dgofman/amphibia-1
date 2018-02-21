@@ -5,6 +5,7 @@
  */
 package com.equinix.amphibia;
 
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 import com.equinix.amphibia.components.ExportDialog;
 import com.equinix.amphibia.components.FindDialog;
 import com.equinix.amphibia.components.GlobalVariableDialog;
@@ -39,11 +40,8 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -53,12 +51,8 @@ import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
 import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -109,10 +103,6 @@ import net.sf.json.JSONObject;
  * @author dgofman
  */
 public final class Amphibia extends JFrame {
-
-    public static File amphibiaHome;
-    private static ConsoleHandler consoleHandler;
-    private static FileHandler logFileHandler;
 
     public static final Amphibia instance = new Amphibia();
     public static final Color OVERLAY_BG_COLOR = new Color(246, 246, 246, 200);
@@ -199,43 +189,6 @@ public final class Amphibia extends JFrame {
 
     public Amphibia() {
         super();
-        try {
-            amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
-            amphibiaHome.mkdirs();
-
-            consoleHandler = new ConsoleHandler();
-            logFileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath());
-            final Formatter formatter = new Formatter() {
-                final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                //System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n");
-
-                @Override
-                public String format(LogRecord record) {
-                    return String.format(Locale.ROOT,
-                            "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n",
-                            record.getMillis(), record.getSourceClassName() + "::" + record.getSourceMethodName(), "",
-                            record.getLevel(), formatMessage(record), getStackTrace(record.getThrown()));
-                }
-
-                private String getStackTrace(Throwable thrown) {
-                    if (thrown == null) {
-                        return "";
-                    }
-                    StringWriter sw = new StringWriter();
-                    PrintWriter printWriter = new PrintWriter(sw);
-                    try {
-                        thrown.printStackTrace(printWriter);
-                    } finally {
-                        printWriter.close();
-                    }
-                    return sw.toString();
-                }
-            };
-            logFileHandler.setFormatter(formatter);
-            consoleHandler.setFormatter(formatter);
-        } catch (IOException | SecurityException ex) {
-            logger.log(Level.SEVERE, ex.toString(), ex);
-        }
         icon = new ImageIcon(Amphibia.class.getResource("/com/equinix/amphibia/icons/logo_16.png"));
         waitIcon = new ImageIcon(Amphibia.class.getResource("/com/equinix/amphibia/icons/ajax-loader.gif"));
         addWindowListener(new WindowAdapter() {
@@ -247,16 +200,17 @@ public final class Amphibia extends JFrame {
             }
         });
     }
+    
+    public static File getAmphibiaHome() {
+        return ProjectAbstract.getAmphibiaHome();
+    }
 
     public static Logger getLogger(String className) {
         return getLogger(Logger.getLogger(className));
     }
 
     public static Logger getLogger(Logger logger) {
-        logger.setUseParentHandlers(false);
-        logger.addHandler(logFileHandler);
-        logger.addHandler(consoleHandler);
-        return logger;
+        return ProjectAbstract.getLogger(logger);
     }
 
     /**

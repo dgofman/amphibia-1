@@ -27,7 +27,7 @@ public class JUnit extends ProjectAbstract {
     protected String tests;
     protected List<String> testCaseOrder;
 
-    private static final Logger LOGGER = Logger.getLogger(JUnit.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(JUnit.class.getName());
 
     public JUnit(CommandLine cmd) throws Exception {
         super(cmd);

@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
@@ -113,11 +114,18 @@ public class IO {
     }
 
     public static String prettyJson(String value) throws Exception {
-        ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
-        scriptEngine.put("jsonString", value);
-        scriptEngine.eval("result = JSON.stringify(JSON.parse(jsonString), null, 4)");
-        String json = ((String) scriptEngine.get("result")).replaceAll(" {4}", "\t");
-        return json == null || "null".equals(json) ? "" : json;
+        try {
+            if (value == null || value.isEmpty()) {
+                return "";
+            }
+            ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
+            scriptEngine.put("jsonString", value);
+            scriptEngine.eval("result = JSON.stringify(JSON.parse(jsonString), null, 4)");
+            String json = ((String) scriptEngine.get("result")).replaceAll(" {4}", "\t");
+            return json == null || "null".equals(json) ? "" : json;
+        } catch (ScriptException e) {
+            throw new Exception("JSON: " + value, e);
+        }
     }
     
     public static URI getResources(String path) {

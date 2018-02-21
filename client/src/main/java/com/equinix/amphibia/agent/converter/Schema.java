@@ -27,7 +27,7 @@ public final class Schema {
 
     public static final Map<String, String> schemas = new LinkedHashMap<String, String>();
 
-    private static final Logger LOGGER = Logger.getLogger(Schema.class.getName());
+    private static final Logger LOGGER = ProjectAbstract.getLogger(Schema.class.getName());
 
     @SuppressWarnings("unchecked")
     public Schema(Swagger swagger, String ref, String childDir) throws Exception {

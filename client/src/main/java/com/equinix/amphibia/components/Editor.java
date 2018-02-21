@@ -105,7 +105,7 @@ public final class Editor extends BaseTaskPane {
         super();
 
         historyInfo = "info.properties";
-        history = IO.newFile(Amphibia.amphibiaHome, ".history.zip");
+        history = IO.newFile(Amphibia.getAmphibiaHome(), ".history.zip");
         historyURI = URI.create("jar:" + history.toURI());
 
         serversModel = new DefaultComboBoxModel<>(new String[]{bundle.getString("mockServer")});
