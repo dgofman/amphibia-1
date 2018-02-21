@@ -41,6 +41,8 @@ public class Properties {
 
     private static final Logger LOGGER = Logger.getLogger(Properties.class.getName());
 
+    private static Object NULL = new Object();
+    
     public Properties(JSONArray globals, JSONObject project) {
         this.globals = new JSONObject();
         this.project = new JSONObject();
@@ -123,18 +125,8 @@ public class Properties {
                 if (key.contains("#")) {
                     continue;
                 }
-                Object propValue;
-                if (teststep != null && teststep.containsKey(key)) {
-                    propValue = teststep.get(key);
-                } else if (testcase != null && testcase.containsKey(key)) {
-                    propValue = testcase.get(key);
-                } else if (testsuite != null && testsuite.containsKey(key)) {
-                    propValue = testsuite.get(key);
-                } else if (project != null && project.containsKey(key)) {
-                    propValue = project.get(key);
-                } else if (globals != null && globals.containsKey(key)) {
-                    propValue = globals.get(key);
-                } else {
+                Object propValue = getValue(key, NULL);
+                if (propValue != NULL) {
                     if (propKey != null) {
                         continue;
                     }
@@ -146,6 +138,22 @@ public class Properties {
             return sb.toString();
         }
         return replace;
+    }
+    
+    public Object getValue(String key, Object defaulValue) {
+        if (teststep != null && teststep.containsKey(key)) {
+            return teststep.get(key);
+        } else if (testcase != null && testcase.containsKey(key)) {
+            return testcase.get(key);
+        } else if (testsuite != null && testsuite.containsKey(key)) {
+            return testsuite.get(key);
+        } else if (project != null && project.containsKey(key)) {
+            return project.get(key);
+        } else if (globals != null && globals.containsKey(key)) {
+            return globals.get(key);
+        } else {
+            return defaulValue;
+        }
     }
     
     public static void replace(StringBuilder sb, int begin, int end, Object val) {

@@ -5,7 +5,10 @@
  */
 package com.equinix.amphibia;
 
+import static com.equinix.amphibia.agent.converter.Profile.HTTP_STATUS_CODE;
+
 import com.equinix.amphibia.agent.builder.Properties;
+import com.equinix.amphibia.components.AssertDialog;
 import com.equinix.amphibia.components.Profile;
 import com.equinix.amphibia.components.TreeCollection;
 import com.equinix.amphibia.components.TreeIconNode;
@@ -22,10 +25,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
+import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 /**
@@ -40,8 +45,6 @@ public final class HttpConnection {
 
     public static int DEFAULT_TIMEOUT = 60;
 
-    private static final Logger logger = Amphibia.getLogger(HttpConnection.class.getName());
-
     public HttpConnection(IHttpConnection out) {
         this.out = out;
         userPreferences = Amphibia.getUserPreferences();
@@ -51,7 +54,22 @@ public final class HttpConnection {
     public Result request(String name, String method, TreeIconNode node) throws Exception {
         final TreeCollection collection = node.getCollection();
         TreeIconNode.ResourceInfo info = node.info;
-        return request(collection.getProjectProperties(), name, method, node.getTreeIconUserObject().getTooltip(), info.getRequestHeader(node), info.getRequestBody(collection));
+        Result result = request(collection.getProjectProperties(), name, method, node.getTreeIconUserObject().getTooltip(), info.getRequestHeader(node), info.getRequestBody(collection));
+        if (node.jsonObject().containsKey("response")) {
+            JSONObject response = node.jsonObject().getJSONObject("response");
+            if (response.containsKey("asserts")) {
+                try {
+                    Object statusCode = info.properties.getValue(HTTP_STATUS_CODE, -1);
+                    assertionValidation(result, response.getJSONArray("asserts"), statusCode, response.getString("body"));
+                } catch (Exception ex) {
+                    addError(result, "ASSERT", ex);
+                    out.info("\nASSERT:\n", true);
+                    out.info(ex.getMessage() + "\n", Profile.RED);
+                }
+            }
+        }
+        return result;
+        
     }
 
     @SuppressWarnings("NonPublicExported")
@@ -154,6 +172,78 @@ public final class HttpConnection {
         return result;
     }
 
+    public void assertionValidation(Result result, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
+        ResourceBundle bundle = Amphibia.getBundle();
+        if (asserts != null) {
+            if (asserts.isEmpty()) {
+                if (result.statusCode != statusCode) {
+                    throw new Exception(String.format(bundle.getString("error_http_code_equals"), statusCode));
+                }
+            } else {
+                for (Object assertType : asserts) {
+                    if (AssertDialog.ASSERTS.NOTEQUALS.toString().equals(assertType)) {
+                        if (result.statusCode == statusCode) {
+                            throw new Exception(String.format(bundle.getString("error_http_code_not_equals"), statusCode));
+                        }
+                    } else if (bodyFile != null) {
+                        if (result.content == null) {
+                            throw new Exception(bundle.getString("error_response_body_null"));
+                        } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
+                            JSON json = IO.getJSON(IO.getFile(bodyFile));
+                            if (result.content.equals(IO.prettyJson(json.toString()))) {
+                                throw new Exception(bundle.getString("error_response_body_match"));
+                            }
+                        } else {
+                            JSON expected = IO.getJSON(IO.getFile(bodyFile));
+                            JSON actual = IO.toJSON(result.content);
+                            assertionValidation(assertType, actual, expected);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void assertionValidation(Object assertType, JSON actual, JSON expected) throws Exception {
+        ResourceBundle bundle = Amphibia.getBundle();
+        StringBuilder sb = new StringBuilder("");
+
+        JSON node1 = AssertDialog.ASSERTS.UNORDERED.toString().equals(assertType) ? actual : expected;
+        JSON node2 = AssertDialog.ASSERTS.UNORDERED.toString().equals(assertType) ? expected : actual;
+        new Object() {
+            void walk(StringBuilder sb, Object node1, Object node2) throws Exception {
+                if (node1 instanceof JSONArray && node2 instanceof JSONArray) {
+                    JSONArray arr1 = (JSONArray) node1;
+                    JSONArray arr2 = (JSONArray) node2;
+                    int length = Math.max(arr1.size(), arr2.size());
+                    for (int i = 0; i < length; i++) {
+                        StringBuilder sba = new StringBuilder(sb).append(".[").append(i).append("]");
+                        if (i < arr1.size() && i < arr2.size()) {
+                            walk(sba, arr1.get(i), arr2.get(i));
+                        } else if (i < arr1.size()) {
+                            walk(sba, arr1.get(i), new JSONObject());
+                        } else {
+                            walk(sba, new JSONObject(), arr2.get(i));
+                        }
+                    }
+                } else if (node1 instanceof JSONObject && node2 instanceof JSONObject) {
+                    JSONObject obj1 = (JSONObject) node1;
+                    JSONObject obj2 = (JSONObject) node2;
+                    for (Object key : obj1.keySet()) {
+                        StringBuilder sbo = new StringBuilder(sb).append(".").append(key);
+                        if (!obj2.containsKey(key)) {
+                            throw new Exception(String.format(bundle.getString("error_response_body_missing_field"), sbo.length() > 0 ? sbo.toString().substring(1) : ""));
+                        } else {
+                            walk(sbo, obj1.get(key), obj2.get(key));
+                        }
+                    }
+                } else if (!String.valueOf(node1).equals(String.valueOf(node2))) {
+                    throw new Exception(String.format(bundle.getString("error_response_unexpected_value"), sb.length() > 0 ? sb.toString().substring(1) : ""));
+                }
+            }
+        }.walk(sb, node1, node2);
+    }
+
     public HttpURLConnection urlConnection() {
         return conn;
     }
@@ -182,7 +272,7 @@ public final class HttpConnection {
         public Throwable exception = null;
         public JSONObject headers = new JSONObject();
         public String content;
-        public int statusCode;
+        public Object statusCode;
         public long time;
 
         public String[] createError() {

@@ -8,6 +8,7 @@ package com.equinix.amphibia.components;
 import static com.equinix.amphibia.Amphibia.getUserPreferences;
 import static com.equinix.amphibia.components.TreeCollection.TYPE.*;
 
+import com.equinix.amphibia.agent.converter.Profile;
 import com.equinix.amphibia.agent.builder.Properties;
 
 import com.equinix.amphibia.Amphibia;
@@ -321,7 +322,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             if (common != null) {
                 props.setTestStep(common.getJSONObject("response").getJSONObject("properties"));
             }
-            return props.replace("${#HTTPStatusCode}", null);
+            return props.replace("${#" + Profile.HTTP_STATUS_CODE + "}", null);
         }
 
         public String getRequestBody(TreeCollection collection) {

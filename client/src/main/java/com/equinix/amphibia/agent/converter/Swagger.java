@@ -325,20 +325,9 @@ public final class Swagger {
     protected JSONObject parseConfig(JSONObject config, int index, Map<String, Object> properties, ApiInfo info) throws Exception {
         JSONObject api = info.api;
         
-        JSONArray assertions = new JSONArray();
         JSONObject responses = api.getJSONObject("responses");
         for (Object httpCode : responses.keySet()) {
-            properties.put("HTTPStatusCode", Integer.parseInt(httpCode.toString()));
-            assertions.add(new LinkedHashMap<String, Object>() {
-                {
-                    put("type", "ValidHTTPStatusCodes");
-                    put("replace", new LinkedHashMap<String, String>() {
-                        {
-                            put("value", "`${#HTTPStatusCode}`");
-                        }
-                    });
-                }
-            });
+            properties.put(Profile.HTTP_STATUS_CODE, Integer.parseInt(httpCode.toString()));
             break;
         }
         
@@ -362,8 +351,6 @@ public final class Swagger {
             config.put("definition", definition.ref.split("#/definitions/")[1]);
         }
         
-        config.put("assertions", assertions);
-
         for (Object httpCode : responses.keySet()) {
             JSONObject response = responses.getJSONObject(httpCode.toString());
             if (response != null) {

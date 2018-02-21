@@ -103,6 +103,14 @@ public class IO {
     public static File getBackupFile(File file) {
         return IO.newFile(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".bak");
     }
+    
+    public static File getBackupOrFile(File file) {
+        File backup = getBackupFile(file);
+        if (backup.exists()) {
+            return backup;
+        }
+        return file;
+    }
 
     public static String prettyJson(String value) throws Exception {
         ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");

@@ -172,6 +172,7 @@ public final class JTreeTable extends JTable {
             REFERENCE,
             REFERENCE_EDIT,
             TRANSFER,
+            ASSERTS,
             ADD,
             ADD_RESOURCES,
             VIEW

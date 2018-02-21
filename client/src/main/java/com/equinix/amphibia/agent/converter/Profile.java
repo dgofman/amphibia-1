@@ -46,6 +46,8 @@ public class Profile {
     public final Map<String, Boolean> invalidPropertyValues;
 
     private static final Logger LOGGER = Logger.getLogger(Profile.class.getName());
+    
+    public static final String HTTP_STATUS_CODE = "HTTPStatusCode";
 
     public Profile() throws Exception {
         resources = new ArrayList<>();
@@ -214,7 +216,7 @@ public class Profile {
                             {
                                 put("properties", new LinkedHashMap<Object, Object>() {
                                     {
-                                        put("HTTPStatusCode", 400);
+                                        put(HTTP_STATUS_CODE, 400);
                                     }
                                 });
                             }
@@ -247,7 +249,7 @@ public class Profile {
                             {
                                 put("properties", new LinkedHashMap<Object, Object>() {
                                     {
-                                        put("HTTPStatusCode", 400);
+                                        put(HTTP_STATUS_CODE, 400);
                                     }
                                 });
                             }

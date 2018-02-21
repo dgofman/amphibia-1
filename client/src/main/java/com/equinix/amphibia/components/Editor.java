@@ -145,7 +145,7 @@ public final class Editor extends BaseTaskPane {
                 mainPanel.resourceEditDialog.openEditDialog(entry, value, false);
             } else if (cellValue == EDIT || cellValue == EDIT_LIMIT) {
                 if (entry.parent != null && entry.parent.type == TRANSFER) {
-                    mainPanel.transferDialog.openDialog(MainPanel.selectedNode, entry);
+                    mainPanel.transferDialog.openDialog(node, entry);
                 } else {
                     mainPanel.resourceEditDialog.openEditDialog(entry, value, true);
                 }
@@ -165,7 +165,9 @@ public final class Editor extends BaseTaskPane {
             } else if (cellValue == REFERENCE) {
                 mainPanel.referenceEditDialog.openViewDialog(collection, entry);
             } else if (cellValue == TRANSFER) {
-                mainPanel.transferDialog.openDialog(MainPanel.selectedNode, entry);
+                mainPanel.transferDialog.openDialog(node, entry);
+            } else if (cellValue == ASSERTS) {
+                mainPanel.assertDialog.openDialog(node, entry);
             }
         };
         treeTable = new JTreeTable(defaultModel, rowListener);
@@ -451,10 +453,7 @@ public final class Editor extends BaseTaskPane {
         try {
             String[] time_path = line.split("=");
             File file = IO.newFile(time_path[1]);
-            File backup = IO.getBackupFile(file);
-            if (backup.exists()) {
-                file = backup;
-            }
+            file = IO.getBackupOrFile(file);
             String oldContent = getHistoryContent(time_path[0] + "/content.json");
             IO.write(oldContent, file);
             mainPanel.reloadAll(true);

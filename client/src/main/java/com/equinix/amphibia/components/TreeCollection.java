@@ -149,7 +149,7 @@ public final class TreeCollection {
         }},
         {"response", new Object[][]{
             {"body", REFERENCE_EDIT},
-            //{"asserts", REFERENCE_EDIT},
+            {"asserts", ASSERTS},
             {"properties", ADD}
         }},
         {"available-properties", null, VIEW},
@@ -171,7 +171,7 @@ public final class TreeCollection {
         }},
         {"response", new Object[][]{
             {"body", REFERENCE_EDIT},
-            //{"asserts", REFERENCE_EDIT},
+            {"asserts", ASSERTS},
             {"properties", ADD}
         }},
         {"available-properties", null, VIEW}
@@ -193,7 +193,7 @@ public final class TreeCollection {
         }},
         {"response", new Object[][]{
             {"body", REFERENCE_EDIT},
-            //{"asserts", REFERENCE_EDIT},
+            {"asserts", ASSERTS},
             {"properties", ADD}
         }},
         {"available-properties", null, VIEW}
@@ -207,7 +207,7 @@ public final class TreeCollection {
         }},
         {"response", new Object[][]{
             {"body", REFERENCE_EDIT},
-            //{"asserts", REFERENCE_EDIT},
+            {"asserts", ASSERTS},
             {"properties", ADD}
         }}
     };
@@ -219,7 +219,7 @@ public final class TreeCollection {
         }},
         {"response", new Object[][]{
             {"body", REFERENCE_EDIT},
-            //{"asserts", REFERENCE_EDIT},
+            {"asserts", ASSERTS},
             {"properties", ADD}
         }}
     };

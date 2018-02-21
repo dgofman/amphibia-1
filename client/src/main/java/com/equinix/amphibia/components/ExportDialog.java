@@ -55,7 +55,6 @@ public final class ExportDialog extends javax.swing.JPanel {
 
     private final DefaultTreeModel treeModel;
     private final DefaultMutableTreeNode rootNode;
-    private MainPanel mainPanel;
     private JDialog dialog;
     private JButton okButton;
     private JButton cancelButton;
@@ -66,7 +65,6 @@ public final class ExportDialog extends javax.swing.JPanel {
      * @param mainPanel
      */
     public ExportDialog(MainPanel mainPanel) {
-        this.mainPanel = mainPanel;
 
         initComponents();
 

@@ -94,6 +94,7 @@ public final class MainPanel extends javax.swing.JPanel {
     public ReferenceDialog referenceEditDialog;
     public ResourceAddDialog resourceAddDialog;
     public TransferDialog transferDialog;
+    public AssertDialog assertDialog;
     public GlobalVariableDialog globalVarsDialog;
     public SaveDialog saveDialog;
 
@@ -120,6 +121,7 @@ public final class MainPanel extends javax.swing.JPanel {
         resourceAddDialog = new ResourceAddDialog(this);
         resourceOrderDialog = new ResourceOrderDialog(this);
         transferDialog = new TransferDialog(this);
+        assertDialog = new AssertDialog(this);
         globalVarsDialog = new GlobalVariableDialog(this);
         saveDialog = new SaveDialog(this);
 

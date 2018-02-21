@@ -551,7 +551,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                 }
                 
                 Object expected = info.getResultStatus();
-                if (expected != null && result.statusCode == Integer.parseInt(expected.toString())) {
+                if (expected != null && result.statusCode == expected) {
                     resultState = TreeIconNode.REPORT_PASSED_STATE;
                 }
             }

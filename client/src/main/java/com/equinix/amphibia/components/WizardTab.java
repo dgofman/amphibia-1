@@ -9,7 +9,9 @@ import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.HttpConnection;
 import com.equinix.amphibia.IHttpConnection;
 import com.equinix.amphibia.IO;
+
 import com.equinix.amphibia.agent.builder.Properties;
+import com.equinix.amphibia.agent.converter.Profile;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -281,8 +283,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                 } catch (NumberFormatException e) {
                     code = 0;
                 }
-                testcase.getJSONObject("properties").element("HTTPStatusCode", code);
-                testcase.element("assertions", IO.toJSONArray("[{\"replace\": {\"value\": \"${#HTTPStatusCode}\"},\"type\": \"ValidHTTPStatusCodes\"}]"));
+                testcase.getJSONObject("properties").element(Profile.HTTP_STATUS_CODE, code);
             }
             testcase.element("operationId", txtTestCaseFuncName.getText());
 
