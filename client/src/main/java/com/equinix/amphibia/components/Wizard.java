@@ -48,12 +48,16 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.TabbedPaneUI;
 import javax.swing.table.DefaultTableModel;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -63,7 +67,7 @@ import net.sf.json.JSONObject;
  * @author dgofman
  */
 public class Wizard extends javax.swing.JPanel {
-    
+
     private ResourceBundle bundle;
     private JDialog interfaceDialog;
     private JButton applyInterfaceButton;
@@ -74,34 +78,72 @@ public class Wizard extends javax.swing.JPanel {
     private TreeCollection selectedCollection;
     private Map<Object, Object> endpoints;
     private JSONArray globalVariables;
-    
+
     MainPanel mainPanel;
-   
+
     public final Object[] headerColumns;
-    
+
     private final DefaultTableModel headersModel;
     private final DefaultComboBoxModel interfaceNameModel;
 
     private final Preferences userPreferences = Amphibia.getUserPreferences();
-    
+
     /**
      * Creates new form Wizard
      */
     public Wizard() {
         bundle = Amphibia.getBundle();
-        
+
         endpoints = new HashMap<>();
 
-        headerColumns = new String [] {
+        headerColumns = new String[]{
             bundle.getString("key"),
             bundle.getString("value")
         };
-        
+
         headersModel = new DefaultTableModel();
         interfaceNameModel = new DefaultComboBoxModel();
-        
+
         initComponents();
         tabNav.setComponentAt(0, wizardTab);
+        tabNav.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    TabbedPaneUI panel = tabNav.getUI();
+                    int index = panel.tabForCoordinate(tabNav, e.getX(), e.getY());
+                    Insets insets = new java.awt.Insets(0, 0, 0, 25);
+                    JPopupMenu popup = new JPopupMenu();
+                    JMenuItem menu = new JMenuItem(bundle.getString("close"));
+                    menu.setMargin(insets);
+                    menu.addActionListener((ActionEvent e1) -> {
+                        if (index != 0) {
+                            tabNav.remove(index);
+                        }
+                    });
+                    popup.add(menu);
+                    menu = new JMenuItem(bundle.getString("closeAll"));
+                    menu.setMargin(insets);
+                    menu.addActionListener((ActionEvent e1) -> {
+                        for (int i = tabNav.getTabCount()- 1; i > 0; i--) {
+                            tabNav.remove(i);
+                        }
+                    });
+                    popup.add(menu);
+                    menu = new JMenuItem(bundle.getString("closeOther"));
+                    menu.setMargin(insets);
+                    menu.addActionListener((ActionEvent e1) -> {
+                        for (int i = tabNav.getTabCount() - 1; i > 0; i--) {
+                            if (i != index) {
+                                tabNav.remove(i);
+                            }
+                        }
+                    });
+                    popup.add(menu);
+                    popup.show(tabNav, e.getX(), e.getY());
+                }
+            }
+        });
 
         applyInterfaceButton = new JButton(bundle.getString("apply"));
         applyInterfaceButton.addActionListener((ActionEvent evt) -> {
@@ -109,16 +151,16 @@ public class Wizard extends javax.swing.JPanel {
             TreeIconNode node = MainPanel.selectedNode.getCollection().project;
             JSONArray interfaces = new JSONArray();
             for (int i = 0; i < interfaceNameModel.getSize(); i++) {
-                interfaces.add(((ComboItem)interfaceNameModel.getElementAt(i)).json);
+                interfaces.add(((ComboItem) interfaceNameModel.getElementAt(i)).json);
             }
             node.jsonObject().element("interfaces", interfaces);
-            
+
             if (!globalVariables.isEmpty()) {
                 mainPanel.globalVarsDialog.mergeVariables(globalVariables);
                 JSONArray globals = node.jsonObject().getJSONArray("globals");
                 globalVariables.forEach((newItem) -> {
                     for (int i = globals.size() - 1; i >= 0; i--) {
-                        if (globals.getJSONObject(i).getString("name").equals(((JSONObject)newItem).getString("name"))) {
+                        if (globals.getJSONObject(i).getString("name").equals(((JSONObject) newItem).getString("name"))) {
                             globals.remove(i);
                             break;
                         }
@@ -127,7 +169,7 @@ public class Wizard extends javax.swing.JPanel {
                 });
                 globalVariables = new JSONArray();
             }
-            
+
             mainPanel.saveNodeValue(node);
             interfaceDialog.setVisible(false);
             updateInterfaces();
@@ -136,7 +178,7 @@ public class Wizard extends javax.swing.JPanel {
         addInterfaceButton.addActionListener((ActionEvent evt) -> {
             JSONObject json = new JSONObject();
             json.element("type", "rest");
-            if(newInterface(json)) {
+            if (newInterface(json)) {
                 reset();
             }
         });
@@ -148,30 +190,30 @@ public class Wizard extends javax.swing.JPanel {
         interfaceDialog = Amphibia.createDialog(pnlInterface, new Object[]{addInterfaceButton, applyInterfaceButton, cancelInterfaceButton}, true);
         interfaceDialog.setSize(new Dimension(600, 500));
     }
-    
+
     public void setMainPanel(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
         EventQueue.invokeLater(() -> {
             interfaceDialog.setLocationRelativeTo(mainPanel);
         });
     }
-    
+
     public DefaultComboBoxModel getInterfaceNameModel() {
         return interfaceNameModel;
     }
-    
+
     public void selectNode(TreeIconNode node) {
         if (node != null && node.getCollection() != selectedCollection) {
             selectedCollection = node.getCollection();
             updateInterfaces();
         }
     }
-    
+
     public void updateInterfaces() {
         interfaceNameModel.removeAllElements();
         JSONObject json = selectedCollection.project.jsonObject();
         JSONArray projectResources = selectedCollection.project.jsonObject().getJSONArray("projectResources");
-        Map<String,Boolean> interfaceIds = new HashMap<>();
+        Map<String, Boolean> interfaceIds = new HashMap<>();
         projectResources.forEach((item) -> {
             interfaceIds.put(((JSONObject) item).getString("interfaceId"), true);
         });
@@ -179,7 +221,7 @@ public class Wizard extends javax.swing.JPanel {
             JSONObject iJson = IO.toJSONObject(item.toString());
             ComboItem comboItem = new ComboItem(iJson, !interfaceIds.containsKey(iJson.getString("id")));
             interfaceNameModel.addElement(comboItem);
-        }); 
+        });
 
         for (int i = 0; i < tabNav.getTabCount(); i++) {
             if (tabNav.getComponent(i) instanceof WizardTab) {
@@ -189,36 +231,36 @@ public class Wizard extends javax.swing.JPanel {
             }
         }
     }
-    
+
     public void updateEndPoints() {
         Amphibia.SelectedEnvironment env = Amphibia.instance.getSelectedEnvironment();
         if (env != null) {
             endpoints = new HashMap<>();
             for (Object[] item : env.data) {
-                if (Converter.ENDPOINT.equals(item[TYPE]) &&
-                        item[NAME] != null && item[VALUE] != null &&
-                        !item[NAME].toString().trim().isEmpty() && !item[VALUE].toString().trim().isEmpty()) {
+                if (Converter.ENDPOINT.equals(item[TYPE])
+                        && item[NAME] != null && item[VALUE] != null
+                        && !item[NAME].toString().trim().isEmpty() && !item[VALUE].toString().trim().isEmpty()) {
                     endpoints.put(item[NAME], item[VALUE]);
                 }
             }
             for (int i = 0; i < tabNav.getTabCount(); i++) {
                 Component tab = tabNav.getComponentAt(i);
                 if (tab instanceof WizardTab) {
-                    ((WizardTab)tab).updateEndPoints(endpoints);
+                    ((WizardTab) tab).updateEndPoints(endpoints);
                 }
             }
         }
     }
-    
+
     public void replaceNode(TreeIconNode node) {
         for (int i = 0; i < tabNav.getTabCount(); i++) {
             Component tab = tabNav.getComponentAt(i);
             if (tab instanceof WizardTab) {
-                ((WizardTab)tab).replaceNode(node);
+                ((WizardTab) tab).replaceNode(node);
             }
-        }       
+        }
     }
-    
+
     public void removeDeadNodes() {
         for (int i = tabNav.getTabCount() - 1; i > 0; i--) { //till first tab
             if (tabNav.getComponentAt(i) instanceof WizardTab) {
@@ -227,7 +269,7 @@ public class Wizard extends javax.swing.JPanel {
                     tabNav.remove(i);
                 }
             }
-        }       
+        }
     }
 
     private boolean newInterface(JSONObject json) {
@@ -250,7 +292,7 @@ public class Wizard extends javax.swing.JPanel {
         }
         return b;
     }
-    
+
     private boolean saveSelectedModel(int index) {
         if (index != -1) {
             CellEditor cellEditor = tblEnvHeaders.getCellEditor();
@@ -281,7 +323,7 @@ public class Wizard extends javax.swing.JPanel {
         lblError.setVisible(false);
         txtBasePath.setText("/");
         globalVariables = new JSONArray();
-        headersModel.setDataVector(new Object [][] {
+        headersModel.setDataVector(new Object[][]{
             {null, null},
             {null, null},
             {null, null},
@@ -289,7 +331,7 @@ public class Wizard extends javax.swing.JPanel {
             {null, null}
         }, headerColumns);
     }
-    
+
     @SuppressWarnings("NonPublicExported")
     public ComboItem createDefaultItem() {
         JSONObject json = new JSONObject();
@@ -298,7 +340,7 @@ public class Wizard extends javax.swing.JPanel {
         json.element("basePath", "");
         return new ComboItem(json, false);
     }
-    
+
     public void openInterfacePanel() {
         TreeIconNode node = MainPanel.selectedNode;
         if (node != null && node.info != null && node.info.resource != null) {
@@ -307,7 +349,7 @@ public class Wizard extends javax.swing.JPanel {
             openInterfacePanel(null);
         }
     }
-    
+
     public void openInterfacePanel(String interfaceId) {
         if (MainPanel.selectedNode != null) {
             reset();
@@ -326,7 +368,7 @@ public class Wizard extends javax.swing.JPanel {
             updateInterfaces();
         }
     }
-    
+
     public void addWizardTab() {
         addWizardTab(MainPanel.selectedNode);
         mainPanel.tabRight.setSelectedIndex(1);
@@ -335,7 +377,7 @@ public class Wizard extends javax.swing.JPanel {
     private void addWizardTab(TreeIconNode node) {
         int index = tabNav.getTabCount();
         WizardTab newTab = new WizardTab(this, node);
-        node.info.states.set(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB,  1);
+        node.info.states.set(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB, 1);
         node.getCollection().profile.saveState(node);
         tabNav.add(newTab);
         tabNav.setTabComponentAt(index, getTitlePanel(newTab, node.getTreeIconUserObject().getIcon(), node.getLabel()));
@@ -343,7 +385,7 @@ public class Wizard extends javax.swing.JPanel {
         newTab.updateEndPoints(endpoints);
         newTab.refresh();
     }
-    
+
     private JPanel getTitlePanel(final JPanel panel, Icon icon, String title) {
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         titlePanel.setOpaque(false);
@@ -363,7 +405,7 @@ public class Wizard extends javax.swing.JPanel {
         titlePanel.add(closeButton);
         return titlePanel;
     }
-    
+
     public void openTabs() {
         Enumeration projects = mainPanel.treeNode.children();
         while (projects.hasMoreElements()) {
@@ -382,7 +424,7 @@ public class Wizard extends javax.swing.JPanel {
                         Enumeration teststeps = testcase.children();
                         while (teststeps.hasMoreElements()) {
                             TreeIconNode teststep = (TreeIconNode) teststeps.nextElement();
-                                if (teststep.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
+                            if (teststep.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
                                 addWizardTab(teststep);
                             }
                         }
@@ -391,7 +433,7 @@ public class Wizard extends javax.swing.JPanel {
             }
         }
     }
-    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -613,7 +655,7 @@ public class Wizard extends javax.swing.JPanel {
                     {
                         put("name", txtHeaderName.getText());
                         put("value", txtHeaderValue.getText());
-                    } 
+                    }
                 });
             }
             int row = tblEnvHeaders.getSelectedRow();
@@ -646,20 +688,20 @@ public class Wizard extends javax.swing.JPanel {
 
     private void btnDeleteActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
         int n = JOptionPane.showConfirmDialog(interfaceDialog,
-                    String.format(bundle.getString("tip_delete_interface"), cmdName.getSelectedItem()), bundle.getString("title"),
-                    JOptionPane.YES_NO_OPTION);
-            if (n == JOptionPane.YES_OPTION) {
-                interfaceNameModel.removeElementAt(cmdName.getSelectedIndex());
-                reset();
-            }
-            headerSaveIndex = -1;
-            cmdNameItemStateChanged(null);
+                String.format(bundle.getString("tip_delete_interface"), cmdName.getSelectedItem()), bundle.getString("title"),
+                JOptionPane.YES_NO_OPTION);
+        if (n == JOptionPane.YES_OPTION) {
+            interfaceNameModel.removeElementAt(cmdName.getSelectedIndex());
+            reset();
+        }
+        headerSaveIndex = -1;
+        cmdNameItemStateChanged(null);
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void cmdNameItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_cmdNameItemStateChanged
         Object item = interfaceNameModel.getSelectedItem();
         btnClone.setEnabled(item != null);
-        btnDelete.setEnabled(item != null && ((ComboItem)item).canDelete);
+        btnDelete.setEnabled(item != null && ((ComboItem) item).canDelete);
         if (item != null) {
             if (evt != null && evt.getStateChange() == ItemEvent.DESELECTED) {
                 if (saveSelectedModel(headerSaveIndex)) {
@@ -673,7 +715,7 @@ public class Wizard extends javax.swing.JPanel {
                     if (!headers.isEmpty()) {
                         headersModel.setRowCount(0);
                         headers.keySet().forEach((key) -> {
-                            headersModel.addRow(new Object[] {key, headers.get(key)});
+                            headersModel.addRow(new Object[]{key, headers.get(key)});
                         });
                     }
                 }
@@ -714,13 +756,13 @@ public class Wizard extends javax.swing.JPanel {
     private JTextField txtHeaderValue;
     // End of variables declaration//GEN-END:variables
 
-
     static public class ComboItem {
+
         String id;
         String label;
         JSONObject json;
         boolean canDelete;
-        
+
         ComboItem(JSONObject item, boolean canDelete) {
             this.json = item;
             this.id = item.getString("id");

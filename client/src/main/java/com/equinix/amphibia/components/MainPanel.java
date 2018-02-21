@@ -24,6 +24,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -257,6 +258,11 @@ public final class MainPanel extends javax.swing.JPanel {
                 }
             }
         };
+        
+        javax.swing.Timer tabRightTimer = new javax.swing.Timer(300, (ActionEvent e) -> {
+            tabRight.setSelectedIndex(0);
+        });
+        tabRightTimer.setRepeats(false);
 
         treeNav.setRowHeight(20);
         treeNav.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
@@ -287,9 +293,10 @@ public final class MainPanel extends javax.swing.JPanel {
                         JPopupMenu popup = menuBuilder.createPopupMenu(selectedNode);
                         popup.show(treeNav, e.getX(), e.getY());
                     } else if (e.getClickCount() == 2 && amphibia.btnAddToWizard.isEnabled()) {
+                        tabRightTimer.stop();
                         wizard.addWizardTab();
                     } else {
-                        tabRight.setSelectedIndex(0);
+                        tabRightTimer.restart();
                     }
                 }
             }
@@ -322,9 +329,10 @@ public final class MainPanel extends javax.swing.JPanel {
                         JPopupMenu popup = menuBuilder.createPopupMenu(selectedNode);
                         popup.show(debugTreeNav, e.getX(), e.getY());
                     } else if (e.getClickCount() == 2 && amphibia.btnAddToWizard.isEnabled()) {
+                        tabRightTimer.stop();
                         wizard.addWizardTab();
                     }  else {
-                        tabRight.setSelectedIndex(0);
+                        tabRightTimer.restart();
                     }
                 }
             }
