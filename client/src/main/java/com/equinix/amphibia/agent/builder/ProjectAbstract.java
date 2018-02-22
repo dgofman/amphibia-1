@@ -23,6 +23,8 @@ import java.io.StringWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
@@ -33,7 +35,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "StaticNonFinalUsedInInitialization"})
 public abstract class ProjectAbstract {
 
     protected CommandLine cmd;
@@ -56,6 +58,10 @@ public abstract class ProjectAbstract {
     
     private final ClassLoader classLoader = getClass().getClassLoader();
     
+    public static int LOG_LIMIT = 1000000; // 1 Mb
+    public static int NUM_LOGS = 5;
+    public static int AUTO_FLUSH = 10000; //10 seconds
+    
     static {
         amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
         amphibiaHome.mkdirs();
@@ -63,7 +69,7 @@ public abstract class ProjectAbstract {
         consoleHandler = new ConsoleHandler();
         FileHandler fileHandler = null;
         try {
-            fileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath());
+            fileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath(), LOG_LIMIT, NUM_LOGS, false);
 
             final Formatter formatter = new Formatter() {
                 final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -96,6 +102,13 @@ public abstract class ProjectAbstract {
         } catch (IOException | SecurityException ex) {
         }
         logFileHandler = fileHandler;
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                logFileHandler.flush();
+            }
+        }, AUTO_FLUSH);
     }
     
     @SuppressWarnings("OverridableMethodCallInConstructor")

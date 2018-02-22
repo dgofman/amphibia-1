@@ -109,38 +109,63 @@ public final class Swagger {
             Converter.addResult(RESOURCE_TYPE.warnings, "Please fix a host value. https://swagger.io/docs/specification/2-0/api-host-and-base-path/");
         }
 
+        JSONObject headers = new JSONObject();
         JSONArray hosts = output.containsKey("hosts") ? output.getJSONArray("hosts") : new JSONArray();
         JSONArray globals = output.containsKey("globals") ? output.getJSONArray("globals") : new JSONArray();
         if (swaggerProperties != null) {
-            JSONObject propertyGlobals = swaggerProperties.getJSONObject("globalProperties");
-            for (Object key : propertyGlobals.keySet()) {
-                if (!"RestEndPoint".equals(key)) {
-                    boolean newProp = true;
-                    for (int i = 0; i < globals.size(); i++) {
-                        if (key.equals(globals.getJSONObject(i).getString("name"))) {
-                            globals.getJSONObject(i).put("value", propertyGlobals.get(key));
-                            newProp = false;
-                            break;
-                        }
+            JSONObject endpoints = swaggerProperties.getJSONObject("endpoints");
+            for (Object key : endpoints.keySet()) {
+                boolean newEndPoint = true;
+                for (int i = 0; i < globals.size(); i++) {
+                    if (key.equals(globals.getJSONObject(i).getString("name"))) {
+                        globals.getJSONObject(i).put("value", endpoints.get(key));
+                        newEndPoint = false;
+                        break;
                     }
-                    if (newProp) {
-                        globals.add(new LinkedHashMap<String, Object>() {
-                            {
-                                put("name", key);
-                                put("value", propertyGlobals.get(key));
-                            }
-                        });
+                }
+                if (newEndPoint) {
+                    if (!hosts.contains(endpoints.get(key))) {
+                        hosts.add(endpoints.get(key));
                     }
-                } else {
-                    host = propertyGlobals.getString(key.toString());
-                    globals.add(new LinkedHashMap<String, Object>() {
+                    globals.add(0, new LinkedHashMap<String, Object>() {
                         {
-                            put("name", "RestEndPoint" + index);
-                            put("value", propertyGlobals.get(key));
+                            put("name", key);
+                            put("value", endpoints.get(key));
                             put("type", "endpoint");
                         }
                     });
                 }
+            }
+            JSONObject propertyGlobals = swaggerProperties.getJSONObject("globalProperties");
+            for (Object key : propertyGlobals.keySet()) {
+                boolean newProp = true;
+                for (int i = 0; i < globals.size(); i++) {
+                    if (key.equals(globals.getJSONObject(i).getString("name"))) {
+                        globals.getJSONObject(i).put("value", propertyGlobals.get(key));
+                        newProp = false;
+                        break;
+                    }
+                }
+                if (newProp) {
+                    globals.add(new LinkedHashMap<String, Object>() {
+                        {
+                            put("name", key);
+                            put("value", propertyGlobals.get(key));
+                        }
+                    });
+                }
+            }
+            if (swaggerProperties.containsKey("info")) {
+                JSONArray resources = swaggerProperties.getJSONObject("info").getJSONArray("resources");
+                resources.forEach((item) -> {
+                    JSONObject resource = (JSONObject) item;
+                    if (resource.containsKey("source")) {
+                        if ((isURL &&  inputParam.equals(resource.getString("source"))) || 
+                                       inputParam.contains(resource.getString("source"))) {
+                            headers.accumulateAll(resource.getJSONObject("headers"));
+                        }
+                    }
+                });
             }
         } else {
             final String hostVal = host;
@@ -170,42 +195,15 @@ public final class Swagger {
             }
         }
 
-        JSONObject headers = new JSONObject();
-        if (swaggerProperties != null) {
-            headers = swaggerProperties.getJSONObject("headers");
-        } else {
-            headers.put("CONTENT-TYPE", "application/json");
-        }
-        
+
         final String name = "/".equals(interfaceName) ? "interface" + (index + 1) : interfaceName;
-        final JSONObject hs = headers;
-        
-        hs.keySet().forEach((key) -> {
-            boolean replace = true;
-            for (Object item : globals) {
-                if (((JSONObject) item).getString("name").equals(key)) {
-                    replace = false;
-                    break;
-                }
-            }
-            if (replace) {
-                globals.add(new LinkedHashMap<String, Object>() {
-                    {
-                        put("name", key);
-                        put("value", hs.get(key));
-                    }
-                });
-                hs.put(key, "${#Global#" + key + "}");
-            }
-        });
-        
         interfaces.add(new LinkedHashMap<String, Object>() {
             {
                 put("id", interfaceId);
                 put("name", name);
                 put("basePath", interfaceBasePath);
                 put("type", "rest");
-                put("headers", hs);
+                put("headers", headers);
             }
         });
         output.put("globals", globals);

@@ -10,7 +10,7 @@
   <priority>normal</priority>
   <downloadUrl>http://java.com/download</downloadUrl>
   <supportUrl></supportUrl>
-  <stayAlive>false</stayAlive>
+  <stayAlive>true</stayAlive>
   <restartOnCrash>false</restartOnCrash>
   <manifest></manifest>
   <icon>..\client\src\main\java\com\equinix\amphibia\icons\logo.ico</icon>
@@ -33,7 +33,7 @@
   <versionInfo>
     <fileVersion>1.0.0.0</fileVersion>
     <txtFileVersion>1.0</txtFileVersion>
-    <fileDescription>API Testing Application</fileDescription>
+    <fileDescription>Amphibia Lite</fileDescription>
     <copyright>Copyright (c) 2018 Equinix Inc. All rights reserved.</copyright>
     <productVersion>1.0.0.0</productVersion>
     <txtProductVersion>1.0</txtProductVersion>

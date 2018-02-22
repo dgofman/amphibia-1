@@ -965,7 +965,8 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                 }
                 Amphibia.setText(txtResHeaders, spnResHeaders, result.headers.toString(4));
                 lblTimeValue.setText(String.valueOf(result.time) + " ms");
-                lblCode.setText(String.valueOf(result.statusCode));
+                String statusCode = String.valueOf(result.statusCode);
+                lblCode.setText(statusCode);
                 pnlWaitOverlay.setVisible(false);
             }
         }.start();
