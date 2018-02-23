@@ -126,7 +126,7 @@ public class Properties {
                     continue;
                 }
                 Object propValue = getValue(key, NULL);
-                if (propValue != NULL) {
+                if (propValue == NULL) {
                     if (propKey != null) {
                         continue;
                     }

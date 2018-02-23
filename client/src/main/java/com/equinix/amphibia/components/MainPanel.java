@@ -12,8 +12,10 @@ import static com.equinix.amphibia.Amphibia.getUserPreferences;
 import static com.equinix.amphibia.components.TreeCollection.*;
 import static com.equinix.amphibia.components.TreeCollection.TYPE.*;
 
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 import com.equinix.amphibia.agent.converter.Swagger;
 import com.equinix.amphibia.agent.builder.Properties;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.ExpertNodes;
 import com.equinix.amphibia.HistoryManager;
@@ -84,7 +86,7 @@ public final class MainPanel extends javax.swing.JPanel {
     public final DefaultTreeModel debugTreeModel;
     public final DefaultTreeModel reportTreeModel;
     public final HistoryManager history;
-    public final Profile profile;
+    public final Runner profile;
 
     private Amphibia amphibia;
     private ResourceBundle bundle;
@@ -142,7 +144,7 @@ public final class MainPanel extends javax.swing.JPanel {
 
         editor.setMainPanel(this);
         wizard.setMainPanel(this);
-        profile = new Profile(this, editor);
+        profile = new Runner(this, editor);
 
         final JTextArea errors = new JTextArea();
         final FontMetrics fm = getFontMetrics(errors.getFont());
@@ -484,10 +486,10 @@ public final class MainPanel extends javax.swing.JPanel {
                     addRaw("\n" + key + ": ", true).addRaw(node.info.properties.replace(headers.get(key)));
                 });
                 addRaw("\n\nRequest Body:\n", true);
-                addRaw(node.info.getRequestBody(collection), Profile.BLUE);
+                addRaw(node.info.getRequestBody(collection), ProjectAbstract.BLUE);
 
                 addRaw("\n\nExpected Response Body:\n", true);
-                addRaw(node.info.getResponseBody(collection), Profile.GREEN);
+                addRaw(node.info.getResponseBody(collection), ProjectAbstract.GREEN);
                 raw = null;
                 break;
         }

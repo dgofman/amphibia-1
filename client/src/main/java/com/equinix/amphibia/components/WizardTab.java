@@ -5,9 +5,11 @@
  */
 package com.equinix.amphibia.components;
 
+import static com.equinix.amphibia.agent.runner.HttpConnectionImpl.Result;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.HttpConnection;
-import com.equinix.amphibia.IHttpConnection;
+import com.equinix.amphibia.agent.runner.IHttpConnection;
 import com.equinix.amphibia.IO;
 
 import com.equinix.amphibia.agent.builder.Properties;
@@ -941,7 +943,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         new Thread() {
             @Override
             public void run() {
-                HttpConnection.Result result = new HttpConnection.Result();
+                Result result = new Result();
                 txtConsole.setText("");
                 txtConsole.setAlignmentX(0);
                 txtResBody.setText("");

@@ -1,5 +1,9 @@
 package com.equinix.amphibia.agent.converter;
 
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
+import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
+import com.equinix.amphibia.agent.converter.Swagger.ApiInfo;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
@@ -10,11 +14,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.equinix.amphibia.agent.builder.ProjectAbstract;
-import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
-import com.equinix.amphibia.agent.converter.Swagger.ApiInfo;
-
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -48,7 +47,7 @@ public class Profile {
     private static final Logger LOGGER = ProjectAbstract.getLogger(Profile.class.getName());
 
     public static final String HTTP_STATUS_CODE = "HTTPStatusCode";
-
+    
     public Profile() throws Exception {
         resources = new ArrayList<>();
         testsuites = new ArrayList<>();
@@ -188,7 +187,7 @@ public class Profile {
             }
 
             if (!testcasesRules.isEmpty()) {
-                for (Object key : testcasesRules.keySet()) {
+                testcasesRules.keySet().forEach((key) -> {
                     JSONObject testcaseRules = testcasesRules.getJSONObject(key.toString());
                     testcases.add(new LinkedHashMap<Object, Object>() {
                         {
@@ -197,7 +196,7 @@ public class Profile {
                             put("steps", testcaseRules.getOrDefault("steps", new JSONArray()));
                         }
                     });
-                }
+                });
             }
             testsuite.put("testcases", testcases);
             testsuites.add(testsuite);
@@ -215,7 +214,7 @@ public class Profile {
                 }
                 JSONArray testcases = new JSONArray();
                 JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONArray());
-                for (Object testcaseName : testcasesRules.keySet()) {
+                testcasesRules.keySet().forEach((testcaseName) -> {
                     JSONObject testcaseRules = testcasesRules.getJSONObject(testcaseName.toString());
                     testcases.add(new LinkedHashMap<Object, Object>() {
                         {
@@ -224,7 +223,7 @@ public class Profile {
                             put("steps", testcaseRules.getOrDefault("steps", new JSONArray()));
                         }
                     });
-                }
+                });
                 testsuite.put("testcases", testcases);
                 testsuites.add(testsuite);
             });

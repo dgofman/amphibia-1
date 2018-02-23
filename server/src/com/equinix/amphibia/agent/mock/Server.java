@@ -24,7 +24,7 @@ public final class Server {
 
     public static void execute(String[] args) throws Exception {
         Options options = new Options();
-        options.addOption(new Option("p", PROJECT, true, "Server port number. Default: " + DEFAUL_PORT));
+        options.addOption(new Option("p", PORT, true, "Server port number. Default: " + DEFAUL_PORT));
 
         Option input = new Option("a", PROJECT, true, "Amphibia Project file");
         input.setRequired(true);
@@ -66,14 +66,10 @@ public final class Server {
                 }
             }
         } catch (ParseException e) {
-            printHelp(formatter, options);
+            formatter.printHelp("Builder", options);
             System.exit(1);
             throw e;
         }
         return cmd;
-    }
-
-    public static void printHelp(HelpFormatter formatter, Options options) {
-        formatter.printHelp("Builder", options);
     }
 }

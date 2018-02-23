@@ -8,7 +8,7 @@ package com.equinix.amphibia.components;
 import static com.equinix.amphibia.Amphibia.getUserPreferences;
 
 import com.equinix.amphibia.Amphibia;
-import com.equinix.amphibia.HttpConnection;
+import com.equinix.amphibia.agent.runner.HttpConnectionImpl;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -157,8 +157,8 @@ public class PreferenceDialog extends javax.swing.JPanel {
         includeSkipTest.setSelected(userPreferences.getBoolean(Amphibia.P_SKIPPED_TEST, true));
         chbShowInterfaces.setSelected(userPreferences.getBoolean(Amphibia.P_INTERFACE, true));
         
-        sprConnTimeout.setValue(userPreferences.getInt(Amphibia.P_CONN_TIMEOUT, HttpConnection.DEFAULT_TIMEOUT));
-        sprReadTimeout.setValue(userPreferences.getInt(Amphibia.P_READ_TIMEOUT, HttpConnection.DEFAULT_TIMEOUT));
+        sprConnTimeout.setValue(userPreferences.getInt(Amphibia.P_CONN_TIMEOUT, HttpConnectionImpl.DEFAULT_TIMEOUT));
+        sprReadTimeout.setValue(userPreferences.getInt(Amphibia.P_READ_TIMEOUT, HttpConnectionImpl.DEFAULT_TIMEOUT));
         chbContinue.setSelected(userPreferences.getBoolean(Amphibia.P_CONTINUE_ON_ERROR, true));
         dialog.setVisible(true);
     }

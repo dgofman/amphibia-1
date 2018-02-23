@@ -5,9 +5,11 @@
  */
 package com.equinix.amphibia.components;
 
+import static com.equinix.amphibia.agent.runner.HttpConnectionImpl.Result;
+
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.HttpConnection;
-import com.equinix.amphibia.IHttpConnection;
+import com.equinix.amphibia.agent.runner.IHttpConnection;
 import com.equinix.amphibia.IO;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -47,7 +49,7 @@ import org.apache.tools.ant.types.FileSet;
  *
  * @author dgofman
  */
-public final class Profile extends BaseTaskPane implements IHttpConnection {
+public final class Runner extends BaseTaskPane implements IHttpConnection {
 
     private boolean isRunning;
     private boolean includeSkippedTests;
@@ -62,11 +64,8 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
     private int lineIndex;
 
     private final SimpleDateFormat reportDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-    public static Color BLUE = Color.BLUE;
-    public static Color RED = Color.RED;
-    public static Color GREEN = new Color(40, 130, 10);
 
-    public Profile(MainPanel mainPanel, Editor editor) {
+    public Runner(MainPanel mainPanel, Editor editor) {
         super();
         this.editor = editor;
         this.mainPanel = mainPanel;
@@ -86,7 +85,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
         return editor.addToTree(editor.errors, error);
     }
     
-    public Profile addToConsole(String text, Color color, boolean isBold) {
+    public Runner addToConsole(String text, Color color, boolean isBold) {
         SimpleAttributeSet attr = new SimpleAttributeSet();
         StyleConstants.setForeground(attr, color);
         StyleConstants.setBold(attr, isBold);
@@ -94,7 +93,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
     }
 
     @SuppressWarnings("SleepWhileInLoop")
-    public Profile addToConsole(String text, SimpleAttributeSet attr) {
+    public Runner addToConsole(String text, SimpleAttributeSet attr) {
         if (text != null && !text.isEmpty()) {
             StyledDocument doc = editor.txtConsole.getStyledDocument();
             if (autoSwitchConsole) {
@@ -130,27 +129,27 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
         }
     }
 
-    public Profile date() {
+    public Runner date() {
         return addToConsole("\n" + dateMediumFormat.print(new Date().getTime()) + "\n\n", Color.BLACK, true);
     }
 
     @Override
-    public Profile info(String text) {
+    public Runner info(String text) {
         return info(text, false);
     }
 
     @Override
-    public Profile info(String text, boolean isBold) {
+    public Runner info(String text, boolean isBold) {
         return addToConsole(text, Color.BLACK, isBold);
     }
     
     @Override
-    public Profile info(String text, Color Color) {
+    public Runner info(String text, Color Color) {
         return addToConsole(text, Color, false);
     }
     
     @Override
-    public Profile info(String text, SimpleAttributeSet attr) {
+    public Runner info(String text, SimpleAttributeSet attr) {
         return addToConsole(text, attr);
     }
 
@@ -215,7 +214,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                 child.setReportState(TreeIconNode.REPORT_SKIPPED_STATE);
             }
         }
-        IO.write(MainPanel.selectedNode.getCollection().profile, Profile.this);
+        IO.write(MainPanel.selectedNode.getCollection().profile, Runner.this);
 
         selectedNode = null;
         isRunning = false;
@@ -360,29 +359,29 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
 
     private String addTestCaseInfo(double[] data, String testSuiteName, String className, String name, JSONObject result) {
         if (result.containsKey("states")) {
-            String info = "\n\t\t\t";
+            String out = "\n\t\t\t";
 
             switch (result.getJSONArray("states").getInt(2)) {
                 case TreeIconNode.REPORT_PASSED_STATE:
                     if (result.containsKey("error")) {
                         JSONArray err = result.getJSONArray("error");
-                        info += "<system-err><![CDATA[" + err.get(2) + "\n\n" + err.get(3) + "]]></system-err>";
+                        out += "<system-err><![CDATA[" + err.get(2) + "\n\n" + err.get(3) + "]]></system-err>";
                     } else {
-                        info = "";
+                        out = "";
                     }
                     break;
                 case TreeIconNode.REPORT_SKIPPED_STATE:
-                    info += "<skipped message=\"\"/>";
+                    out += "<skipped message=\"\"/>";
                     data[2]++;
                     break;
                 case TreeIconNode.REPORT_ERROR_STATE:
                     JSONArray err = result.getJSONArray("error");
-                    info += "<error message=\"" + StringEscapeUtils.escapeXml(err.getString(0)) + "\" type=\"" + err.get(1) + "\"><![CDATA[" + err.get(2) + "\n\n" + err.get(3) + "]]></error>";
+                    out += "<error message=\"" + StringEscapeUtils.escapeXml(err.getString(0)) + "\" type=\"" + err.get(1) + "\"><![CDATA[" + err.get(2) + "\n\n" + err.get(3) + "]]></error>";
                     data[3]++;
                     break;
                 case TreeIconNode.REPORT_FAILED_STATE:
                     JSONArray fail = result.getJSONArray("error");
-                    info += "<failure message=\"" + StringEscapeUtils.escapeXml(fail.getString(0)) + "\" type=\"" + fail.get(1) + "\"><![CDATA[" + fail.get(2) + "\n\n" + fail.get(3) + "]]></failure>";
+                    out += "<failure message=\"" + StringEscapeUtils.escapeXml(fail.getString(0)) + "\" type=\"" + fail.get(1) + "\"><![CDATA[" + fail.get(2) + "\n\n" + fail.get(3) + "]]></failure>";
                     data[4]++;
                     break;
                 default:
@@ -393,7 +392,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
             data[0] += time;
             data[1]++;
 
-            return "\t\t<testcase parent=\"" + testSuiteName + "\" classname=\"" + className + "\" name=\"" + name + "\" time=\"" + time + "\">" + info + "\n\t\t</testcase>\n";
+            return "\t\t<testcase parent=\"" + testSuiteName + "\" classname=\"" + className + "\" name=\"" + name + "\" time=\"" + time + "\">" + out + "\n\t\t</testcase>\n";
         }
         return "";
     }
@@ -481,7 +480,6 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
     }
 
     private synchronized int executeTest(Thread thread, TreeIconNode parent, TreeIconNode node, int resultState) {
-        TreeIconNode.ResourceInfo info = node.info;
         EventQueue.invokeLater(() -> {
             Rectangle rect = tree.getPathBounds(new TreePath(node.getPath()));
             if (rect != null) {
@@ -522,7 +520,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                 treeModel.nodeStructureChanged(node);
                 JSONObject json = node.jsonObject();
                 JSONObject sourceJSON = node.source.jsonObject();
-                HttpConnection.Result result = new HttpConnection.Result();
+                Result result = new Result();
                 int startIndex = lineIndex;
                 String name = sourceJSON.getString("name");
                 try {
@@ -531,9 +529,9 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                 } catch (Exception e) {
                     connection.addError(result, name, e);
                 }
-                info.consoleLine = Math.max(0, startIndex);
+                node.info.consoleLine = Math.max(0, startIndex);
                 json.element("time", result.time);
-                json.element("line", info.consoleLine);
+                json.element("line", node.info.consoleLine);
 
                 if (result.exception == null) {
                     resultState = TreeIconNode.REPORT_PASSED_STATE;
@@ -550,7 +548,7 @@ public final class Profile extends BaseTaskPane implements IHttpConnection {
                     }
                 }
                 
-                Object expected = info.getResultStatus();
+                Object expected = node.info.getResultStatus();
                 if (expected != null && result.statusCode == expected) {
                     resultState = TreeIconNode.REPORT_PASSED_STATE;
                 }

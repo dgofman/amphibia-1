@@ -1,5 +1,7 @@
 package com.equinix.amphibia.agent.builder;
 
+import com.equinix.amphibia.agent.converter.Profile;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,14 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-
-
-import org.apache.commons.cli.CommandLine;
-
-import com.equinix.amphibia.agent.converter.Profile;
+import java.awt.Color;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.DateFormat;
@@ -30,9 +27,9 @@ import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
 
 @SuppressWarnings({"unchecked", "StaticNonFinalUsedInInitialization"})
@@ -61,6 +58,10 @@ public abstract class ProjectAbstract {
     public static int LOG_LIMIT = 1000000; // 1 Mb
     public static int NUM_LOGS = 5;
     public static int AUTO_FLUSH = 10000; //10 seconds
+    
+    public static Color GREEN = new Color(40, 130, 10);
+    public static Color BLUE = Color.BLUE;
+    public static Color RED = Color.RED;
     
     static {
         amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
@@ -181,15 +182,15 @@ public abstract class ProjectAbstract {
         return JSONObject.fromObject(value).toString().replaceAll("\\\"", "\\\\\"");
     }
 
-    protected String prettyJson(Object value) throws Exception {
+    public static String prettyJson(Object value) throws Exception {
         return prettyJson(JSONObject.fromObject(value).toString());
     }
 
-    protected String prettyJson(String value) throws Exception {
+    public static String prettyJson(String value) throws Exception {
         return prettyJson(value, "\t", 4);
     }
 
-    public String prettyJson(String value, String tabs, int spaces) throws Exception {
+    public static String prettyJson(String value, String tabs, int spaces) throws Exception {
         ScriptEngine scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
         scriptEngine.put("jsonString", value);
         scriptEngine.eval("result = JSON.stringify(JSON.parse(jsonString), null, " + spaces + ")");
