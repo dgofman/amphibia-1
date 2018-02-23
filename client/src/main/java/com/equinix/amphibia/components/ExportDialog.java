@@ -165,7 +165,7 @@ public final class ExportDialog extends javax.swing.JPanel {
         json.getJSONObject("projectProperties").accumulateAll(profile.getJSONObject("properties"));
         
         JSONObject original;
-        JSONObject testSuiteProperties = json.getJSONObject("testSuiteProperties");
+        JSONObject testSuitesRules = json.getJSONObject("testsuites");
         CheckBoxNode testsuites = (CheckBoxNode) rootNode.getChildAt(0);
         CheckBoxNode commons = (CheckBoxNode) rootNode.getChildAt(1);
         Enumeration children = testsuites.children();
@@ -175,7 +175,7 @@ public final class ExportDialog extends javax.swing.JPanel {
             Enumeration testcases = testsuiteNode.children();
             while (testcases.hasMoreElements()) {
                 CheckBoxNode testcaseNode = (CheckBoxNode) testcases.nextElement();
-                JSONObject testSteps = new JSONObject();
+                JSONArray testSteps = new JSONArray();
                 Enumeration teststeps = testcaseNode.children();
                 while (teststeps.hasMoreElements()) {
                     CheckBoxNode teststepNode = (CheckBoxNode) teststeps.nextElement();
@@ -188,26 +188,19 @@ public final class ExportDialog extends javax.swing.JPanel {
 			clone.remove("line");
                         clone.remove("error");
                         if (!clone.isEmpty()) {
-                            testSteps.put(original.getString("name"), clone);
+                            original.remove("states");
+                            original.remove("time");
+                            original.remove("line");
+                            original.remove("error");
+                            testSteps.add(original);
                         }
                     }
                 }
                 
                 JSONObject testCase = new JSONObject();
                 original = testcaseNode.getInfo().testCase;
-                if (isTestCase || testcaseNode.getActionIndex() != CheckBoxNode.UNSELECT) {
-                    File file = IO.getFile(collection, original.getString("path"));
-                    if (file.exists()) {
-                        String dirName = file.getParentFile().getName();
-                        JSONObject suiteJSON = (JSONObject) tests.getOrDefault(dirName, new JSONObject()) ;
-                        try {
-                            suiteJSON.put(file.getName(), IO.getJSON(file));
-                        } catch (Exception ex) {
-                            mainPanel.addError(ex);
-                        }
-                        tests.put(dirName, suiteJSON);
-                    }
-                            
+                File file = IO.getFile(collection, original.getString("path"));
+                if (isTestCase || testcaseNode.getActionIndex() != CheckBoxNode.UNSELECT) {      
                     if (original.containsKey("headers") && !original.getJSONObject("headers").isEmpty()) {
                         testCase.put("headers", original.get("headers"));
                     }
@@ -219,7 +212,22 @@ public final class ExportDialog extends javax.swing.JPanel {
                     testCase.put("steps", testSteps);
                 }
                 if (!testCase.isEmpty()) {
-                    testCases.put(original.getString("name"), testCase);
+                    String name = file.getName().split(".json")[0];
+                    if (file.exists()) {
+                        String testSuiteName = file.getParentFile().getName();
+                        JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject()) ;
+                        try {
+                            suiteJSON.put(name, IO.getJSON(file));
+                        } catch (Exception ex) {
+                            mainPanel.addError(ex);
+                        }
+                        tests.put(testSuiteName, suiteJSON);
+                    }
+
+                    if (!name.equals(original.getString("name"))) {
+                        testCase.put("name", original.getString("name"));
+                    }
+                    testCases.put(name, testCase);
                 }
             }
                
@@ -231,10 +239,10 @@ public final class ExportDialog extends javax.swing.JPanel {
                 }
             }
             if (!testCases.isEmpty()) {
-                testSuite.put("steps", testCases);
+                testSuite.put("testcases", testCases);
             }
             if (!testSuite.isEmpty()) {
-                testSuiteProperties.put(original.getString("name"), testSuite);
+                testSuitesRules.put(original.getString("name"), testSuite);
             }
         }
 

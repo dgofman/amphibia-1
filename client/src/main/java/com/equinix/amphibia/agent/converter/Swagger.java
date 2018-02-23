@@ -94,7 +94,7 @@ public final class Swagger {
     }
 
     protected void parse(int index, String inputParam, boolean isURL, String propertiesFile) throws Exception {
-        String host = doc.getString("host");
+        String host = (String) doc.getOrDefault("host", "localhost");
         if (!host.startsWith("http")) {
             JSONArray schemes = new JSONArray();
             if (doc.containsKey("schemes")) {
@@ -113,6 +113,7 @@ public final class Swagger {
         JSONArray hosts = output.containsKey("hosts") ? output.getJSONArray("hosts") : new JSONArray();
         JSONArray globals = output.containsKey("globals") ? output.getJSONArray("globals") : new JSONArray();
         if (swaggerProperties != null) {
+            profile.getCommon().putAll(swaggerProperties.getJSONObject("commons"));
             JSONObject endpoints = swaggerProperties.getJSONObject("endpoints");
             for (Object key : endpoints.keySet()) {
                 boolean newEndPoint = true;
@@ -160,8 +161,8 @@ public final class Swagger {
                 resources.forEach((item) -> {
                     JSONObject resource = (JSONObject) item;
                     if (resource.containsKey("source")) {
-                        if ((isURL &&  inputParam.equals(resource.getString("source"))) || 
-                                       inputParam.contains(resource.getString("source"))) {
+                        if ((isURL && inputParam.equals(resource.getString("source")))
+                                || inputParam.contains(resource.getString("source"))) {
                             headers.accumulateAll(resource.getJSONObject("headers"));
                         }
                     }
@@ -182,7 +183,7 @@ public final class Swagger {
             hosts.add(host);
         }
         output.put("hosts", hosts);
-        
+
         JSONArray interfaces = output.containsKey("interfaces") ? output.getJSONArray("interfaces") : new JSONArray();
         String interfaceBasePath = (String) doc.getOrDefault("basePath", "/");
         String interfaceName = interfaceBasePath;
@@ -194,7 +195,6 @@ public final class Swagger {
                 interfaceName = params[index];
             }
         }
-
 
         final String name = "/".equals(interfaceName) ? "interface" + (index + 1) : interfaceName;
         interfaces.add(new LinkedHashMap<String, Object>() {
@@ -208,12 +208,12 @@ public final class Swagger {
         });
         output.put("globals", globals);
         output.put("interfaces", interfaces);
-        
+
         profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile);
 
         JSONArray projectResources = output.containsKey("projectResources") ? output.getJSONArray("projectResources") : new JSONArray();
         JSONObject testsuites = output.containsKey("testsuites") ? output.getJSONObject("testsuites") : new JSONObject();
-        
+
         addTestSuite(index, resourceId, interfaceId, interfaceBasePath, testsuites);
 
         JSONObject properties = output.containsKey("properties") ? output.getJSONObject("properties") : new JSONObject();
@@ -276,29 +276,30 @@ public final class Swagger {
             });
         });
 
+        JSONObject testSuitesRules = new JSONObject();
+        if (swaggerProperties != null) {
+            testSuitesRules = swaggerProperties.getJSONObject("testsuites");
+        }
         for (String testSuiteName : testSuiteMap.keySet()) {
             JSONArray testcases = new JSONArray();
-            JSONObject properties = new JSONObject();
-            if (swaggerProperties != null) {
-                JSONObject testSuiteProperties = swaggerProperties.getJSONObject("testSuiteProperties");
-                if (testSuiteProperties.containsKey(testSuiteName)) {
-                    properties = testSuiteProperties.getJSONObject(testSuiteName);
-                }
+            JSONObject testSuiteRule = new JSONObject();
+            if (testSuitesRules.containsKey(testSuiteName)) {
+                testSuiteRule.accumulateAll(testSuitesRules.getJSONObject(testSuiteName));
             }
-            addTestCases(index, testcases, testSuiteMap.get(testSuiteName));
-            final JSONObject props = properties;
+            addTestCases(index, testcases, testSuiteMap.get(testSuiteName), testSuiteRule);
             testsuites.put(testSuiteName, new LinkedHashMap<String, Object>() {
                 {
-                    put("properties", props);
+                    put("properties", testSuiteRule.getOrDefault("properties", new JSONObject()));
                     put("testcases", testcases);
                 }
             });
         }
 
-        this.profile.addTestCases(index, resourceId, interfaceName, testSuiteMap);
+        this.profile.addTestCases(index, resourceId, interfaceName, testSuiteMap, swaggerProperties != null ? swaggerProperties : new JSONObject());
     }
 
-    protected void addTestCases(int index, JSONArray testcases, List<ApiInfo> apiList) throws Exception {
+    protected void addTestCases(int index, JSONArray testcases, List<ApiInfo> apiList, JSONObject testSuiteRule) throws Exception {
+        JSONObject testcasesRule = (JSONObject) testSuiteRule.getOrDefault("testcases", new JSONObject());
         for (ApiInfo info : apiList) {
             String summaryInfo = info.apiName;
             if (info.api.containsKey("summary")) {
@@ -307,7 +308,11 @@ public final class Swagger {
                 summaryInfo = info.api.getString("summary");
             }
             info.testCaseName = info.methodName + "_" + info.apiName;
+            JSONObject testcaseRule = (JSONObject) testcasesRule.getOrDefault(info.testCaseName, new JSONObject());
             Map<String, Object> properties = new LinkedHashMap<>();
+            if (testcaseRule.containsKey("properties")) {
+                properties = testcaseRule.getJSONObject("properties");
+            }
             String summary = summaryInfo;
             JSONObject config = new JSONObject();
             config.put("type", "restrequest");
@@ -322,13 +327,13 @@ public final class Swagger {
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     protected JSONObject parseConfig(JSONObject config, int index, Map<String, Object> properties, ApiInfo info) throws Exception {
         JSONObject api = info.api;
-        
+
         JSONObject responses = api.getJSONObject("responses");
         for (Object httpCode : responses.keySet()) {
             properties.put(Profile.HTTP_STATUS_CODE, Integer.parseInt(httpCode.toString()));
             break;
         }
-        
+
         Definition definition = new Definition(doc, this);
         parseDefinition(info, definition, info.apis, properties);
         parseDefinition(info, definition, api, properties);
@@ -348,7 +353,7 @@ public final class Swagger {
         if (definition.ref != null) {
             config.put("definition", definition.ref.split("#/definitions/")[1]);
         }
-        
+
         for (Object httpCode : responses.keySet()) {
             JSONObject response = responses.getJSONObject(httpCode.toString());
             if (response != null) {
@@ -442,10 +447,10 @@ public final class Swagger {
     @SuppressWarnings("NonPublicExported")
     public Object getTestRuleProperty(ApiInfo info, String id) {
         if (swaggerProperties != null) {
-            JSONObject testSuiteProperties;
-            if (swaggerProperties.getJSONObject("testSuiteProperties").containsKey(info.testSuiteName)) {
-                testSuiteProperties = swaggerProperties.getJSONObject("testSuiteProperties").getJSONObject(info.testSuiteName);
-                if (testSuiteProperties.containsKey(id)) {
+            JSONObject testsuites;
+            if (swaggerProperties.getJSONObject("testsuites").containsKey(info.testSuiteName)) {
+                testsuites = swaggerProperties.getJSONObject("testsuites").getJSONObject(info.testSuiteName);
+                if (testsuites.containsKey(id)) {
                     return "${#TestSuite#" + id + "}";
                 }
             }

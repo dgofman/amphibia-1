@@ -61,9 +61,10 @@ public class Converter {
         responses,
         asserts,
         warnings,
-        errors
+        errors,
+        info
     };
-    
+
     public static final Object ENDPOINT = 0;
     public static final Object VARIABLE = 1;
 
@@ -117,6 +118,7 @@ public class Converter {
             results.put(RESOURCE_TYPE.warnings, new ArrayList<>());
             results.put(RESOURCE_TYPE.asserts, new ArrayList<>());
             results.put(RESOURCE_TYPE.errors, new ArrayList<>());
+            results.put(RESOURCE_TYPE.info, new ArrayList<>());
             Logger.getGlobal().setLevel(Level.SEVERE);
         }
 
@@ -133,7 +135,7 @@ public class Converter {
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
-        
+
         try {
             FileUtils.deleteDirectory(new File(Profile.PROJECT_DIR, Profile.DATA_DIR));
         } catch (IOException ex) {

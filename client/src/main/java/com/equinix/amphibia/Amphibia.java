@@ -42,6 +42,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
@@ -54,6 +57,12 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -168,6 +177,36 @@ public final class Amphibia extends JFrame {
     private static final Logger logger = Amphibia.getLogger(Amphibia.class.getName());
 
     public static void main(String args[]) {
+
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+
+        }};
+
+        try {
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (NoSuchAlgorithmException | KeyManagementException ex) {
+            logger.log(Level.SEVERE, ex.toString(), ex);
+        }
+
+        // Create all-trusting host name verifier
+        HostnameVerifier allHostsValid = (String hostname, SSLSession session) -> true;
+        // Install the all-trusting host verifier
+        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+
         java.awt.EventQueue.invokeLater(() -> {
             instance.init();
             instance.setAlwaysOnTop(true);
@@ -200,7 +239,7 @@ public final class Amphibia extends JFrame {
             }
         });
     }
-    
+
     public static File getAmphibiaHome() {
         return ProjectAbstract.getAmphibiaHome();
     }
@@ -1703,7 +1742,7 @@ public final class Amphibia extends JFrame {
         SelectedEnvironment env = (SelectedEnvironment) cmbEnvironment.getSelectedItem();
         return env != null && env.columnIndex != -1 ? env : null;
     }
-    
+
     public static void resetUndoManager(JTextComponent text) {
         Action action = text.getActionMap().get("Reset");
         action.actionPerformed(new ActionEvent(text, ActionEvent.ACTION_PERFORMED, null));

@@ -712,7 +712,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         });
         pnlEndpoint.add(cmdEndpoint);
 
-        btnEndpointInfo.setIcon(new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/icon-16-info.png"))); // NOI18N
+        btnEndpointInfo.setIcon(new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/info_16.png"))); // NOI18N
         btnEndpointInfo.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnEndpointInfo.setFocusPainted(false);
         btnEndpointInfo.setPreferredSize(new Dimension(30, 22));
@@ -743,7 +743,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         });
         pnlInterface.add(cmdInterface);
 
-        btnInterfaceInfo.setIcon(new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/icon-16-info.png"))); // NOI18N
+        btnInterfaceInfo.setIcon(new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/info_16.png"))); // NOI18N
         btnInterfaceInfo.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnInterfaceInfo.setFocusPainted(false);
         btnInterfaceInfo.setPreferredSize(new Dimension(30, 22));

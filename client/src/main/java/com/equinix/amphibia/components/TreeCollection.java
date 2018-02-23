@@ -105,10 +105,13 @@ public final class TreeCollection {
     };
 
     public static final Object[][] RULES_PROPERTIES = new Object[][]{
-        {"headers", null, VIEW},
+        {"info", null, VIEW},
+        {"endpoints", null, VIEW},
         {"globalProperties", null, VIEW},
         {"projectProperties", null, VIEW},
-        {"testSuiteProperties", null, VIEW}
+        {"testsuites", null, VIEW},
+        {"commons", null, VIEW},
+        {"tests", null, VIEW}
     };
 
     public static final Object[][] PROFILE_PROPERTIES = new Object[][]{

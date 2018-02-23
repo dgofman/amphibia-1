@@ -61,6 +61,7 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
     protected final DefaultTreeModel treeProblemsModel;
     protected final DefaultMutableTreeNode warnings;
     protected final DefaultMutableTreeNode errors;
+    protected final DefaultMutableTreeNode info;
 
     protected final Preferences userPreferences = getUserPreferences();
     protected static final Logger logger = Amphibia.getLogger(BaseTaskPane.class.getName());
@@ -80,8 +81,10 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
         DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode();
         warnings = new DefaultMutableTreeNode(bundle.getString("warnings"));
         errors = new DefaultMutableTreeNode(bundle.getString("errors"));
+        info = new DefaultMutableTreeNode(bundle.getString("info"));
         treeNode.add(warnings);
         treeNode.add(errors);
+        treeNode.add(info);
         treeProblemsModel = new DefaultTreeModel(treeNode);
         changeLocale();
         initComponents();
@@ -141,8 +144,14 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
         if (tabs.getSelectedIndex() == Amphibia.TAB_PROBLEMS) {
             warnings.removeAllChildren();
             errors.removeAllChildren();
+            info.removeAllChildren();
             treeProblemsModel.reload();
         }
+    }
+    
+    public DefaultMutableTreeNode addInfo(String infoMsg) {
+        logger.log(Level.INFO, infoMsg);
+        return addToTree(info, infoMsg);
     }
 
     public DefaultMutableTreeNode addWarning(String warning) {
@@ -265,6 +274,7 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
 
         ImageIcon warningIcon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/warning_16.png"));
         ImageIcon errorIcon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/error_16.png"));
+        ImageIcon infoIcon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/info_16.png"));
 
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
@@ -274,6 +284,8 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
                 setIcon(warningIcon);
             } else if (value == errors) {
                 setIcon(errorIcon);
+            } else if (value == info) {
+                setIcon(infoIcon);
             }
             return c;
         }

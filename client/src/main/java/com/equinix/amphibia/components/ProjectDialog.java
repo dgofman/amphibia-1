@@ -545,6 +545,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
                         txtSwaggerUrl.setText(url);
                         invalidateAll();
                     } catch (Exception e) {
+                        mainPanel.addError(e);
                         lblSwaggerUrlError.setText(bundle.getString("error_open_json"));
                     }
                     pnlWaitOverlay.setVisible(false);
@@ -682,6 +683,8 @@ public final class ProjectDialog extends javax.swing.JPanel {
             items.forEach(mainPanel.editor::addWarning);
             items = (List<String>) results.get(RESOURCE_TYPE.errors);
             items.forEach(mainPanel.editor::addError);
+            items = (List<String>) results.get(RESOURCE_TYPE.info);
+            items.forEach(mainPanel.editor::addInfo);
         } catch (Exception e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
