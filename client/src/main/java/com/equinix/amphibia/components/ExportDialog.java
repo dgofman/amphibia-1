@@ -128,6 +128,7 @@ public final class ExportDialog extends javax.swing.JPanel {
         boolean isCommon = rbnParentLevel.isSelected() && chbCommon.isSelected();
         
         TreeCollection collection = MainPanel.selectedNode.getCollection();
+        JSONObject project = collection.project.jsonObject();
         JSONObject profile = collection.getProjectProfile();
 
         JSONObject info = json.getJSONObject("info");
@@ -135,12 +136,28 @@ public final class ExportDialog extends javax.swing.JPanel {
         info.put("directory", collection.getProjectDir().getAbsolutePath());
         info.put("environment", Amphibia.getUserPreferences().get(Amphibia.P_SELECTED_ENVIRONMENT, null));
         JSONArray resources = new JSONArray();
-        profile.getJSONArray("resources").forEach((item) -> {
-            JSONObject resource = (JSONObject) item;
+        JSONArray interfaces = project.getJSONArray("interfaces");
+        profile.getJSONArray("resources").forEach((item1) -> {
+            JSONObject resource = (JSONObject) item1;
+            JSONObject headers = new JSONObject();
+            
+            interfaces.forEach((item2) ->  {
+                JSONObject itf = (JSONObject) item2;
+                if (itf.getString("id").equals(resource.get("interface"))) {
+                    if (itf.containsKey("headers")) {
+                        headers.putAll(itf.getJSONObject("headers"));
+                    }
+                }
+            });
+            
+            if (resource.containsKey("headers")) {
+                headers.putAll(resource.getJSONObject("headers"));
+            }
+            
             resources.add(new LinkedHashMap<Object, Object>() {{
                 put("type", resource.getOrDefault("type", null));
                 put("source", resource.getOrDefault("source", null));
-                put("headers", resource.getJSONObject("headers"));
+                put("headers", headers);
             }});
         });
         info.put("resources", resources);
@@ -162,7 +179,14 @@ public final class ExportDialog extends javax.swing.JPanel {
             }
         }
         
-        json.getJSONObject("projectProperties").accumulateAll(profile.getJSONObject("properties"));
+        json.getJSONObject("projectProperties").putAll(project.getJSONObject("projectProperties"));
+        json.getJSONObject("projectProperties").putAll(profile.getJSONObject("properties"));
+        
+        JSONObject projectTestSuites = new JSONObject();
+        project.getJSONArray("projectResources").forEach((item) -> {
+            JSONObject resource = (JSONObject) item;
+            projectTestSuites.putAll(resource.getJSONObject("testsuites"));
+        });
         
         JSONObject original;
         JSONObject testSuitesRules = json.getJSONObject("testsuites");
@@ -200,42 +224,63 @@ public final class ExportDialog extends javax.swing.JPanel {
                 JSONObject testCase = new JSONObject();
                 original = testcaseNode.getInfo().testCase;
                 File file = IO.getFile(collection, original.getString("path"));
-                if (isTestCase || testcaseNode.getActionIndex() != CheckBoxNode.UNSELECT) {      
-                    if (original.containsKey("headers") && !original.getJSONObject("headers").isEmpty()) {
-                        testCase.put("headers", original.get("headers"));
+                String testSuiteName = file.getParentFile().getName();
+                String testCaseName = file.getName().split(".json")[0];
+                JSONObject projectTestSuite = (JSONObject) projectTestSuites.getOrDefault(testSuiteName, new JSONObject());
+                if (isTestCase || testcaseNode.getActionIndex() != CheckBoxNode.UNSELECT) {
+                    JSONObject headers = new JSONObject();
+                    JSONObject properties = new JSONObject();
+                    
+                    for (Object item : projectTestSuite.getJSONArray("testcases")) {
+                        JSONObject testcase = (JSONObject) item;
+                        if (testCaseName.equals(testcase.getString("name"))) {
+                            headers.putAll((JSONObject) testcase.getOrDefault("headers", new JSONObject()));
+                            properties.putAll((JSONObject) testcase.getOrDefault("properties", new JSONObject()));
+                            properties.remove("HTTPStatusCode");
+                            break;
+                        }
                     }
-                    if (original.containsKey("properties") && !original.getJSONObject("properties").isEmpty()) {
-                        testCase.put("properties", original.get("properties"));
+                    
+                    headers.putAll((JSONObject) original.getOrDefault("headers", new JSONObject()));
+                    if (!headers.isEmpty()) {
+                        testCase.put("headers", headers);
+                    }
+
+                    properties.putAll((JSONObject) original.getOrDefault("properties", new JSONObject()));
+                    if (!properties.isEmpty()) {
+                        testCase.put("properties", properties);
                     }
                 }
                 if (!testSteps.isEmpty()) {
                     testCase.put("steps", testSteps);
                 }
                 if (!testCase.isEmpty()) {
-                    String name = file.getName().split(".json")[0];
                     if (file.exists()) {
-                        String testSuiteName = file.getParentFile().getName();
                         JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject()) ;
                         try {
-                            suiteJSON.put(name, IO.getJSON(file));
+                            suiteJSON.put(testCaseName, IO.getJSON(file));
                         } catch (Exception ex) {
                             mainPanel.addError(ex);
                         }
                         tests.put(testSuiteName, suiteJSON);
                     }
 
-                    if (!name.equals(original.getString("name"))) {
+                    if (!testCaseName.equals(original.getString("name"))) {
                         testCase.put("name", original.getString("name"));
                     }
-                    testCases.put(name, testCase);
+                    testCases.put(testCaseName, testCase);
                 }
             }
                
             JSONObject testSuite = new JSONObject();
             original = testsuiteNode.getInfo().testSuite;
             if (isTestSuite || testsuiteNode.getActionIndex() != CheckBoxNode.UNSELECT) {
-                if (original.containsKey("properties") && !original.getJSONObject("properties").isEmpty()) {
-                    testSuite.put("properties", original.get("properties"));
+                JSONObject properties = new JSONObject();
+                JSONObject projectTestSuite = (JSONObject) projectTestSuites.getOrDefault(original.getString("name"), new JSONObject());
+                properties.putAll((JSONObject) projectTestSuite.getOrDefault("properties", new JSONObject()));
+                properties.putAll((JSONObject) original.getOrDefault("properties", new JSONObject()));
+                if (!properties.isEmpty()) {
+                    testSuite.put("properties", properties);
                 }
             }
             if (!testCases.isEmpty()) {
