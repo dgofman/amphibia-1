@@ -32,6 +32,7 @@ public class Converter {
     public static final String NAME = "name";
     public static final String PATH = "path";
     public static final String INPUT = "input";
+    public static final String MERGE = "merge";
     public static final String PROPERTIES = "properties";
     public static final String INTERFACES = "interfaces";
     public static final String SCHEMA = "schema";
@@ -72,6 +73,7 @@ public class Converter {
         Options options = new Options();
         options.addOption(new Option("n", NAME, true, "Project name (Optional)"));
         options.addOption(new Option("a", PATH, true, "Absolute path (Optional)"));
+        options.addOption(new Option("m", MERGE, true, "Merge properties into project file. Default: false"));
         options.addOption(new Option("p", PROPERTIES, true, "Comma-separated list of property file(s) (Optional)"));
         options.addOption(new Option("f", INTERFACES, true, "Comma-separated list of interface name(s) (Optional)"));
         options.addOption(new Option("s", SCHEMA, true, "Generate JSON schemas. Default: true"));
@@ -165,7 +167,7 @@ public class Converter {
             }
             String resourceId = UUID.randomUUID().toString();
             Swagger swagger = new Swagger(cmd, resourceId, is, pis, output, profile);
-            profile.setSwagger(swagger);
+            profile.setSwagger(swagger, swagger.getSwaggerProperties());
             name = swagger.init(name, i, inputParam, isURL, propertiesFile);
             IOUtils.closeQuietly(is);
         }

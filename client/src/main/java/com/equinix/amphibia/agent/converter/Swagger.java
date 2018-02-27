@@ -33,6 +33,7 @@ public final class Swagger {
     private final JSONObject swaggerProperties;
     private final Profile profile;
     private final String resourceId;
+    private final boolean isMerge;
 
     public static final Map<Object, String> asserts = new LinkedHashMap<>();
     public static final JSONNull NULL = JSONNull.getInstance();
@@ -45,6 +46,7 @@ public final class Swagger {
         this.swaggerProperties = getContent(properties);
         this.output = output;
         this.profile = profile;
+        this.isMerge = "true".equals(Converter.cmd.getOptionValue(Converter.MERGE));
     }
 
     public String init(String name, int index, String inputParam, boolean isURL, String propertiesFile) throws Exception {
@@ -156,14 +158,14 @@ public final class Swagger {
                     });
                 }
             }
-            if (swaggerProperties.containsKey("info")) {
+            if (isMerge && swaggerProperties.containsKey("info")) {
                 JSONArray resources = swaggerProperties.getJSONObject("info").getJSONArray("resources");
                 resources.forEach((item) -> {
                     JSONObject resource = (JSONObject) item;
                     if (resource.containsKey("source")) {
                         if ((isURL && inputParam.equals(resource.getString("source")))
                                 || inputParam.contains(resource.getString("source"))) {
-                            headers.accumulateAll(resource.getJSONObject("headers"));
+                            headers.putAll(resource.getJSONObject("headers"));
                         }
                     }
                 });
@@ -209,7 +211,7 @@ public final class Swagger {
         output.put("globals", globals);
         output.put("interfaces", interfaces);
 
-        profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile);
+        profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile, swaggerProperties);
 
         JSONArray projectResources = output.containsKey("projectResources") ? output.getJSONArray("projectResources") : new JSONArray();
         JSONObject testsuites = output.containsKey("testsuites") ? output.getJSONObject("testsuites") : new JSONObject();
@@ -217,7 +219,7 @@ public final class Swagger {
         addTestSuite(index, resourceId, interfaceId, interfaceBasePath, testsuites);
 
         JSONObject properties = output.containsKey("properties") ? output.getJSONObject("properties") : new JSONObject();
-        if (swaggerProperties != null) {
+        if (isMerge && swaggerProperties != null) {
             JSONObject projectProperties = swaggerProperties.getJSONObject("projectProperties");
             projectProperties.keySet().forEach((key) -> {
                 Object value = projectProperties.get(key);
@@ -283,7 +285,7 @@ public final class Swagger {
         for (String testSuiteName : testSuiteMap.keySet()) {
             JSONArray testcases = new JSONArray();
             JSONObject testSuiteRule = new JSONObject();
-            if (testSuitesRules.containsKey(testSuiteName)) {
+            if (isMerge && testSuitesRules.containsKey(testSuiteName)) {
                 testSuiteRule.accumulateAll(testSuitesRules.getJSONObject(testSuiteName));
             }
             addTestCases(index, testcases, testSuiteMap.get(testSuiteName), testSuiteRule);

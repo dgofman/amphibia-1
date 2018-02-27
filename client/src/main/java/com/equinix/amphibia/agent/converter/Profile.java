@@ -22,6 +22,7 @@ public class Profile {
 
     protected JSONObject definitions;
     protected Swagger swagger;
+    protected final boolean isMerge;
     protected final boolean isJSON;
     protected final boolean isNullTests;
     protected final boolean isTypeTests;
@@ -47,12 +48,13 @@ public class Profile {
     private static final Logger LOGGER = ProjectAbstract.getLogger(Profile.class.getName());
 
     public static final String HTTP_STATUS_CODE = "HTTPStatusCode";
-    
+
     public Profile() throws Exception {
         resources = new ArrayList<>();
         testsuites = new ArrayList<>();
         common = new LinkedHashMap<>();
         invalidPropertyValues = new LinkedHashMap<>();
+        isMerge = "true".equals(Converter.cmd.getOptionValue(Converter.MERGE));
         isJSON = "true".equals(Converter.cmd.getOptionValue(Converter.JSON));
         isNullTests = "true".equals(Converter.cmd.getOptionValue(Converter.NULL));
         isTypeTests = "true".equals(Converter.cmd.getOptionValue(Converter.TYPE));
@@ -96,26 +98,48 @@ public class Profile {
         ((LinkedHashMap<Object, Object>) profile.get("project")).put("name", projectName);
     }
 
-    public void setSwagger(Swagger swagger) {
+    public void setSwagger(Swagger swagger, JSONObject swaggerProperties) {
         this.swagger = swagger;
+        if (!isMerge && swaggerProperties != null) {
+            ((JSONObject) profile.get("properties")).putAll(swaggerProperties.getJSONObject("projectProperties"));
+        }
     }
 
     public void setDefinition(JSONObject doc) {
         this.definitions = doc.getJSONObject("definitions");
     }
 
-    public void addResource(String resourceId, String intf, String inputParam, boolean isURL, String propertiesFile) {
-        resources.add(new LinkedHashMap<Object, Object>() {
+    public void addResource(String resourceId, String intf, String inputParam, boolean isURL, String propertiesFile,
+            JSONObject swaggerProperties) {
+        Map<Object, Object> resourceMap = new LinkedHashMap<Object, Object>() {
             {
                 put("id", resourceId);
                 put("interface", intf);
                 put("type", isURL ? RESOURCE_TYPE_URL : RESOURCE_TYPE_FILE);
                 put("source", inputParam);
                 put("properties", propertiesFile);
-                put("headers", new LinkedHashMap<Object, Object>() {
-                });
+                put("headers", new JSONObject());
             }
-        });
+        };
+        if (!isMerge && swaggerProperties != null) {
+            JSONArray resourceInfo = swaggerProperties.getJSONObject("info").getJSONArray("resources");
+            resourceInfo.forEach((item) -> {
+                JSONObject resource = (JSONObject) item;
+                if (resource.containsKey("source")) {
+                    if ((isURL && inputParam.equals(resource.getString("source")))
+                            || inputParam.contains(resource.getString("source"))) {
+                        ((JSONObject) resourceMap.get("headers")).putAll(resource.getJSONObject("headers"));
+                        if (resource.containsKey("interface")) {
+                            resourceMap.put("name", resource.get("interface"));
+                        }
+                        if (resource.containsKey("basePath")) {
+                            resourceMap.put("basePath", resource.get("basePath"));
+                        }
+                    }
+                }
+            });
+        }
+        resources.add(resourceMap);
     }
 
     public void saveFile(JSONObject output, File outputFile) throws Exception {
@@ -174,14 +198,7 @@ public class Profile {
                 String testFile = getPath(info) + ".json";
                 String name = info.methodName + "_" + info.apiName;
                 JSONObject testcaseRules = (JSONObject) testcasesRules.getOrDefault(name, new JSONObject());
-                JSONArray steps = (JSONArray) testcaseRules.getOrDefault("steps", new JSONArray());
-                testcases.add(new LinkedHashMap<Object, Object>() {
-                    {
-                        put("name", testcaseRules.getOrDefault("name", name));
-                        put("path", swagger.getDataDirPath() + "/tests/" + testFile);
-                        put("steps", steps);
-                    }
-                });
+                JSONArray steps = addTestCase(testcases, testcaseRules, testSuiteName, name);
                 testcasesRules.remove(name);
                 addTestSteps(steps, info, testFile, "tests", testSuiteTests);
             }
@@ -189,16 +206,13 @@ public class Profile {
             if (!testcasesRules.isEmpty()) {
                 testcasesRules.keySet().forEach((key) -> {
                     JSONObject testcaseRules = testcasesRules.getJSONObject(key.toString());
-                    testcases.add(new LinkedHashMap<Object, Object>() {
-                        {
-                            put("name", key);
-                            put("path", swagger.getDataDirPath() + "/tests/" + key + ".json");
-                            put("steps", testcaseRules.getOrDefault("steps", new JSONArray()));
-                        }
-                    });
+                    addTestCase(testcases, testcaseRules, testSuiteName, key);
                 });
             }
             testsuite.put("testcases", testcases);
+            if (testSuiteRules.containsKey("properties")) {
+                testsuite.put("properties", testSuiteRules.get("properties"));
+            }
             testsuites.add(testsuite);
             testSuitesRules.remove(testSuiteName);
         }
@@ -216,13 +230,7 @@ public class Profile {
                 JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONArray());
                 testcasesRules.keySet().forEach((testcaseName) -> {
                     JSONObject testcaseRules = testcasesRules.getJSONObject(testcaseName.toString());
-                    testcases.add(new LinkedHashMap<Object, Object>() {
-                        {
-                            put("name", testcaseName);
-                            put("path", swagger.getDataDirPath() + "/tests/" + testcaseName + ".json");
-                            put("steps", testcaseRules.getOrDefault("steps", new JSONArray()));
-                        }
-                    });
+                    addTestCase(testcases, testcaseRules, testSuiteName, testcaseName);
                 });
                 testsuite.put("testcases", testcases);
                 testsuites.add(testsuite);
@@ -230,14 +238,62 @@ public class Profile {
         }
     }
 
+    private JSONArray addTestCase(List<Map<Object, Object>> testcases, JSONObject testcaseRules, Object testSuiteName, Object testCaseName) {
+        JSONArray steps = (JSONArray) testcaseRules.getOrDefault("steps", new JSONArray());
+        for (int i = 0; i < steps.size(); i++) {
+            Object item = steps.get(i);
+            if (item instanceof JSONObject) {
+                JSONObject step = (JSONObject) item;
+                if (step.containsKey("request")) {
+                    Object body = step.getJSONObject("request").getOrDefault("body", null);
+                    if (body != null) {
+                        step.getJSONObject("request").put("body",
+                                String.format(body.toString(), swagger.getResourceId()));
+                    }
+                }
+                if (step.containsKey("response")) {
+                    Object body = step.getJSONObject("response").getOrDefault("body", null);
+                    if (body != null) {
+                        step.getJSONObject("response").put("body",
+                                String.format(body.toString(), swagger.getResourceId()));
+                    }
+                }
+            } else {
+                JSONObject step = new JSONObject();
+                step.put("name", item);
+                if (common.containsKey(item)) {
+                    step.put("common", item);
+                }
+                steps.set(i, step);
+            }
+        }
+        testcases.add(new LinkedHashMap<Object, Object>() {
+            {
+                put("name", testcaseRules.containsKey("name") ? testcaseRules.get("name") : testCaseName);
+                put("path", swagger.getDataDirPath() + "/tests/" + getPath(testSuiteName, testCaseName) + ".json");
+                put("steps", steps);
+                if (testcaseRules.containsKey("headers")) {
+                    put("headers", testcaseRules.get("headers"));
+                }
+                if (testcaseRules.containsKey("properties")) {
+                    put("properties", testcaseRules.get("properties"));
+                }
+                if (testcaseRules.containsKey("transfer")) {
+                    put("transfer", testcaseRules.get("transfer"));
+                }
+            }
+        });
+        return steps;
+    }
+
     @SuppressWarnings("NonPublicExported")
-    protected void addTestSteps(JSONArray steps, ApiInfo info, String testFile, String childDir, JSONObject testSuiteTests)
-            throws Exception {
+    protected void addTestSteps(JSONArray steps, ApiInfo info, String testFile, String childDir,
+            JSONObject testSuiteTests) throws Exception {
         JSONObject api = info.api;
         Map<Object, Object> body = new LinkedHashMap<>();
 
         Map<String, Object> teststep = new LinkedHashMap<>();
-        Map<String, Object> step = addStep(info, testFile, api, body);
+        Map<String, Object> step = addStep(info, testFile, api, body, testSuiteTests);
         Map<Object, Map<Object, Object>> request = (Map<Object, Map<Object, Object>>) step.get("request");
         if (request != null) {
             Map<Object, Object> properties = request.get("properties");
@@ -288,9 +344,18 @@ public class Profile {
                     JSONObject json = new JSONObject();
                     String name = key.toString().replaceAll("\\.", "_") + "_TRUE";
                     if (isAddTypeTests) {
-                        json.element("name", name);
-                        json.element("common", name);
-                        steps.add(json);
+                        boolean add = true;
+                        for (Object item : steps) {
+                            if (((JSONObject) item).getString("name").equals(name)) {
+                                add = false;
+                                break;
+                            }
+                        }
+                        if (add) {
+                            json.element("name", name);
+                            json.element("common", name);
+                            steps.add(json);
+                        }
                     }
 
                     if (!common.containsKey(name)) {
@@ -318,14 +383,11 @@ public class Profile {
                 }
             });
         }
+
         teststep.put("request", request);
         teststep.put("response", step.get("response"));
         JSONObject json = JSONObject.fromObject(teststep);
-        if (testSuiteTests.containsKey(info.testCaseName)) {
-            //TODO
-            JSONObject testCaseJSON = testSuiteTests.getJSONObject(info.testCaseName);
-            json.putAll(testCaseJSON);
-        }
+
         String testStepFile = save(swagger.getDataDir(), Swagger.getJson(json), testFile, childDir, null);
         Converter.addResult(RESOURCE_TYPE.tests, testStepFile);
     }
@@ -504,7 +566,8 @@ public class Profile {
     }
 
     @SuppressWarnings("NonPublicExported")
-    public void addPropertyValue(ApiInfo info, String definitionName, JSONObject examples, Map<Object, Object> properties, Object key, Object value) {
+    public void addPropertyValue(ApiInfo info, String definitionName, JSONObject examples,
+            Map<Object, Object> properties, Object key, Object value) {
         if (isNullValidation && value == null) {
             if (!examples.isEmpty()) {
                 value = findPropertyValueFromExamples(examples, key.toString());
@@ -516,23 +579,23 @@ public class Profile {
             String errorKey = definitionName + "|" + key + "|" + value;
             if (!invalidPropertyValues.containsKey(errorKey)) {
                 invalidPropertyValues.put(errorKey, true);
-                Converter.addResult(RESOURCE_TYPE.warnings,
-                        "'" + key + "' parameter is set to NULL. (" + (definitionName != null ? "Definition: " + definitionName : "Path: " + info.path) + ")");
+                Converter.addResult(RESOURCE_TYPE.warnings, "'" + key + "' parameter is set to NULL. ("
+                        + (definitionName != null ? "Definition: " + definitionName : "Path: " + info.path) + ")");
             }
         } else if (isTypeValidation && (value instanceof String && ("true".equals(value) || "false".equals(value)))) {
             String errorKey = definitionName + "|" + key + "|" + value;
             if (!invalidPropertyValues.containsKey(errorKey)) {
                 invalidPropertyValues.put(errorKey, true);
-                Converter.addResult(RESOURCE_TYPE.warnings,
-                        "'" + key + "' parameter is set as BOOLEAN STRING. (" + (definitionName != null ? "Definition: " + definitionName : "Path: " + info.path) + ")");
+                Converter.addResult(RESOURCE_TYPE.warnings, "'" + key + "' parameter is set as BOOLEAN STRING. ("
+                        + (definitionName != null ? "Definition: " + definitionName : "Path: " + info.path) + ")");
             }
         }
         properties.put(key, value);
     }
 
     @SuppressWarnings("NonPublicExported")
-    protected Map<String, Object> addStep(ApiInfo info, String fileName, JSONObject api, Map<Object, Object> body)
-            throws Exception {
+    protected Map<String, Object> addStep(ApiInfo info, String fileName, JSONObject api, Map<Object, Object> body,
+            JSONObject testSuiteTests) throws Exception {
         Map<String, Object> step = new LinkedHashMap<>();
 
         Object requestBody = null;
@@ -594,15 +657,18 @@ public class Profile {
                         if (response.containsKey("examples")) {
                             examples = response.getJSONObject("examples");
                             if (schema.containsKey("properties")) {
-                                addBodyAndProperty(info, null, schema.getJSONObject("properties"), responseProperties, resBody, examples, "");
+                                addBodyAndProperty(info, null, schema.getJSONObject("properties"), responseProperties,
+                                        resBody, examples, "");
                             } else if (schema.containsKey("items")) {
                                 JSONObject items = schema.getJSONObject("items");
                                 if (items.containsKey("$ref")) {
-                                    addBodyAndProperties(info, items.getString("$ref"), responseProperties, resBody, examples, "");
+                                    addBodyAndProperties(info, items.getString("$ref"), responseProperties, resBody,
+                                            examples, "");
                                 }
                             }
                             if (schema.containsKey("$ref")) {
-                                addBodyAndProperties(info, schema.getString("$ref"), responseProperties, resBody, examples, "");
+                                addBodyAndProperties(info, schema.getString("$ref"), responseProperties, resBody,
+                                        examples, "");
                             }
                         }
                         if (!resBody.isEmpty()) {
@@ -654,9 +720,40 @@ public class Profile {
             responseFile = Swagger.NULL;
         }
 
+        JSONArray asserts = new JSONArray();
+        JSONObject transfer = new JSONObject();
+        if (testSuiteTests.containsKey(info.testCaseName)) {
+            JSONObject testCaseRules = testSuiteTests.getJSONObject(info.testCaseName);
+            if (testCaseRules.containsKey("request")) {
+                JSONObject requestRules = testCaseRules.getJSONObject("request");
+                if (requestRules.containsKey("body")) {
+                    requestBody = requestRules.getString("body") == null ? null
+                            : String.format(requestRules.getString("body"), swagger.getResourceId());
+                }
+                if (requestRules.containsKey("properties")) {
+                    requestProperties.putAll(requestRules.getJSONObject("properties"));
+                }
+            }
+            if (testCaseRules.containsKey("response")) {
+                JSONObject responseRules = testCaseRules.getJSONObject("response");
+                if (responseRules.containsKey("body")) {
+                    responseFile = responseRules.getString("body") == null ? null
+                            : String.format(responseRules.getString("body"), swagger.getResourceId());
+                }
+                if (responseRules.containsKey("properties")) {
+                    responseProperties.putAll(responseRules.getJSONObject("properties"));
+                }
+                if (responseRules.containsKey("transfer")) {
+                    transfer.putAll(responseRules.getJSONObject("transfer"));
+                }
+                if (responseRules.containsKey("asserts")) {
+                    asserts.addAll(responseRules.getJSONArray("asserts"));
+                }
+            }
+        }
+
         final Object reqBody = requestBody == null ? Swagger.NULL : requestBody;
-        final Object reqSchema = requestSchema == null ? Swagger.NULL : requestSchema;
-        final Object resSchema = responseSchema == null ? Swagger.NULL : responseSchema;
+        final Object resBody = responseFile == null ? Swagger.NULL : responseFile;
         step.put("request", new LinkedHashMap<Object, Object>() {
             {
                 put("properties", requestProperties);
@@ -666,14 +763,23 @@ public class Profile {
         step.put("response", new LinkedHashMap<Object, Object>() {
             {
                 put("properties", responseProperties);
-                put("body", responseFile);
-                put("asserts", new ArrayList<>());
+                put("body", resBody);
+                if (!asserts.isEmpty()) {
+                    put("asserts", asserts);
+                }
+                if (!transfer.isEmpty()) {
+                    put("transfer", transfer);
+                }
             }
         });
         return step;
     }
 
     private String getPath(ApiInfo info) {
-        return Swagger.stripName(info.testSuiteName) + "/" + info.methodName + "_" + info.apiName;
+        return getPath(info.testSuiteName, info.methodName + "_" + info.apiName);
+    }
+
+    private String getPath(Object testSuiteName, Object testCaseName) {
+        return Swagger.stripName(testSuiteName.toString()) + "/" + testCaseName;
     }
 }

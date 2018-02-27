@@ -176,9 +176,10 @@ public final class Runner extends BaseTaskPane implements IHttpConnection {
             TreeIconNode child = (TreeIconNode) children.nextElement();
             child.setReportState(TreeIconNode.REPORT_INIT_STATE);
             if (child.getType() == TreeCollection.TYPE.TEST_STEP_ITEM || child.getType() == TreeCollection.TYPE.TESTCASE) {
-                child.jsonObject().remove("error");
-                child.jsonObject().remove("time");
-                child.jsonObject().remove("timestamp");
+                JSONObject json = child.jsonObject();
+                json.remove("error");
+                json.remove("time");
+                json.remove("timestamp");
             }
         }
 

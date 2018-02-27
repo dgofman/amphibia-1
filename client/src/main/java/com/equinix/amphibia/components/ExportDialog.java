@@ -157,6 +157,12 @@ public final class ExportDialog extends javax.swing.JPanel {
             resources.add(new LinkedHashMap<Object, Object>() {{
                 put("type", resource.getOrDefault("type", null));
                 put("source", resource.getOrDefault("source", null));
+                if (resource.containsKey("name")) {
+                    put("interface", resource.get("name"));
+                }
+                if (resource.containsKey("basePath")) {
+                    put("basePath", resource.get("basePath"));
+                }
                 put("headers", headers);
             }});
         });
@@ -212,6 +218,8 @@ public final class ExportDialog extends javax.swing.JPanel {
                             clone.remove("common");
                             if (!clone.isEmpty()) {
                                 testSteps.add(testStep);
+                            } else {
+                                testSteps.add(testStep.getString("name"));
                             }
                         }
                     }
@@ -231,8 +239,6 @@ public final class ExportDialog extends javax.swing.JPanel {
                         JSONObject testcase = (JSONObject) item;
                         if (testCaseName.equals(testcase.getString("name"))) {
                             headers.putAll((JSONObject) testcase.getOrDefault("headers", new JSONObject()));
-                            properties.putAll((JSONObject) testcase.getOrDefault("properties", new JSONObject()));
-                            properties.remove("HTTPStatusCode");
                             break;
                         }
                     }
