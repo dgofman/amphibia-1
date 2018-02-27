@@ -320,14 +320,11 @@ public class Profile {
         }
         teststep.put("request", request);
         teststep.put("response", step.get("response"));
-        String json = JSONObject.fromObject(teststep).toString();
+        JSONObject json = JSONObject.fromObject(teststep);
         if (testSuiteTests.containsKey(info.testCaseName)) {
-            if (!json.equals(testSuiteTests.getJSONObject(info.testCaseName).toString())) {
-                String backupTestFile = testFile + ".bak";
-                save(swagger.getDataDir(), Swagger.getJson(json), backupTestFile, childDir, null);
-                Converter.addResult(RESOURCE_TYPE.info, "Swagger test has been changed and saved as: " + backupTestFile);
-            }
-            json = testSuiteTests.getJSONObject(info.testCaseName).toString();
+            //TODO
+            JSONObject testCaseJSON = testSuiteTests.getJSONObject(info.testCaseName);
+            json.putAll(testCaseJSON);
         }
         String testStepFile = save(swagger.getDataDir(), Swagger.getJson(json), testFile, childDir, null);
         Converter.addResult(RESOURCE_TYPE.tests, testStepFile);

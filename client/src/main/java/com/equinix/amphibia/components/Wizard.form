@@ -751,6 +751,9 @@
   <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
   <SubComponents>
     <Container class="javax.swing.JTabbedPane" name="tabNav">
+      <Properties>
+        <Property name="tabLayoutPolicy" type="int" value="1"/>
+      </Properties>
       <AuxValues>
         <AuxValue name="JavaCodeGenerator_InitCodePre" type="java.lang.String" value="wizardTab = new WizardTab(this);&#xa;tabNav.addTab(&quot;&quot;, &#xa;new ImageIcon(getClass().getResource(&quot;/com/equinix/amphibia/icons/wizard_16.png&quot;)),&#xa;wizardTab);"/>
         <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>

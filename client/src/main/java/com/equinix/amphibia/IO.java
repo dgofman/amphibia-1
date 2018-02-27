@@ -79,6 +79,10 @@ public class IO {
         }
     }
 
+    public static JSON getJSON(String path) throws Exception {
+        return getJSON(IO.getFile(path));
+    }
+    
     public static JSON getJSON(File file) throws Exception {
         JSON json = null;
         try {
@@ -184,16 +188,16 @@ public class IO {
         return str;
     }
     
-    public static String readFile(TreeCollection collection, String filePath) throws IOException {
-        return readFile(IO.newFile(collection.getProjectDir(), filePath));
+    public static String readFile(String filePath) throws IOException {
+        return readFile(getFile(filePath));
     }
     
-    public static String readFile(TreeCollection collection, String filePath, BaseTaskPane pane) {
-        return readFile(IO.newFile(collection.getProjectDir(), filePath), pane);
+    public static String readFile(String filePath, BaseTaskPane pane) {
+        return readFile(getFile(filePath), pane);
     }
 
-    public static JSON getJSON(TreeCollection collection, String filePath, BaseTaskPane pane) {
-        return getJSON(IO.newFile(collection.getProjectDir(), filePath), pane);
+    public static JSON getJSON(String filePath, BaseTaskPane pane) {
+        return getJSON(getFile(filePath), pane);
     }
 
     public static JSON getJSON(File file, BaseTaskPane pane) {
@@ -214,10 +218,6 @@ public class IO {
         }
     }
 
-    public static JSON getJSON(TreeCollection collection, String filePath) throws Exception {
-        return getJSON(getFile(collection, filePath));
-    }
-
     public static File getFile(TreeCollection collection, String path) {
         return IO.newFile(collection.getProjectDir(), path);
     }
@@ -227,10 +227,12 @@ public class IO {
         if (file.exists()) {
             return file;
         } else if (MainPanel.selectedNode != null) {
-            return getFile(MainPanel.selectedNode.getCollection(), path);
-        } else {
-            return file;
+            file = getFile(MainPanel.selectedNode.getCollection(), path);
+            if (file.exists()) {
+                return file;
+            }
         }
+        return IO.newFile(path);
     }
     
     public static File newFile(String path) {

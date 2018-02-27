@@ -195,7 +195,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                         wizard.mainPanel.saveNodeValue(collection.profile);
                         Amphibia.setText(txtReqHeaders, spnReqHeaders, IO.prettyJson(openedNode.info.properties.replace(testCaseHeaders.toString())));
                     } catch (Exception ex) {
-                        logger.log(Level.SEVERE, ex.toString(), ex);
+                        addError(ex, bundle.getString("error_open_json"));
                     }
                 }
             }
@@ -330,6 +330,18 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             headersDialog.setLocationRelativeTo(this);
             saveTestCase.setLocationRelativeTo(this);
         });
+    }
+    
+    public void deleteTab(boolean isSave) {
+        wizard.tabNav.remove(this);
+        openedNode.info.states.set(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB, 0);
+        if (isSave) {
+            save();
+        }
+    }
+    
+    public void save() {
+        openedNode.getCollection().profile.saveState(openedNode);
     }
 
     public void refresh() {
@@ -1029,7 +1041,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         try {
             Amphibia.setText(txtReqHeaders, spnReqHeaders, IO.prettyJson(openedNode.info.properties.replace(headers.toString())));
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, ex.toString(), ex);
+            addError(ex, bundle.getString("error_open_json"));
         }
 
         if (json != null) {
@@ -1037,7 +1049,11 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             txtTestCase.setText(json.getString("name"));
         }
         
-        Amphibia.setText(txtReqBody, spnReqBody, openedNode.info.getRequestBody(openedNode.getCollection()));
+        try {
+            Amphibia.setText(txtReqBody, spnReqBody, openedNode.info.getRequestBody());
+        } catch (Exception ex) {
+            addError(ex, bundle.getString("error_open_json"));
+        }
         testSuitesModel.addElement(openedNode.info.testSuite.getString("name"));
         txtSummary.setText(openedNode.info.testCaseInfo.getString("summary"));
         txtTestCaseFuncName.setText(openedNode.info.testCaseInfo.getString("operationId"));

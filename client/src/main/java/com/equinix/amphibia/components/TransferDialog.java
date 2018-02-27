@@ -290,7 +290,7 @@ public class TransferDialog extends javax.swing.JPanel {
         if (path != null) {
             File test = IO.getFile(node.getCollection(), (String) path);
             if (test.exists()) {
-                bodyJSON = (JSONObject) IO.getJSON(node.getCollection(), path.toString(), mainPanel.editor);
+                bodyJSON = (JSONObject) IO.getJSON(path.toString(), mainPanel.editor);
                 if (bodyJSON != null) {
                     if (bodyJSON != null) {
                         rbSelectPropertyPath.setSelected(true);

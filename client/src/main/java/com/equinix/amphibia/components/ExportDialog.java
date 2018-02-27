@@ -19,7 +19,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.ResourceBundle;
@@ -126,15 +125,16 @@ public final class ExportDialog extends javax.swing.JPanel {
         boolean isTestCase = rbnParentLevel.isSelected() && chbTestCase.isSelected();
         boolean isTestStep = rbnParentLevel.isSelected() && chbTestStep.isSelected();
         boolean isCommon = rbnParentLevel.isSelected() && chbCommon.isSelected();
+        boolean isTests = rbnParentLevel.isSelected() && chbTests.isSelected();
         
         TreeCollection collection = MainPanel.selectedNode.getCollection();
         JSONObject project = collection.project.jsonObject();
         JSONObject profile = collection.getProjectProfile();
 
-        JSONObject info = json.getJSONObject("info");
-        info.put("name", collection.getProjectName());
-        info.put("directory", collection.getProjectDir().getAbsolutePath());
-        info.put("environment", Amphibia.getUserPreferences().get(Amphibia.P_SELECTED_ENVIRONMENT, null));
+        JSONObject infoNode = json.getJSONObject("info");
+        infoNode.put("name", collection.getProjectName());
+        infoNode.put("directory", collection.getProjectDir().getAbsolutePath());
+        infoNode.put("environment", Amphibia.getUserPreferences().get(Amphibia.P_SELECTED_ENVIRONMENT, null));
         JSONArray resources = new JSONArray();
         JSONArray interfaces = project.getJSONArray("interfaces");
         profile.getJSONArray("resources").forEach((item1) -> {
@@ -160,9 +160,8 @@ public final class ExportDialog extends javax.swing.JPanel {
                 put("headers", headers);
             }});
         });
-        info.put("resources", resources);
+        infoNode.put("resources", resources);
         
-        JSONObject tests = json.getJSONObject("tests");
         JSONObject endpoints = json.getJSONObject("endpoints");
         endpoints.clear();
         JSONObject globals = json.getJSONObject("globalProperties");
@@ -188,7 +187,6 @@ public final class ExportDialog extends javax.swing.JPanel {
             projectTestSuites.putAll(resource.getJSONObject("testsuites"));
         });
         
-        JSONObject original;
         JSONObject testSuitesRules = json.getJSONObject("testsuites");
         CheckBoxNode testsuites = (CheckBoxNode) rootNode.getChildAt(0);
         CheckBoxNode commons = (CheckBoxNode) rootNode.getChildAt(1);
@@ -204,33 +202,31 @@ public final class ExportDialog extends javax.swing.JPanel {
                 while (teststeps.hasMoreElements()) {
                     CheckBoxNode teststepNode = (CheckBoxNode) teststeps.nextElement();
                     if (isTestStep || teststepNode.getActionIndex() != CheckBoxNode.UNSELECT) {
-                        JSONObject clone = IO.toJSONObject(original = teststepNode.getInfo().testStep);
-                        clone.remove("name");
-                        clone.remove("common");
-                        clone.remove("states");
-                        clone.remove("time");
-			clone.remove("line");
-                        clone.remove("error");
-                        if (!clone.isEmpty()) {
-                            original.remove("states");
-                            original.remove("time");
-                            original.remove("line");
-                            original.remove("error");
-                            testSteps.add(original);
+                        TreeIconNode.ResourceInfo info = teststepNode.getInfo();
+                        JSONObject testStep = copyValues(info.testStep, info.testCase.getString("path").split("/"));
+                        if (testStep.containsKey("common") && !testStep.getString("name").equals(testStep.getString("common"))) {
+                            testSteps.add(testStep);
+                        } else {
+                            JSONObject clone = IO.toJSONObject(testStep);
+                            clone.remove("name");
+                            clone.remove("common");
+                            if (!clone.isEmpty()) {
+                                testSteps.add(testStep);
+                            }
                         }
                     }
                 }
                 
-                JSONObject testCase = new JSONObject();
-                original = testcaseNode.getInfo().testCase;
-                File file = IO.getFile(collection, original.getString("path"));
-                String testSuiteName = file.getParentFile().getName();
-                String testCaseName = file.getName().split(".json")[0];
+                String path = testcaseNode.getInfo().testCase.getString("path");
+                String[] arr = path.split("/");
+                String testSuiteName = arr[3];
+                String testCaseName = arr[4].split(".json")[0];
                 JSONObject projectTestSuite = (JSONObject) projectTestSuites.getOrDefault(testSuiteName, new JSONObject());
+                JSONObject testCase = copyValues(testcaseNode.getInfo().testCase, arr);
                 if (isTestCase || testcaseNode.getActionIndex() != CheckBoxNode.UNSELECT) {
                     JSONObject headers = new JSONObject();
                     JSONObject properties = new JSONObject();
-                    
+
                     for (Object item : projectTestSuite.getJSONArray("testcases")) {
                         JSONObject testcase = (JSONObject) item;
                         if (testCaseName.equals(testcase.getString("name"))) {
@@ -241,12 +237,12 @@ public final class ExportDialog extends javax.swing.JPanel {
                         }
                     }
                     
-                    headers.putAll((JSONObject) original.getOrDefault("headers", new JSONObject()));
+                    headers.putAll((JSONObject) testCase.getOrDefault("headers", new JSONObject()));
                     if (!headers.isEmpty()) {
                         testCase.put("headers", headers);
                     }
 
-                    properties.putAll((JSONObject) original.getOrDefault("properties", new JSONObject()));
+                    properties.putAll((JSONObject) testCase.getOrDefault("properties", new JSONObject()));
                     if (!properties.isEmpty()) {
                         testCase.put("properties", properties);
                     }
@@ -254,26 +250,33 @@ public final class ExportDialog extends javax.swing.JPanel {
                 if (!testSteps.isEmpty()) {
                     testCase.put("steps", testSteps);
                 }
-                if (!testCase.isEmpty()) {
-                    if (file.exists()) {
-                        JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject()) ;
-                        try {
-                            suiteJSON.put(testCaseName, IO.getJSON(file));
-                        } catch (Exception ex) {
-                            mainPanel.addError(ex);
-                        }
-                        tests.put(testSuiteName, suiteJSON);
-                    }
+                
+                if (testCaseName.equals(testCase.getString("name"))) {
+                    testCase.remove("name");
+                }
 
-                    if (!testCaseName.equals(original.getString("name"))) {
-                        testCase.put("name", original.getString("name"));
-                    }
+                if (!testCase.isEmpty()) {
                     testCases.put(testCaseName, testCase);
+                }
+                
+                if (isTests) {
+                    JSONObject tests = json.getJSONObject("tests");
+                    JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject()) ;
+                    try {
+                        JSONObject test = copyValues((JSONObject) IO.getJSON(path), path.split("/"));
+                        if (test.getJSONObject("response").getJSONArray("asserts").isEmpty()) {
+                            test.getJSONObject("response").remove("asserts");
+                        }
+                        suiteJSON.put(testCaseName, test);
+                    } catch (Exception ex) {
+                        mainPanel.addError(ex);
+                    }
+                    tests.put(testSuiteName, suiteJSON);
                 }
             }
                
             JSONObject testSuite = new JSONObject();
-            original = testsuiteNode.getInfo().testSuite;
+            JSONObject original = testsuiteNode.getInfo().testSuite;
             if (isTestSuite || testsuiteNode.getActionIndex() != CheckBoxNode.UNSELECT) {
                 JSONObject properties = new JSONObject();
                 JSONObject projectTestSuite = (JSONObject) projectTestSuites.getOrDefault(original.getString("name"), new JSONObject());
@@ -299,6 +302,58 @@ public final class ExportDialog extends javax.swing.JPanel {
                 commonsNode.put(commonNode.getLabel(), commonNode.getJSON());
             }
         }
+    }
+    
+    private JSONObject copyValues(JSONObject source, String[] path) {
+        JSONObject target = new JSONObject();
+        target.put("name", source.get("name"));
+        if (source.containsKey("common")) {
+            target.put("common", source.get("common"));
+        }
+        if (source.containsKey("headers")) {
+            target.put("headers", source.get("headers"));
+        }
+        if (source.containsKey("properties")) {
+            target.put("properties", source.get("properties"));
+        }
+        if (source.containsKey("transfer")) {
+            target.put("transfer", source.get("transfer"));
+        }
+        if (source.containsKey("request")) {
+            JSONObject request = source.getJSONObject("request");
+            JSONObject targetRequest = new JSONObject();
+            String body = String.format("data/%s/requests/%s/%s", path[1], path[3], path[4]);
+            if (request.containsKey("body") && !body.equals(request.getString("body"))) {
+                targetRequest.put("body", request.getString("body") == null ? null : request.getString("body").replace(String.format("data/%s/", path[1]), "data/%s/"));
+            }
+            if (request.containsKey("properties")) {
+                targetRequest.put("properties", request.get("properties"));
+            }
+            if (!targetRequest.isEmpty()) {
+                target.put("request", targetRequest);
+            }
+        }
+        if (source.containsKey("response")) {
+            JSONObject response = source.getJSONObject("response");
+            JSONObject targetResponse = new JSONObject();
+            String body = String.format("data/%s/responses/%s/%s", path[1], path[3], path[4]);
+            if (response.containsKey("body") && !body.equals(response.getString("body"))) {
+                targetResponse.put("body", response.getString("body") == null ? null : response.getString("body").replace(String.format("data/%s/", path[1]), "data/%s/"));
+            }
+            if (response.containsKey("properties")) {
+                targetResponse.put("properties", response.get("properties"));
+            }
+            if (response.containsKey("asserts")) {
+                targetResponse.put("asserts", response.get("asserts"));
+            }
+            if (response.containsKey("transfer")) {
+                targetResponse.put("transfer", response.get("transfer"));
+            }
+            if (!targetResponse.isEmpty()) {
+                target.put("response", targetResponse);
+            }
+        }
+        return target;
     }
 
     public void openDialog() {
@@ -328,6 +383,7 @@ public final class ExportDialog extends javax.swing.JPanel {
         chbTestCase = new JCheckBox();
         chbTestStep = new JCheckBox();
         chbCommon = new JCheckBox();
+        chbTests = new JCheckBox();
         rbnCustom = new JRadioButton();
         spnCustom = new JScrollPane();
         treeCustom = new JTree();
@@ -349,10 +405,12 @@ public final class ExportDialog extends javax.swing.JPanel {
         chbTestSuite.setMargin(new Insets(2, 30, 2, 2));
         pnlTop.add(chbTestSuite);
 
+        chbTestCase.setSelected(true);
         chbTestCase.setText(bundle.getString("testcase")); // NOI18N
         chbTestCase.setMargin(new Insets(2, 30, 2, 2));
         pnlTop.add(chbTestCase);
 
+        chbTestStep.setSelected(true);
         chbTestStep.setText(bundle.getString("teststep")); // NOI18N
         chbTestStep.setMargin(new Insets(2, 30, 2, 2));
         pnlTop.add(chbTestStep);
@@ -360,6 +418,10 @@ public final class ExportDialog extends javax.swing.JPanel {
         chbCommon.setText(bundle.getString("common")); // NOI18N
         chbCommon.setMargin(new Insets(2, 30, 2, 2));
         pnlTop.add(chbCommon);
+
+        chbTests.setText(bundle.getString("tests")); // NOI18N
+        chbTests.setMargin(new Insets(2, 30, 2, 2));
+        pnlTop.add(chbTests);
 
         btgLevels.add(rbnCustom);
         rbnCustom.setText("Custom Selection");
@@ -393,6 +455,7 @@ public final class ExportDialog extends javax.swing.JPanel {
     private JCheckBox chbTestCase;
     private JCheckBox chbTestStep;
     private JCheckBox chbTestSuite;
+    private JCheckBox chbTests;
     private JPanel pnlTop;
     private JRadioButton rbnCustom;
     private JRadioButton rbnParentLevel;

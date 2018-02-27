@@ -45,7 +45,7 @@ public final class HttpConnection {
     public Result request(String name, String method, TreeIconNode node) throws Exception {
         final TreeCollection collection = node.getCollection();
         TreeIconNode.ResourceInfo info = node.info;
-        Result result = request(collection.getProjectProperties(), name, method, node.getTreeIconUserObject().getTooltip(), info.getRequestHeader(node), info.getRequestBody(collection));
+        Result result = request(collection.getProjectProperties(), name, method, node.getTreeIconUserObject().getTooltip(), info.getRequestHeader(node), info.getRequestBody());
         if (node.jsonObject().containsKey("response")) {
             JSONObject response = node.jsonObject().getJSONObject("response");
             if (response.containsKey("asserts")) {
@@ -83,12 +83,12 @@ public final class HttpConnection {
                         if (result.content == null) {
                             throw new Exception(bundle.getString("error_response_body_null"));
                         } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
-                            JSON json = IO.getJSON(IO.getFile(bodyFile));
+                            JSON json = IO.getJSON(bodyFile);
                             if (result.content.equals(IO.prettyJson(json.toString()))) {
                                 throw new Exception(bundle.getString("error_response_body_match"));
                             }
                         } else {
-                            JSON expected = IO.getJSON(IO.getFile(bodyFile));
+                            JSON expected = IO.getJSON(bodyFile);
                             JSON actual = IO.toJSON(result.content);
                             assertionValidation(assertType, actual, expected);
                         }

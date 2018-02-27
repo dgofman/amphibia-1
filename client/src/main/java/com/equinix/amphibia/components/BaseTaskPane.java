@@ -82,9 +82,9 @@ public class BaseTaskPane extends javax.swing.JSplitPane {
         warnings = new DefaultMutableTreeNode(bundle.getString("warnings"));
         errors = new DefaultMutableTreeNode(bundle.getString("errors"));
         info = new DefaultMutableTreeNode(bundle.getString("info"));
-        treeNode.add(warnings);
-        treeNode.add(errors);
         treeNode.add(info);
+        treeNode.add(errors);
+        treeNode.add(warnings);
         treeProblemsModel = new DefaultTreeModel(treeNode);
         changeLocale();
         initComponents();

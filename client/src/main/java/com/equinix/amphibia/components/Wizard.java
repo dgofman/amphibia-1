@@ -116,28 +116,35 @@ public class Wizard extends javax.swing.JPanel {
                     JPopupMenu popup = new JPopupMenu();
                     JMenuItem menu = new JMenuItem(bundle.getString("close"));
                     menu.setMargin(insets);
+                    final WizardTab tab = (WizardTab) tabNav.getComponentAt(index);
                     menu.addActionListener((ActionEvent e1) -> {
                         if (index != 0) {
-                            tabNav.remove(index);
+                            tab.deleteTab(true);
                         }
                     });
                     popup.add(menu);
                     menu = new JMenuItem(bundle.getString("closeAll"));
                     menu.setMargin(insets);
                     menu.addActionListener((ActionEvent e1) -> {
-                        for (int i = tabNav.getTabCount()- 1; i > 0; i--) {
-                            tabNav.remove(i);
+                        for (int i = tabNav.getTabCount() - 1; i > 0; i--) {
+                            if (tabNav.getComponentAt(i) instanceof WizardTab) {
+                                ((WizardTab) tabNav.getComponentAt(i)).deleteTab(false);
+                            }
                         }
+                        tab.save();
                     });
                     popup.add(menu);
                     menu = new JMenuItem(bundle.getString("closeOther"));
                     menu.setMargin(insets);
                     menu.addActionListener((ActionEvent e1) -> {
                         for (int i = tabNav.getTabCount() - 1; i > 0; i--) {
-                            if (i != index) {
-                                tabNav.remove(i);
+                            if (tabNav.getComponentAt(i) instanceof WizardTab) {
+                                if (tab != tabNav.getComponentAt(i)) {
+                                    ((WizardTab) tabNav.getComponentAt(i)).deleteTab(false);
+                                }
                             }
                         }
+                        tab.save();
                     });
                     popup.add(menu);
                     popup.show(tabNav, e.getX(), e.getY());
@@ -224,8 +231,8 @@ public class Wizard extends javax.swing.JPanel {
         });
 
         for (int i = 0; i < tabNav.getTabCount(); i++) {
-            if (tabNav.getComponent(i) instanceof WizardTab) {
-                WizardTab tab = (WizardTab) tabNav.getComponent(i);
+            if (tabNav.getComponentAt(i) instanceof WizardTab) {
+                WizardTab tab = (WizardTab) tabNav.getComponentAt(i);
                 tab.updateInterfaces();
                 tab.refresh();
             }
@@ -386,7 +393,7 @@ public class Wizard extends javax.swing.JPanel {
         newTab.refresh();
     }
 
-    private JPanel getTitlePanel(final JPanel panel, Icon icon, String title) {
+    private JPanel getTitlePanel(final WizardTab newTab, Icon icon, String title) {
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         titlePanel.setOpaque(false);
         JLabel label = new JLabel(title);
@@ -399,7 +406,7 @@ public class Wizard extends javax.swing.JPanel {
         closeButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                tabNav.remove(panel);
+                newTab.deleteTab(true);
             }
         });
         titlePanel.add(closeButton);
@@ -432,6 +439,9 @@ public class Wizard extends javax.swing.JPanel {
                 }
             }
         }
+        java.awt.EventQueue.invokeLater(() -> {
+            tabNav.setSelectedIndex(0);
+        });
     }
 
     /**
@@ -623,6 +633,7 @@ public class Wizard extends javax.swing.JPanel {
         tabNav.addTab("",
             new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/wizard_16.png")),
             wizardTab);
+        tabNav.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         add(tabNav, BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 

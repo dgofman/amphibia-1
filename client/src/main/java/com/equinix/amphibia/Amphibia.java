@@ -208,15 +208,19 @@ public final class Amphibia extends JFrame {
         HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
 
         java.awt.EventQueue.invokeLater(() -> {
-            instance.init();
+            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable ex) -> {
+                logger.log(Level.SEVERE, ex.toString(), ex);
+            });
+            try {
+                instance.init();
+            } catch (Exception ex) {
+                instance.mainPanel.addError(ex);
+            }
             instance.setAlwaysOnTop(true);
             instance.toFront();
             instance.requestFocus();
             instance.setAlwaysOnTop(false);
             instance.setVisible(true);
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable ex) -> {
-                logger.log(Level.SEVERE, ex.toString(), ex);
-            });
             new Thread() {
                 @Override
                 public void run() {
@@ -359,7 +363,7 @@ public final class Amphibia extends JFrame {
         resetEnvironmentModel();
 
         logger.info("Reload APP");
-        mainPanel.profile.openReport();
+        mainPanel.runner.openReport();
         mainPanel.reloadAll(false);
         mainPanel.wizard.openTabs();
         logger.info("Init End");
@@ -1397,7 +1401,7 @@ public final class Amphibia extends JFrame {
         if (userPreferences.getBoolean(Amphibia.P_SHOW_DEBUGGER_TIP, true)) {
             openTipDialog("tip_debugger_mode", P_SHOW_DEBUGGER_TIP);
         }
-        mainPanel.profile.runTests();
+        mainPanel.runner.runTests();
     }//GEN-LAST:event_tlbRunActionPerformed
 
     private void mnuOpenProjectActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuOpenProjectActionPerformed
@@ -1518,11 +1522,11 @@ public final class Amphibia extends JFrame {
     }//GEN-LAST:event_mnuOpenActionPerformed
 
     private void btnStopActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnStopActionPerformed
-        mainPanel.profile.stopTests();
+        mainPanel.runner.stopTests();
     }//GEN-LAST:event_btnStopActionPerformed
 
     private void btnPauseActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnPauseActionPerformed
-        mainPanel.profile.pauseResumeTests(btnPause.isSelected());
+        mainPanel.runner.pauseResumeTests(btnPause.isSelected());
     }//GEN-LAST:event_btnPauseActionPerformed
 
     private void mnuReportActionPerformed(ActionEvent evt) {//GEN-FIRST:event_mnuReportActionPerformed
@@ -1531,7 +1535,7 @@ public final class Amphibia extends JFrame {
 
     private void btnReportActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnReportActionPerformed
         try {
-            mainPanel.profile.generateJUnitReport();
+            mainPanel.runner.generateJUnitReport();
         } catch (IOException e) {
             mainPanel.addError(e);
         }

@@ -86,7 +86,7 @@ public final class MainPanel extends javax.swing.JPanel {
     public final DefaultTreeModel debugTreeModel;
     public final DefaultTreeModel reportTreeModel;
     public final HistoryManager history;
-    public final Runner profile;
+    public final Runner runner;
 
     private Amphibia amphibia;
     private ResourceBundle bundle;
@@ -144,7 +144,7 @@ public final class MainPanel extends javax.swing.JPanel {
 
         editor.setMainPanel(this);
         wizard.setMainPanel(this);
-        profile = new Runner(this, editor);
+        runner = new Runner(this, editor);
 
         final JTextArea errors = new JTextArea();
         final FontMetrics fm = getFontMetrics(errors.getFont());
@@ -218,7 +218,7 @@ public final class MainPanel extends javax.swing.JPanel {
                 TreeIconNode node = (TreeIconNode) path.getLastPathComponent();
                 if (!node.getTreeIconUserObject().isEnabled()) {
                     ((JTree) event.getSource()).collapsePath(path);
-                } else if (!profile.isRunning() && node.info != null) {
+                } else if (!runner.isRunning() && node.info != null) {
                     TreeCollection collection = node.getCollection();
                     if (node.info.states != null) {
                         node.info.states.set(getStateIndex(event.getSource()), 1);
@@ -234,7 +234,7 @@ public final class MainPanel extends javax.swing.JPanel {
             public void treeCollapsed(TreeExpansionEvent event) {
                 TreePath path = event.getPath();
                 TreeIconNode node = (TreeIconNode) path.getLastPathComponent();
-                if (!profile.isRunning() && node.info != null) {
+                if (!runner.isRunning() && node.info != null) {
                     TreeCollection collection = node.getCollection();
                     JSONObject expandResources = collection.profile.jsonObject().getJSONObject("expandResources");
                     int index = getStateIndex(event.getSource());
@@ -486,10 +486,14 @@ public final class MainPanel extends javax.swing.JPanel {
                     addRaw("\n" + key + ": ", true).addRaw(node.info.properties.replace(headers.get(key)));
                 });
                 addRaw("\n\nRequest Body:\n", true);
-                addRaw(node.info.getRequestBody(collection), ProjectAbstract.BLUE);
+                try {
+                    addRaw(node.info.getRequestBody(), ProjectAbstract.BLUE);
 
-                addRaw("\n\nExpected Response Body:\n", true);
-                addRaw(node.info.getResponseBody(collection), ProjectAbstract.GREEN);
+                    addRaw("\n\nExpected Response Body:\n", true);
+                    addRaw(node.info.getResponseBody(), ProjectAbstract.GREEN);
+                } catch (Exception ex) {
+                    addError(ex, node.getLabel() + " (type: " + node.getType() + ") - " + ex.getMessage());
+                }
                 raw = null;
                 break;
         }
@@ -540,6 +544,10 @@ public final class MainPanel extends javax.swing.JPanel {
         return this;
     }
 
+    public void addError(Exception ex, String error) {
+        editor.addError(ex, error);
+    }
+    
     public void addError(Exception ex) {
         editor.addError(ex);
     }
@@ -907,7 +915,6 @@ public final class MainPanel extends javax.swing.JPanel {
                         debugSuiteNode.add(debugTestCaseNode);
 
                         JSONArray teststeps = new JSONArray();
-                        JSONObject ivailableProperties = IO.toJSONObject(testCaseAvailableProperties);
                         testcase.getJSONArray("steps").forEach((item) -> {
                             JSONObject step = (JSONObject) item;
 
@@ -924,7 +931,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             });
                             testStepJSON.element("disabled", step.get("disabled") == Boolean.TRUE);
 
-                            JSONObject stepAvailableProperties = IO.toJSONObject(ivailableProperties);
+                            JSONObject stepAvailableProperties = IO.toJSONObject(testCaseAvailableProperties);
                             final JSONObject requestProp = testStepJSON.getJSONObject("request").getJSONObject("properties");
                             final JSONObject responseProp = testStepJSON.getJSONObject("response").getJSONObject("properties");
 
@@ -940,12 +947,12 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customReqProps = commonItem.getJSONObject("request").getJSONObject("properties");
                                 customReqProps.keySet().forEach((key) -> {
                                     requestProp.put(key, customReqProps.get(key));
-                                    stepAvailableProperties.put(key, "${#Common$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#Common#" + key + "}");
                                 });
                                 JSONObject customResProps = commonItem.getJSONObject("response").getJSONObject("properties");
                                 customResProps.keySet().forEach((key) -> {
                                     responseProp.put(key, customResProps.get(key));
-                                    stepAvailableProperties.put(key, "${#Common$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#Common#" + key + "}");
                                 });
                             }
 
@@ -953,7 +960,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customStepProps = step.getJSONObject("request").getJSONObject("properties");
                                 customStepProps.keySet().forEach((key) -> {
                                     requestProp.put(key, customStepProps.get(key));
-                                    stepAvailableProperties.put(key, "${#TestStep$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#TestStep#" + key + "}");
                                 });
                             }
 
@@ -961,7 +968,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 JSONObject customStepProps = step.getJSONObject("response").getJSONObject("properties");
                                 customStepProps.keySet().forEach((key) -> {
                                     responseProp.put(key, customStepProps.get(key));
-                                    stepAvailableProperties.put(key, "${#TestStep$" + key + "}");
+                                    stepAvailableProperties.put(key, "${#TestStep#" + key + "}");
                                 });
                             }
 
@@ -991,6 +998,8 @@ public final class MainPanel extends javax.swing.JPanel {
                                         testStepHeader.remove(key);
                                     } else {
                                         testStepProperties.put(key, prop);
+                                        
+                                        stepAvailableProperties.put(key, "${#TestStep#" + key + "}");
                                     }
                                 });
                                 properties.setTestCase(testStepProperties);
@@ -1014,10 +1023,11 @@ public final class MainPanel extends javax.swing.JPanel {
                                     if (testCaseAvailableProperties.containsKey(key)) {
                                         values = testCaseAvailableProperties.get(key)
                                                 + ", \n${#TestStep#" + step.getString("name") + ":" + transferProps.get(key) + "}";
+                                        testCaseAvailableProperties.put(key, values);
                                     } else {
                                         values = "${#TestStep#" + step.getString("name") + ":" + transferProps.get(key) + "}";
                                     }
-                                    testCaseAvailableProperties.put(key, values);
+                                    stepAvailableProperties.put(key, values);
                                     
                                     testCaseTransfer.put("${#TestStep#" + step.getString("name") + ":" + key + "}" , transferProps.get(key));
                                 });

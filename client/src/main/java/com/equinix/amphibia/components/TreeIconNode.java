@@ -325,46 +325,38 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             return props.replace("${#" + Profile.HTTP_STATUS_CODE + "}", null);
         }
 
-        public String getRequestBody(TreeCollection collection) {
+        public String getRequestBody() throws Exception {
             JSONObject request = testStepInfo.getJSONObject("request");
             String json = null;
             if (request.get("body") instanceof String) {
                 json = request.getString("body");
-                try {
-                    json = IO.readFile(collection, json);
-                    json = IO.prettyJson(json);
-                    Properties props = properties.cloneProperties();
-                    if (testStep != null && testStep.containsKey("request")) {
-                        props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
-                    }
-                    if (common != null) {
-                        props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
-                    }
-                    json = props.replace(json);
-                } catch (Exception ex) {
-                    logger.log(Level.SEVERE, ex.toString(), ex);
+                json = IO.readFile(json);
+                json = IO.prettyJson(json);
+                Properties props = properties.cloneProperties();
+                if (testStep != null && testStep.containsKey("request")) {
+                    props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
                 }
+                if (common != null) {
+                    props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
+                }
+                json = props.replace(json);
             }
             return json;
         }
 
-        public String getResponseBody(TreeCollection collection) {
+        public String getResponseBody() throws Exception{
             JSONObject response = testStepInfo.getJSONObject("response");
             String json = null;
             if (response.get("body") instanceof String) {
                 json = response.getString("body");
-                try {
-                    json = IO.readFile(collection, json);
-                    json = IO.prettyJson(json);
-                    if (testStep != null && testStep.containsKey("response")) {
-                        json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
-                    } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
-                        json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
-                    } else {
-                        json = properties.replace(json);
-                    }
-                } catch (Exception ex) {
-                    logger.log(Level.SEVERE, ex.toString(), ex);
+                json = IO.readFile(json);
+                json = IO.prettyJson(json);
+                if (testStep != null && testStep.containsKey("response")) {
+                    json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
+                } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
+                    json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
+                } else {
+                    json = properties.replace(json);
                 }
             }
             return json;
