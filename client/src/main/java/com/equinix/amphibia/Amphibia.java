@@ -355,10 +355,10 @@ public final class Amphibia extends JFrame {
                 collection.setProjectFile(file);
                 mainPanel.loadProject(collection);
             }
+            userPreferences.put(Amphibia.P_PROJECT_UUIDS, list.toString());
+            createRecentProjectMenu(collection);
         }
         logger.info("Register APP");
-        userPreferences.put(Amphibia.P_PROJECT_UUIDS, list.toString());
-        createRecentProjectMenu(collection);
         mainPanel.treeModel.reload();
         resetEnvironmentModel();
 
@@ -418,9 +418,9 @@ public final class Amphibia extends JFrame {
     }
 
     public TreeCollection registerProject(TreeCollection collection) {
+        mainPanel.loadProject(collection);
         updateRecentProjects(collection.getProjectFile(), null);
         createRecentProjectMenu(collection);
-        mainPanel.loadProject(collection);
         mainPanel.treeModel.reload();
         mainPanel.reloadAll(false);
         return collection;

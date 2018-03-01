@@ -58,7 +58,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
     public TreeIconNode source;
     public TreeIconNode debugNode;
 
-    public static final int STATE_PROJECT_EXPAND = 0;
+    public static final int STATE_OPEN_CLOSE = 0;
     public static final int STATE_DEBUG_EXPAND = 1;
     public static final int STATE_DEBUG_REPORT = 2;
     public static final int STATE_OPEN_PROJECT_OR_WIZARD_TAB = 3; //Project is open or close, or TestCase/TestStep open in Wizard tab
@@ -487,15 +487,15 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
             if (!profileJSON.containsKey("states")) {
                 JSONObject states = new JSONObject();
-                states.element("project", new int[]{1, 1, 0, 1}); //STATE_PROJECT_EXPAND, STATE_DEBUG_EXPAND, STATE_DEBUG_REPORT, STATE_OPEN_PROJECT_OR_WIZARD_TAB
-                states.element("resources", new int[]{0});
-                states.element("interfaces", new int[]{0});
-                states.element("testsuites", new int[]{1});
-                states.element("common", new int[]{0});
-                states.element("tests", new int[]{0});
-                states.element("schemas", new int[]{0});
-                states.element("requests", new int[]{0});
-                states.element("responses", new int[]{0});
+                states.element("project", getDefaultProjectStates());
+                states.element("resources", closeState());
+                states.element("interfaces", closeState());
+                states.element("testsuites", openState());
+                states.element("common", closeState());
+                states.element("tests", closeState());
+                states.element("schemas", closeState());
+                states.element("requests", closeState());
+                states.element("responses", closeState());
                 profileJSON.element("states", states);
             }
 
@@ -536,19 +536,19 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                                 for (Object item2 : profileJSON.getJSONArray("testsuites")) {
                                     JSONObject testsuite2 = (JSONObject) item2;
                                     if (testsuite1.getString("name").equals(testsuite2.getString("name"))) {
-                                        testsuite2.element("states", testsuite1.getJSONArray("states"));
+                                        testsuite2.element("states", testsuite1.getOrDefault("states", getDefaultTestSuiteStates()));
                                         for (Object item3 : testsuite1.getJSONArray("testcases")) {
                                             JSONObject testcase1 = (JSONObject) item3;
                                             for (Object item4 : testsuite2.getJSONArray("testcases")) {
                                                 JSONObject testcase2 = (JSONObject) item4;
                                                 if (testcase1.getString("name").equals(testcase2.getString("name"))) {
-                                                    testcase2.element("states", testcase1.getJSONArray("states"));
+                                                    testcase2.element("states", testcase1.getOrDefault("states", getDefaultTestCaseStates()));
                                                     for (Object item5 : testcase1.getJSONArray("steps")) {
                                                         JSONObject step1 = (JSONObject) item5;
                                                         for (Object item6 : testcase2.getJSONArray("steps")) {
                                                             JSONObject step2 = (JSONObject) item6;
                                                             if (step1.getString("name").equals(step2.getString("name"))) {
-                                                                step2.element("states", step1.getJSONArray("states"));
+                                                                step2.element("states", step1.getOrDefault("states", getDefaultTestStepStates()));
                                                                 break;
                                                             }
                                                         }
@@ -583,5 +583,29 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                 }
             }, 100);
         }
+    }
+    
+    public static int[] openState() {
+        return new int[] {1};
+    }
+    
+    public static int[] closeState() {
+        return new int[] {0};
+    }
+    
+    public static int[] getDefaultProjectStates() {
+        return new int[] {1, 1, 0, 1}; //STATE_OPEN_CLOSE, STATE_DEBUG_EXPAND, STATE_DEBUG_REPORT, STATE_OPEN_PROJECT_OR_WIZARD_TAB
+    }
+    
+    public static int[] getDefaultTestSuiteStates() {
+        return new int[] {0, 0, 0}; //STATE_OPEN_CLOSE, STATE_DEBUG_EXPAND, STATE_DEBUG_REPORT
+    }
+    
+    public static int[] getDefaultTestCaseStates() {
+        return new int[] {0, 0, 0, 0, 0}; //STATE_OPEN_CLOSE, STATE_DEBUG_EXPAND, STATE_DEBUG_REPORT, STATE_OPEN_PROJECT_OR_WIZARD_TAB, STATE_HIDE_COMMONS
+    }
+    
+    public static int[] getDefaultTestStepStates() {
+        return new int[] {-1, -1, 0, 0}; //STATE_OPEN_CLOSE, STATE_DEBUG_EXPAND, STATE_DEBUG_REPORT, STATE_OPEN_PROJECT_OR_WIZARD_TAB
     }
 }

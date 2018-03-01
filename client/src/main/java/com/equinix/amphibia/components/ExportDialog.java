@@ -7,6 +7,7 @@ package com.equinix.amphibia.components;
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 import com.equinix.amphibia.agent.converter.Converter;
 
 import java.awt.BorderLayout;
@@ -19,9 +20,17 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.ResourceBundle;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -91,16 +100,53 @@ public final class ExportDialog extends javax.swing.JPanel {
         okButton = new JButton(UIManager.getString("OptionPane.okButtonText"));
         okButton.addActionListener((ActionEvent evt) -> {
             JFileChooser jc = Amphibia.setFileChooserDir(new JFileChooser());
-            jc.setFileFilter(new FileNameExtensionFilter("Rule-Properties JSON File", "json", "text"));
-            jc.setSelectedFile(IO.getFile("rules-properties.json"));
+            if (chbOtherFiles.isSelected()) {
+                jc.setFileFilter(new FileNameExtensionFilter("Rule-Properties Archive", "zip"));
+                jc.setSelectedFile(IO.getFile("rules-properties.zip"));
+            } else {
+                jc.setFileFilter(new FileNameExtensionFilter("Rule-Properties JSON File", "json", "text"));
+                jc.setSelectedFile(IO.getFile("rules-properties.json"));
+            }
             int rVal = jc.showSaveDialog(null);
             if (rVal != JFileChooser.CANCEL_OPTION) {
                 try {
                     JSONObject json = (JSONObject) IO.getJSON(IO.getResources("rules_properties_template.json"));
-                    buildProperties(json);
-                    IO.write(IO.prettyJson(json.toString()), jc.getSelectedFile());
-                    Desktop desktop = Desktop.getDesktop();
-                    desktop.open(jc.getSelectedFile());
+                    JSONArray resources = buildProperties(json);
+                    if (chbOtherFiles.isSelected()) {
+                        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(jc.getSelectedFile()));
+                        ZipEntry zipEntry = new ZipEntry("rules-properties.json");
+                        zout.putNextEntry(zipEntry);
+                        zout.write(IO.prettyJson(json.toString()).getBytes());
+                        zout.closeEntry();
+
+                        File projectDir = MainPanel.selectedNode.getCollection().getProjectDir();
+                        File dataDir = new File(projectDir, "data");
+                        resources.forEach((item) -> {
+                            try {
+                                Files.walk(Paths.get(new File(dataDir, ((JSONObject) item).getString("id")).toURI()))
+                                        .filter(path -> !Files.isDirectory(path))
+                                        .forEach((Path path) -> {
+                                            String relative = ProjectAbstract.getRelativePath(projectDir.toURI(), path.toUri());
+                                            ZipEntry entry = new ZipEntry(relative);
+                                            try {
+                                                zout.putNextEntry(entry);
+                                                zout.write(Files.readAllBytes(path));
+                                                zout.closeEntry();
+                                            } catch (IOException ex) {
+                                                mainPanel.addError(ex);
+                                            }
+                                        });
+                            } catch (IOException ex) {
+                                mainPanel.addError(ex);
+                            }
+                        });
+
+                        zout.close();
+                        Desktop.getDesktop().open(jc.getSelectedFile().getParentFile());
+                    } else {
+                        IO.write(IO.prettyJson(json.toString()), jc.getSelectedFile());
+                        Desktop.getDesktop().open(jc.getSelectedFile());
+                    }
                 } catch (Exception ex) {
                     mainPanel.addError(ex);
                 }
@@ -119,14 +165,13 @@ public final class ExportDialog extends javax.swing.JPanel {
 
         rbnParentLevel.setSelected(true);
     }
-    
-    private void buildProperties(JSONObject json) {
+
+    private JSONArray buildProperties(JSONObject json) {
         boolean isTestSuite = rbnParentLevel.isSelected() && chbTestSuite.isSelected();
         boolean isTestCase = rbnParentLevel.isSelected() && chbTestCase.isSelected();
         boolean isTestStep = rbnParentLevel.isSelected() && chbTestStep.isSelected();
         boolean isCommon = rbnParentLevel.isSelected() && chbCommon.isSelected();
-        boolean isTests = rbnParentLevel.isSelected() && chbTests.isSelected();
-        
+
         TreeCollection collection = MainPanel.selectedNode.getCollection();
         JSONObject project = collection.project.jsonObject();
         JSONObject profile = collection.getProjectProfile();
@@ -140,8 +185,8 @@ public final class ExportDialog extends javax.swing.JPanel {
         profile.getJSONArray("resources").forEach((item1) -> {
             JSONObject resource = (JSONObject) item1;
             JSONObject headers = new JSONObject();
-            
-            interfaces.forEach((item2) ->  {
+
+            interfaces.forEach((item2) -> {
                 JSONObject itf = (JSONObject) item2;
                 if (itf.getString("id").equals(resource.get("interface"))) {
                     if (itf.containsKey("headers")) {
@@ -149,30 +194,33 @@ public final class ExportDialog extends javax.swing.JPanel {
                     }
                 }
             });
-            
+
             if (resource.containsKey("headers")) {
                 headers.putAll(resource.getJSONObject("headers"));
             }
-            
-            resources.add(new LinkedHashMap<Object, Object>() {{
-                put("type", resource.getOrDefault("type", null));
-                put("source", resource.getOrDefault("source", null));
-                if (resource.containsKey("name")) {
-                    put("interface", resource.get("name"));
+
+            resources.add(new LinkedHashMap<Object, Object>() {
+                {
+                    put("id", resource.get("id"));
+                    put("type", resource.getOrDefault("type", null));
+                    put("source", resource.getOrDefault("source", null));
+                    if (resource.containsKey("name")) {
+                        put("interface", resource.get("name"));
+                    }
+                    if (resource.containsKey("basePath")) {
+                        put("basePath", resource.get("basePath"));
+                    }
+                    put("headers", headers);
                 }
-                if (resource.containsKey("basePath")) {
-                    put("basePath", resource.get("basePath"));
-                }
-                put("headers", headers);
-            }});
+            });
         });
         infoNode.put("resources", resources);
-        
+
         JSONObject endpoints = json.getJSONObject("endpoints");
         endpoints.clear();
         JSONObject globals = json.getJSONObject("globalProperties");
         globals.clear();
-        
+
         Object[][] vars = GlobalVariableDialog.getGlobalVarData();
         int columnIndex = Amphibia.instance.getSelectedEnvDataIndex();
         for (Object[] data : vars) {
@@ -183,16 +231,16 @@ public final class ExportDialog extends javax.swing.JPanel {
                 globals.put(data[1], value);
             }
         }
-        
+
         json.getJSONObject("projectProperties").putAll(project.getJSONObject("projectProperties"));
         json.getJSONObject("projectProperties").putAll(profile.getJSONObject("properties"));
-        
+
         JSONObject projectTestSuites = new JSONObject();
         project.getJSONArray("projectResources").forEach((item) -> {
             JSONObject resource = (JSONObject) item;
             projectTestSuites.putAll(resource.getJSONObject("testsuites"));
         });
-        
+
         JSONObject testSuitesRules = json.getJSONObject("testsuites");
         CheckBoxNode testsuites = (CheckBoxNode) rootNode.getChildAt(0);
         CheckBoxNode commons = (CheckBoxNode) rootNode.getChildAt(1);
@@ -224,7 +272,7 @@ public final class ExportDialog extends javax.swing.JPanel {
                         }
                     }
                 }
-                
+
                 String path = testcaseNode.getInfo().testCase.getString("path");
                 String[] arr = path.split("/");
                 String testSuiteName = arr[3];
@@ -242,7 +290,7 @@ public final class ExportDialog extends javax.swing.JPanel {
                             break;
                         }
                     }
-                    
+
                     headers.putAll((JSONObject) testCase.getOrDefault("headers", new JSONObject()));
                     if (!headers.isEmpty()) {
                         testCase.put("headers", headers);
@@ -256,7 +304,7 @@ public final class ExportDialog extends javax.swing.JPanel {
                 if (!testSteps.isEmpty()) {
                     testCase.put("steps", testSteps);
                 }
-                
+
                 if (testCaseName.equals(testCase.getString("name"))) {
                     testCase.remove("name");
                 }
@@ -264,13 +312,14 @@ public final class ExportDialog extends javax.swing.JPanel {
                 if (!testCase.isEmpty()) {
                     testCases.put(testCaseName, testCase);
                 }
-                
-                if (isTests) {
+
+                if (chbTests.isSelected() && !chbOtherFiles.isSelected()) {
                     JSONObject tests = json.getJSONObject("tests");
-                    JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject()) ;
+                    JSONObject suiteJSON = (JSONObject) tests.getOrDefault(testSuiteName, new JSONObject());
                     try {
                         JSONObject test = copyValues((JSONObject) IO.getJSON(path), path.split("/"));
-                        if (test.getJSONObject("response").getJSONArray("asserts").isEmpty()) {
+                        JSONArray asserts = (JSONArray) test.getJSONObject("response").getOrDefault("asserts", null);
+                        if (asserts != null && asserts.isEmpty()) {
                             test.getJSONObject("response").remove("asserts");
                         }
                         suiteJSON.put(testCaseName, test);
@@ -280,22 +329,23 @@ public final class ExportDialog extends javax.swing.JPanel {
                     tests.put(testSuiteName, suiteJSON);
                 }
             }
-               
-            JSONObject testSuite = new JSONObject();
+
             JSONObject original = testsuiteNode.getInfo().testSuite;
+            JSONObject properties = new JSONObject();
             if (isTestSuite || testsuiteNode.getActionIndex() != CheckBoxNode.UNSELECT) {
-                JSONObject properties = new JSONObject();
                 JSONObject projectTestSuite = (JSONObject) projectTestSuites.getOrDefault(original.getString("name"), new JSONObject());
                 properties.putAll((JSONObject) projectTestSuite.getOrDefault("properties", new JSONObject()));
                 properties.putAll((JSONObject) original.getOrDefault("properties", new JSONObject()));
+            }
+            if (!properties.isEmpty() || !testCases.isEmpty()) {
+                JSONObject testSuite = new JSONObject();
+                testSuite.put("resource", original.getString("resource"));
                 if (!properties.isEmpty()) {
                     testSuite.put("properties", properties);
                 }
-            }
-            if (!testCases.isEmpty()) {
-                testSuite.put("testcases", testCases);
-            }
-            if (!testSuite.isEmpty()) {
+                if (!testCases.isEmpty()) {
+                    testSuite.put("testcases", testCases);
+                }
                 testSuitesRules.put(original.getString("name"), testSuite);
             }
         }
@@ -308,8 +358,10 @@ public final class ExportDialog extends javax.swing.JPanel {
                 commonsNode.put(commonNode.getLabel(), commonNode.getJSON());
             }
         }
+        
+        return resources;
     }
-    
+
     private JSONObject copyValues(JSONObject source, String[] path) {
         JSONObject target = new JSONObject();
         target.put("name", source.get("name"));
@@ -389,10 +441,12 @@ public final class ExportDialog extends javax.swing.JPanel {
         chbTestCase = new JCheckBox();
         chbTestStep = new JCheckBox();
         chbCommon = new JCheckBox();
-        chbTests = new JCheckBox();
         rbnCustom = new JRadioButton();
         spnCustom = new JScrollPane();
         treeCustom = new JTree();
+        pnlFooter = new JPanel();
+        chbTests = new JCheckBox();
+        chbOtherFiles = new JCheckBox();
 
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         setLayout(new BorderLayout());
@@ -425,10 +479,6 @@ public final class ExportDialog extends javax.swing.JPanel {
         chbCommon.setMargin(new Insets(2, 30, 2, 2));
         pnlTop.add(chbCommon);
 
-        chbTests.setText(bundle.getString("tests")); // NOI18N
-        chbTests.setMargin(new Insets(2, 30, 2, 2));
-        pnlTop.add(chbTests);
-
         btgLevels.add(rbnCustom);
         rbnCustom.setText("Custom Selection");
         rbnCustom.addChangeListener(new ChangeListener() {
@@ -444,6 +494,16 @@ public final class ExportDialog extends javax.swing.JPanel {
         spnCustom.setViewportView(treeCustom);
 
         add(spnCustom, BorderLayout.CENTER);
+
+        pnlFooter.setBorder(BorderFactory.createTitledBorder(bundle.getString("exportData"))); // NOI18N
+
+        chbTests.setText(bundle.getString("tests")); // NOI18N
+        pnlFooter.add(chbTests);
+
+        chbOtherFiles.setText(bundle.getString("otherFiles")); // NOI18N
+        pnlFooter.add(chbOtherFiles);
+
+        add(pnlFooter, BorderLayout.PAGE_END);
     }// </editor-fold>//GEN-END:initComponents
 
     private void rbnCustomStateChanged(ChangeEvent evt) {//GEN-FIRST:event_rbnCustomStateChanged
@@ -458,10 +518,12 @@ public final class ExportDialog extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private ButtonGroup btgLevels;
     private JCheckBox chbCommon;
+    private JCheckBox chbOtherFiles;
     private JCheckBox chbTestCase;
     private JCheckBox chbTestStep;
     private JCheckBox chbTestSuite;
     private JCheckBox chbTests;
+    private JPanel pnlFooter;
     private JPanel pnlTop;
     private JRadioButton rbnCustom;
     private JRadioButton rbnParentLevel;
@@ -489,7 +551,7 @@ final class CheckBoxRenderer extends JTreeTable.AbstractCellEditor implements Tr
         panel.add(checkBox, gbc);
         panel.add(label, gbc);
     }
-    
+
     public void setEnabled(boolean b) {
         checkBox.setEnabled(b);
         label.setEnabled(b);
@@ -522,7 +584,7 @@ final class CheckBoxNode extends DefaultMutableTreeNode {
 
     private TreeIconNode source;
     private int actionIndex;
-    
+
     public static final int UNSELECT = 1;
 
     public CheckBoxNode(TreeIconNode source) {
@@ -537,15 +599,15 @@ final class CheckBoxNode extends DefaultMutableTreeNode {
     public Icon getIcon() {
         return source.getTreeIconUserObject().getIcon();
     }
-    
+
     public TreeCollection.TYPE getType() {
         return source.getType();
     }
-    
+
     public TreeIconNode.ResourceInfo getInfo() {
         return source.info;
     }
-    
+
     public JSONObject getJSON() {
         return source.jsonObject();
     }

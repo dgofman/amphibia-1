@@ -683,8 +683,6 @@ public final class ProjectDialog extends javax.swing.JPanel {
             items.forEach(mainPanel.editor::addWarning);
             items = (List<String>) results.get(RESOURCE_TYPE.errors);
             items.forEach(mainPanel.editor::addError);
-            items = (List<String>) results.get(RESOURCE_TYPE.info);
-            items.forEach(mainPanel.editor::addInfo);
         } catch (Exception e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }

@@ -1,9 +1,9 @@
 package com.equinix.amphibia.agent.converter;
 
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -18,7 +18,6 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.io.IOUtils;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
@@ -30,23 +29,33 @@ public final class Swagger {
     private final CommandLine cmd;
     private final JSONObject doc;
     private final JSONObject output;
-    private final JSONObject swaggerProperties;
+    private final JSONObject rulesAndPrperties;
     private final Profile profile;
     private final String resourceId;
+    private final boolean isDataGenerate;
     private final boolean isMerge;
 
     public static final Map<Object, String> asserts = new LinkedHashMap<>();
     public static final JSONNull NULL = JSONNull.getInstance();
 
-    public Swagger(CommandLine cmd, String resourceId, InputStream input, InputStream properties, JSONObject output, Profile profile)
-            throws Exception {
-        this.resourceId = resourceId;
+    public Swagger(CommandLine cmd, String resourceId, JSONObject rulesAndPrperties, InputStream input, JSONObject output, Profile profile) throws Exception {
         this.cmd = cmd;
-        this.doc = getContent(input);
-        this.swaggerProperties = getContent(properties);
+        this.rulesAndPrperties = rulesAndPrperties;
+        this.doc = ProjectAbstract.getJSON(input);
         this.output = output;
         this.profile = profile;
         this.isMerge = "true".equals(Converter.cmd.getOptionValue(Converter.MERGE));
+        if (resourceId != null) {
+            this.resourceId = resourceId;
+            this.isDataGenerate = false;
+        } else {
+            this.resourceId = UUID.randomUUID().toString();
+            this.isDataGenerate = true;
+        }
+    }
+
+    public boolean isDataGenerate() {
+        return isDataGenerate;
     }
 
     public String init(String name, int index, String inputParam, boolean isURL, String propertiesFile) throws Exception {
@@ -114,9 +123,20 @@ public final class Swagger {
         JSONObject headers = new JSONObject();
         JSONArray hosts = output.containsKey("hosts") ? output.getJSONArray("hosts") : new JSONArray();
         JSONArray globals = output.containsKey("globals") ? output.getJSONArray("globals") : new JSONArray();
-        if (swaggerProperties != null) {
-            profile.getCommon().putAll(swaggerProperties.getJSONObject("commons"));
-            JSONObject endpoints = swaggerProperties.getJSONObject("endpoints");
+        if (rulesAndPrperties != null) {
+            if (isMerge) {
+                JSONArray resources = rulesAndPrperties.getJSONObject("info").getJSONArray("resources");
+                for (Object item : resources) {
+                    JSONObject resource = (JSONObject) item;
+                    if (resourceId.equals(resource.getString("id"))) {
+                        headers.putAll(resource.getJSONObject("headers"));
+                        break;
+                    }
+                }
+            }
+
+            profile.getCommon().putAll(rulesAndPrperties.getJSONObject("commons"));
+            JSONObject endpoints = rulesAndPrperties.getJSONObject("endpoints");
             for (Object key : endpoints.keySet()) {
                 boolean newEndPoint = true;
                 for (int i = 0; i < globals.size(); i++) {
@@ -139,7 +159,7 @@ public final class Swagger {
                     });
                 }
             }
-            JSONObject propertyGlobals = swaggerProperties.getJSONObject("globalProperties");
+            JSONObject propertyGlobals = rulesAndPrperties.getJSONObject("globalProperties");
             for (Object key : propertyGlobals.keySet()) {
                 boolean newProp = true;
                 for (int i = 0; i < globals.size(); i++) {
@@ -157,18 +177,6 @@ public final class Swagger {
                         }
                     });
                 }
-            }
-            if (isMerge && swaggerProperties.containsKey("info")) {
-                JSONArray resources = swaggerProperties.getJSONObject("info").getJSONArray("resources");
-                resources.forEach((item) -> {
-                    JSONObject resource = (JSONObject) item;
-                    if (resource.containsKey("source")) {
-                        if ((isURL && inputParam.equals(resource.getString("source")))
-                                || inputParam.contains(resource.getString("source"))) {
-                            headers.putAll(resource.getJSONObject("headers"));
-                        }
-                    }
-                });
             }
         } else {
             final String hostVal = host;
@@ -211,7 +219,7 @@ public final class Swagger {
         output.put("globals", globals);
         output.put("interfaces", interfaces);
 
-        profile.addResource(resourceId, interfaceId, inputParam, isURL, propertiesFile, swaggerProperties);
+        profile.addResource(resourceId, interfaceId, inputParam, isURL, rulesAndPrperties, propertiesFile);
 
         JSONArray projectResources = output.containsKey("projectResources") ? output.getJSONArray("projectResources") : new JSONArray();
         JSONObject testsuites = output.containsKey("testsuites") ? output.getJSONObject("testsuites") : new JSONObject();
@@ -219,8 +227,8 @@ public final class Swagger {
         addTestSuite(index, resourceId, interfaceId, interfaceBasePath, testsuites);
 
         JSONObject properties = output.containsKey("properties") ? output.getJSONObject("properties") : new JSONObject();
-        if (isMerge && swaggerProperties != null) {
-            JSONObject projectProperties = swaggerProperties.getJSONObject("projectProperties");
+        if (isMerge && rulesAndPrperties != null) {
+            JSONObject projectProperties = rulesAndPrperties.getJSONObject("projectProperties");
             projectProperties.keySet().forEach((key) -> {
                 Object value = projectProperties.get(key);
                 if (properties.containsKey(key)) {
@@ -279,8 +287,8 @@ public final class Swagger {
         });
 
         JSONObject testSuitesRules = new JSONObject();
-        if (swaggerProperties != null) {
-            testSuitesRules = swaggerProperties.getJSONObject("testsuites");
+        if (rulesAndPrperties != null) {
+            testSuitesRules = rulesAndPrperties.getJSONObject("testsuites");
         }
         for (String testSuiteName : testSuiteMap.keySet()) {
             JSONArray testcases = new JSONArray();
@@ -297,7 +305,7 @@ public final class Swagger {
             });
         }
 
-        this.profile.addTestCases(index, resourceId, interfaceName, testSuiteMap, swaggerProperties != null ? swaggerProperties : new JSONObject());
+        this.profile.addTestCases(index, resourceId, interfaceName, testSuiteMap, rulesAndPrperties == null ? new JSONObject() : rulesAndPrperties);
     }
 
     protected void addTestCases(int index, JSONArray testcases, List<ApiInfo> apiList, JSONObject testSuiteRule) throws Exception {
@@ -416,13 +424,6 @@ public final class Swagger {
         }
     }
 
-    protected JSONObject getContent(InputStream is) throws IOException {
-        if (is == null) {
-            return null;
-        }
-        return JSONObject.fromObject(IOUtils.toString(is));
-    }
-
     public static String getPath(File path) {
         return path.getPath().replaceAll("\\\\", "/");
     }
@@ -442,21 +443,21 @@ public final class Swagger {
         return doc;
     }
 
-    public JSONObject getSwaggerProperties() {
-        return swaggerProperties;
+    public JSONObject getRulesAndPrperties() {
+        return rulesAndPrperties;
     }
 
     @SuppressWarnings("NonPublicExported")
     public Object getTestRuleProperty(ApiInfo info, String id) {
-        if (swaggerProperties != null) {
+        if (rulesAndPrperties != null) {
             JSONObject testsuites;
-            if (swaggerProperties.getJSONObject("testsuites").containsKey(info.testSuiteName)) {
-                testsuites = swaggerProperties.getJSONObject("testsuites").getJSONObject(info.testSuiteName);
+            if (rulesAndPrperties.getJSONObject("testsuites").containsKey(info.testSuiteName)) {
+                testsuites = rulesAndPrperties.getJSONObject("testsuites").getJSONObject(info.testSuiteName);
                 if (testsuites.containsKey(id)) {
                     return "${#TestSuite#" + id + "}";
                 }
             }
-            if (swaggerProperties.getJSONObject("properties").containsKey(id)) {
+            if (rulesAndPrperties.getJSONObject("properties").containsKey(id)) {
                 return "${#Project#" + id + "}";
             }
         }

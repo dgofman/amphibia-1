@@ -98,10 +98,10 @@ public class Profile {
         ((LinkedHashMap<Object, Object>) profile.get("project")).put("name", projectName);
     }
 
-    public void setSwagger(Swagger swagger, JSONObject swaggerProperties) {
+    public void setSwagger(Swagger swagger, JSONObject rulesAndPrperties) {
         this.swagger = swagger;
-        if (!isMerge && swaggerProperties != null) {
-            ((JSONObject) profile.get("properties")).putAll(swaggerProperties.getJSONObject("projectProperties"));
+        if (!isMerge && rulesAndPrperties != null) {
+            ((JSONObject) profile.get("properties")).putAll(rulesAndPrperties.getJSONObject("projectProperties"));
         }
     }
 
@@ -109,8 +109,7 @@ public class Profile {
         this.definitions = doc.getJSONObject("definitions");
     }
 
-    public void addResource(String resourceId, String intf, String inputParam, boolean isURL, String propertiesFile,
-            JSONObject swaggerProperties) {
+    public void addResource(String resourceId, String intf, String inputParam, boolean isURL, JSONObject rulesAndPrperties, String propertiesFile) {
         Map<Object, Object> resourceMap = new LinkedHashMap<Object, Object>() {
             {
                 put("id", resourceId);
@@ -121,20 +120,17 @@ public class Profile {
                 put("headers", new JSONObject());
             }
         };
-        if (!isMerge && swaggerProperties != null) {
-            JSONArray resourceInfo = swaggerProperties.getJSONObject("info").getJSONArray("resources");
+        if (!isMerge && rulesAndPrperties != null) {
+            JSONArray resourceInfo = rulesAndPrperties.getJSONObject("info").getJSONArray("resources");
             resourceInfo.forEach((item) -> {
                 JSONObject resource = (JSONObject) item;
-                if (resource.containsKey("source")) {
-                    if ((isURL && inputParam.equals(resource.getString("source")))
-                            || inputParam.contains(resource.getString("source"))) {
-                        ((JSONObject) resourceMap.get("headers")).putAll(resource.getJSONObject("headers"));
-                        if (resource.containsKey("interface")) {
-                            resourceMap.put("name", resource.get("interface"));
-                        }
-                        if (resource.containsKey("basePath")) {
-                            resourceMap.put("basePath", resource.get("basePath"));
-                        }
+                if (resourceId.equals(resource.getString("id"))) {
+                    ((JSONObject) resourceMap.get("headers")).putAll(resource.getJSONObject("headers"));
+                    if (resource.containsKey("interface")) {
+                        resourceMap.put("name", resource.get("interface"));
+                    }
+                    if (resource.containsKey("basePath")) {
+                        resourceMap.put("basePath", resource.get("basePath"));
                     }
                 }
             });
@@ -156,8 +152,7 @@ public class Profile {
         Converter.addResult(RESOURCE_TYPE.project, outputFile.getCanonicalPath());
     }
 
-    protected static String save(File dataDir, String json, String fileName, String childDir, RESOURCE_TYPE type)
-            throws Exception {
+    protected String save(File dataDir, String json, String fileName, String childDir, RESOURCE_TYPE type) throws Exception {
         if ("false".equals(Converter.cmd.getOptionValue(Converter.TESTS))) {
             return null;
         }
@@ -169,31 +164,36 @@ public class Profile {
         if (!outputFile.getParentFile().exists()) {
             outputFile.getParentFile().mkdirs();
         }
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(json);
-        writer.close();
-        LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
         String filePath = ProjectAbstract.getRelativePath(outputFile.toURI());
-        if (type != null) {
-            Converter.addResult(type, filePath);
+
+        if (!outputFile.exists()) {
+            PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
+            writer.println(json);
+            writer.close();
+            LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
+            if (type != null) {
+                Converter.addResult(type, filePath);
+            }
+        } else if (swagger.isDataGenerate()) {
+            Converter.addResult(RESOURCE_TYPE.warnings, "File already exists: " + outputFile.getAbsolutePath());
         }
         return filePath;
     }
 
     @SuppressWarnings("NonPublicExported")
     public void addTestCases(int index, String resourceId, String interfaceName,
-            Map<String, List<ApiInfo>> testSuiteMap, JSONObject swaggerProperties) throws Exception {
-        JSONObject testSuitesRules = (JSONObject) swaggerProperties.getOrDefault("testsuites", new JSONObject());
-        JSONObject testsRules = (JSONObject) swaggerProperties.getOrDefault("tests", new JSONObject());
+            Map<String, List<ApiInfo>> testSuiteMap, JSONObject rulesAndPrperties) throws Exception {
+        JSONObject testSuitesRules = (JSONObject) rulesAndPrperties.getOrDefault("testsuites", new JSONObject());
+        JSONObject testsRules = (JSONObject) rulesAndPrperties.getOrDefault("tests", new JSONObject());
         for (String testSuiteName : testSuiteMap.keySet()) {
             List<Map<Object, Object>> testcases = new ArrayList<>();
             JSONObject testSuiteRules = (JSONObject) testSuitesRules.getOrDefault(testSuiteName, new JSONObject());
+            if (testSuiteRules.containsKey("resource") && !resourceId.equals(testSuiteRules.get("resource"))) {
+                continue;
+            }
             JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONObject());
             JSONObject testSuiteTests = (JSONObject) testsRules.getOrDefault(testSuiteName, new JSONObject());
 
-            Map<String, Object> testsuite = new LinkedHashMap<>();
-            testsuite.put("name", testSuiteName);
-            testsuite.put("resource", resourceId);
             for (ApiInfo info : testSuiteMap.get(testSuiteName)) {
                 String testFile = getPath(info) + ".json";
                 String name = info.methodName + "_" + info.apiName;
@@ -209,6 +209,10 @@ public class Profile {
                     addTestCase(testcases, testcaseRules, testSuiteName, key);
                 });
             }
+
+            Map<String, Object> testsuite = new LinkedHashMap<>();
+            testsuite.put("name", testSuiteName);
+            testsuite.put("resource", resourceId);
             testsuite.put("testcases", testcases);
             if (testSuiteRules.containsKey("properties")) {
                 testsuite.put("properties", testSuiteRules.get("properties"));
@@ -220,20 +224,22 @@ public class Profile {
         if (!testSuitesRules.isEmpty()) {
             testSuitesRules.keySet().forEach((testSuiteName) -> {
                 JSONObject testSuiteRules = (JSONObject) testSuitesRules.get(testSuiteName);
-                Map<String, Object> testsuite = new LinkedHashMap<>();
-                testsuite.put("name", testSuiteName);
-                testsuite.put("resource", resourceId);
-                if (testSuiteRules.containsKey("properties")) {
-                    testsuite.put("properties", testSuiteRules.get("properties"));
+                if (testSuiteRules.getString("resource").equals(resourceId)) {
+                    Map<String, Object> testsuite = new LinkedHashMap<>();
+                    testsuite.put("name", testSuiteName);
+                    testsuite.put("resource", resourceId);
+                    if (testSuiteRules.containsKey("properties")) {
+                        testsuite.put("properties", testSuiteRules.get("properties"));
+                    }
+                    JSONArray testcases = new JSONArray();
+                    JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONArray());
+                    testcasesRules.keySet().forEach((testcaseName) -> {
+                        JSONObject testcaseRules = testcasesRules.getJSONObject(testcaseName.toString());
+                        addTestCase(testcases, testcaseRules, testSuiteName, testcaseName);
+                    });
+                    testsuite.put("testcases", testcases);
+                    testsuites.add(testsuite);
                 }
-                JSONArray testcases = new JSONArray();
-                JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONArray());
-                testcasesRules.keySet().forEach((testcaseName) -> {
-                    JSONObject testcaseRules = testcasesRules.getJSONObject(testcaseName.toString());
-                    addTestCase(testcases, testcaseRules, testSuiteName, testcaseName);
-                });
-                testsuite.put("testcases", testcases);
-                testsuites.add(testsuite);
             });
         }
     }
@@ -727,7 +733,7 @@ public class Profile {
             if (testCaseRules.containsKey("request")) {
                 JSONObject requestRules = testCaseRules.getJSONObject("request");
                 if (requestRules.containsKey("body")) {
-                    requestBody = requestRules.getString("body") == null ? null
+                    requestBody = ProjectAbstract.isNULL(requestRules.get("body")) ? null
                             : String.format(requestRules.getString("body"), swagger.getResourceId());
                 }
                 if (requestRules.containsKey("properties")) {
@@ -737,7 +743,7 @@ public class Profile {
             if (testCaseRules.containsKey("response")) {
                 JSONObject responseRules = testCaseRules.getJSONObject("response");
                 if (responseRules.containsKey("body")) {
-                    responseFile = responseRules.getString("body") == null ? null
+                    responseFile = ProjectAbstract.isNULL(responseRules.get("body")) ? null
                             : String.format(responseRules.getString("body"), swagger.getResourceId());
                 }
                 if (responseRules.containsKey("properties")) {

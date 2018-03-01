@@ -15,6 +15,7 @@ import java.util.zip.ZipOutputStream;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.awt.Color;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.DateFormat;
@@ -52,17 +53,17 @@ public abstract class ProjectAbstract {
     private static final File amphibiaHome;
     private static final ConsoleHandler consoleHandler;
     private static final FileHandler logFileHandler;
-    
+
     private final ClassLoader classLoader = getClass().getClassLoader();
-    
+
     public static int LOG_LIMIT = 1000000; // 1 Mb
     public static int NUM_LOGS = 5;
     public static int AUTO_FLUSH = 10000; //10 seconds
-    
+
     public static Color GREEN = new Color(40, 130, 10);
     public static Color BLUE = Color.BLUE;
     public static Color RED = Color.RED;
-    
+
     static {
         amphibiaHome = new File(System.getProperty("user.home"), "amphibia");
         amphibiaHome.mkdirs();
@@ -111,7 +112,7 @@ public abstract class ProjectAbstract {
             }
         }, AUTO_FLUSH);
     }
-    
+
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public ProjectAbstract(CommandLine cmd) throws Exception {
         this.cmd = cmd;
@@ -127,11 +128,11 @@ public abstract class ProjectAbstract {
 
         init();
     }
-    
+
     public static File getAmphibiaHome() {
         return amphibiaHome;
     }
-    
+
     public static Logger getLogger(String className) {
         return getLogger(Logger.getLogger(className));
     }
@@ -205,21 +206,29 @@ public abstract class ProjectAbstract {
         return ((String) scriptEngine.get("result"));
     }
 
-    protected JSONObject getJSON(String path) throws IOException {
+    public static JSONObject getJSON(String path) throws IOException {
         return getJSON(new File(path));
     }
 
-    protected JSONObject getJSON(File file) throws IOException {
-        String json = getFileContent(file.toURI());
+    public static JSONObject getJSON(File file) throws IOException {
+        return getJSON(file.toURI().toURL().openStream());
+    }
+
+    public static JSONObject getJSON(InputStream is) throws IOException {
+        String json = getFileContent(is);
         return JSONObject.fromObject(json);
     }
 
-    protected String getFileContent(String file) throws IOException {
+    public static String getFileContent(String file) throws IOException {
         return getFileContent(new File(file).toURI());
     }
 
-    protected String getFileContent(URI uri) throws IOException {
-        String str = IOUtils.toString(uri.toURL().openStream());
+    public static String getFileContent(URI uri) throws IOException {
+        return getFileContent(uri.toURL().openStream());
+    }
+
+    public static String getFileContent(InputStream is) throws IOException {
+        String str = IOUtils.toString(is);
         return str;
     }
 

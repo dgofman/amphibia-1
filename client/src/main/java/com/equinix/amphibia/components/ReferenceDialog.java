@@ -209,10 +209,12 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             mainPanel.resourceEditDialog.openEditDialog(entry, entry.value, true);
             return false;
         } else {
-            String filePath = (String) entry.value;
-            txtPath.setText(filePath);
+            if (!IO.isNULL(entry.value)) {
+                String filePath = (String) entry.value;
+                txtPath.setText(filePath);
+                reviewPath(filePath != null ? IO.getFile(filePath) : null);
+            }
             txtName.setText(entry.name);
-            reviewPath(filePath != null ? IO.getFile(filePath) : null);
             return true;
         }
     }
@@ -265,8 +267,9 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             }
         }
         
-        String filePath = (String) entry.value;
-        if (filePath != null) {
+        String filePath = null;
+        if (!IO.isNULL(entry.value)) {
+            filePath = (String) entry.value;
             if (!filePath.contains(resoursePath)) {
                 selectedIndex = referenceModel.getSize();
                 referenceModel.addElement(new ComboItem(filePath, IO.getFile(filePath)));
@@ -274,12 +277,14 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         }
         
         File resourseDir = IO.getFile(collection, resoursePath);
-        for (String fileName : resourseDir.list()) {
-            String path = resoursePath + fileName;
-            if (path.equals(filePath)) {
-                selectedIndex = referenceModel.getSize();
+        if (resourseDir.exists()) {
+            for (String fileName : resourseDir.list()) {
+                String path = resoursePath + fileName;
+                if (path.equals(filePath)) {
+                    selectedIndex = referenceModel.getSize();
+                }
+                referenceModel.addElement(new ComboItem(path, IO.newFile(resourseDir, fileName)));
             }
-            referenceModel.addElement(new ComboItem(path, IO.newFile(resourseDir, fileName)));
         }
 
         cmbPath.setSelectedIndex(selectedIndex);
@@ -434,7 +439,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         java.awt.EventQueue.invokeLater(() -> {
             if (cmbPath.getSelectedIndex() == 1) {
                 String resourceId = entry.node.info.resource.getString("resourceId");
-                String dir = entry.value != null ? (String) entry.value :  String.format("data/%s/", resourceId);
+                String dir = !IO.isNULL(entry.value) ? (String) entry.value :  String.format("data/%s/", resourceId);
                 JFileChooser jc = new JFileChooser();
                 jc.setFileFilter(new FileNameExtensionFilter("JSON File", "json", "text"));
                 jc.setCurrentDirectory(IO.getFile(dir));

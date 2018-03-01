@@ -6,14 +6,19 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import net.sf.json.JSONArray;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -62,8 +67,7 @@ public class Converter {
         responses,
         asserts,
         warnings,
-        errors,
-        info
+        errors
     };
 
     public static final Object ENDPOINT = 0;
@@ -120,7 +124,6 @@ public class Converter {
             results.put(RESOURCE_TYPE.warnings, new ArrayList<>());
             results.put(RESOURCE_TYPE.asserts, new ArrayList<>());
             results.put(RESOURCE_TYPE.errors, new ArrayList<>());
-            results.put(RESOURCE_TYPE.info, new ArrayList<>());
             Logger.getGlobal().setLevel(Level.SEVERE);
         }
 
@@ -145,9 +148,9 @@ public class Converter {
         }
         Profile profile = new Profile();
         JSONObject output = new JSONObject();
+        Map<String, JSONObject> rulesAndPrperties = new LinkedHashMap<>();
         for (int i = 0; i < inputParams.length; i++) {
             InputStream is;
-            InputStream pis = null;
             String inputParam = inputParams[i];
             boolean isURL = inputParam.startsWith("http");
             if (isURL) {
@@ -156,18 +159,32 @@ public class Converter {
                 is = new FileInputStream(inputParam);
             }
 
-            String propertiesFile = "";
+            String propertiesFile = null;
+            String resourceId = null;
             String param = cmd.getOptionValue(Converter.PROPERTIES);
             if (param != null) {
                 String[] properties = param.split(",");
-                if (i < properties.length && new File(properties[i]).exists()) {
-                    propertiesFile = new File(properties[i]).getAbsolutePath();
-                    pis = new FileInputStream(propertiesFile);
+                File file;
+                if (i < properties.length && (file = new File(properties[i])).exists()) {
+                    propertiesFile = properties[i];
+                    if (!rulesAndPrperties.containsKey(propertiesFile)) {
+                        rulesAndPrperties.put(propertiesFile, getRulesAndProperties(file));
+                    }
+                    JSONArray resources = rulesAndPrperties.get(propertiesFile).getJSONObject("info").getJSONArray("resources");
+                    for (Object item : resources) {
+                        JSONObject resource = (JSONObject) item;
+                        if (resource.containsKey("source")) {
+                            if ((isURL && inputParam.equals(resource.getString("source")))
+                                    || inputParam.contains(resource.getString("source"))) {
+                                resourceId = resource.getString("id");
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-            String resourceId = UUID.randomUUID().toString();
-            Swagger swagger = new Swagger(cmd, resourceId, is, pis, output, profile);
-            profile.setSwagger(swagger, swagger.getSwaggerProperties());
+            Swagger swagger = new Swagger(cmd, resourceId, rulesAndPrperties.get(propertiesFile), is, output, profile);
+            profile.setSwagger(swagger, swagger.getRulesAndPrperties());
             name = swagger.init(name, i, inputParam, isURL, propertiesFile);
             IOUtils.closeQuietly(is);
         }
@@ -179,6 +196,32 @@ public class Converter {
         }
         profile.saveFile(output, projectFile);
         return results;
+    }
+
+    private static JSONObject getRulesAndProperties(File file) throws IOException {
+        if (file.getName().endsWith(".json")) {
+            return ProjectAbstract.getJSON(file);
+        } else if (file.getName().endsWith(".zip")) {
+            ZipFile zipFile = new ZipFile(file);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            JSONObject json = null;
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.getName().equals("rules-properties.json")) {
+                    json = ProjectAbstract.getJSON(zipFile.getInputStream(entry));
+                } else {
+                    InputStream stream = zipFile.getInputStream(entry);
+                    file = new File(Profile.PROJECT_DIR, entry.getName());
+                    file.getParentFile().mkdirs();
+                    Files.copy(stream, file.toPath());
+                    stream.close();
+                }
+            }
+            zipFile.close();
+            return json;
+        } else {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 import com.equinix.amphibia.agent.builder.ProjectAbstract;
+import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
+
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -124,7 +126,7 @@ public final class Schema {
         return new File(dataDir, "schemas");
     }
 
-    public static String save(File dataDir, String json, String fileName, String childDir) throws Exception {
+    public String save(File dataDir, String json, String fileName, String childDir) throws Exception {
         if ("false".equals(Converter.cmd.getOptionValue(Converter.SCHEMA))) {
             return null;
         }
@@ -137,12 +139,17 @@ public final class Schema {
             outputDir.mkdirs();
         }
         File outputFile = new File(outputDir, fileName + ".json");
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(Swagger.getJson(json));
-        writer.close();
-        LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
         String filePath = ProjectAbstract.getRelativePath(outputFile.toURI());
-        Converter.addResult(Converter.RESOURCE_TYPE.schemas, filePath);
+
+        if (!outputFile.exists()) {
+            PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
+            writer.println(Swagger.getJson(json));
+            writer.close();
+            LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
+            Converter.addResult(Converter.RESOURCE_TYPE.schemas, filePath);
+        } else if (swagger.isDataGenerate()) {
+            Converter.addResult(RESOURCE_TYPE.warnings, "File already exists: " + outputFile.getAbsolutePath());
+        }
         return filePath;
     }
 

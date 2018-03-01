@@ -359,7 +359,7 @@ public final class MainPanel extends javax.swing.JPanel {
     }
 
     public int getStateIndex(Object tree) {
-        return tree == treeNav ? TreeIconNode.STATE_PROJECT_EXPAND : TreeIconNode.STATE_DEBUG_EXPAND;
+        return tree == treeNav ? TreeIconNode.STATE_OPEN_CLOSE : TreeIconNode.STATE_DEBUG_EXPAND;
     }
 
     public void deleteProject(TreeCollection collection) {
@@ -680,11 +680,14 @@ public final class MainPanel extends javax.swing.JPanel {
         });
         collection.interfaces.addJSON(interfaceList);
 
-        testsuites.forEach((item) -> {
+        for (Object item : testsuites) {
             JSONObject testsuite = (JSONObject) item;
             String resourceId = testsuite.getString("resource");
             JSONObject resource = resourceMap.get(resourceId);
             JSONObject testSuiteInfo = resource.getJSONObject("testsuites").getJSONObject(testsuite.getString("name"));
+            if (testSuiteInfo.isEmpty()) {
+                continue;
+            }
             String dirPath = String.format(ExpertNodes.dirFormat, resourceId, testsuite.getString("name"));
             File dir = IO.getFile(collection, dirPath);
             TreeIconNode.ResourceInfo info = new TreeIconNode.ResourceInfo(dir, resource, testsuite, testSuiteInfo, null, null, null);
@@ -725,7 +728,7 @@ public final class MainPanel extends javax.swing.JPanel {
                     }
                 }
             }
-        });
+        }
 
         for (int i = 0; i < resources.size(); i++) {
             TreeIconNode resourceNode;
@@ -743,7 +746,7 @@ public final class MainPanel extends javax.swing.JPanel {
             }
 
             if (!resource.containsKey("states")) {
-                resource.element("states", new int[]{0});
+                resource.element("states", TreeIconNode.closeState());
             }
             resourceNode.info = new TreeIconNode.ResourceInfo(resource.getJSONArray("states"));
 
@@ -799,7 +802,7 @@ public final class MainPanel extends javax.swing.JPanel {
                 testsuiteNode.info = resourceInfoMap.get(dir.getAbsolutePath());
                 testsuiteNode.info.properties = projectProperties;
                 if (!testsuite.containsKey("states")) {
-                    testsuite.element("states", new int[]{0, 0, 0});
+                    testsuite.element("states", TreeIconNode.getDefaultTestSuiteStates());
                 }
                 testsuiteNode.info.states = testsuite.getJSONArray("states");
 
@@ -904,7 +907,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             testcaseNode.info.consoleLine = testcase.getInt("line");
                         }
                         if (!testcase.containsKey("states")) {
-                            testcase.element("states", new int[]{0, 0, 0, 0, 0});
+                            testcase.element("states", TreeIconNode.getDefaultTestCaseStates());
                         }
                         testcaseNode.info.states = testcase.getJSONArray("states");
                         if (testcaseNode.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
@@ -1058,7 +1061,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                 testStepNode.info.consoleLine = step.getInt("line");
                             }
                             if (!step.containsKey("states")) {
-                                step.element("states", new int[]{-1, -1, 0, 0});
+                                step.element("states", TreeIconNode.getDefaultTestStepStates());
                             }
                             testStepNode.info.states = step.getJSONArray("states");
                             if (testStepNode.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
@@ -1165,7 +1168,7 @@ public final class MainPanel extends javax.swing.JPanel {
                     TreeIconNode node = (TreeIconNode) children.nextElement();
                     if (node.info != null && treeNav.isExpanded(new TreePath(((TreeIconNode) node.getParent()).getPath()))) {
                         if (node.info.states != null) {
-                            if (node.info.states.getInt(TreeIconNode.STATE_PROJECT_EXPAND) == 1) {
+                            if (node.info.states.getInt(TreeIconNode.STATE_OPEN_CLOSE) == 1) {
                                 treeNav.expandPath(new TreePath(node.getPath()));
                             }
                         } else if (expandResources.containsKey(node.info.file.getAbsolutePath())) {
