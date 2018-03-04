@@ -92,15 +92,22 @@ public final class TreeCollection {
 
     public static final Object[][] RESOURCE_PROPERTIES = new Object[][]{
         {"id", VIEW},
+        {"type", VIEW},
         {"interface", VIEW},
         {"source", VIEW},
         {"properties", VIEW}
+    };
+    
+    public static final Object[][] RESOURCE_WIZARD_PROPERTIES = new Object[][]{
+        {"id", VIEW},
+        {"type", VIEW},
+        {"name", VIEW},
+        {"basePath", VIEW}
     };
 
     public static final Object[][] INTERFACE_PROPERTIES = new Object[][]{
         {"name", EDIT_LIMIT},
         {"basePath", EDIT_LIMIT},
-        {"type", VIEW},
         {"headers", ADD}
     };
 
