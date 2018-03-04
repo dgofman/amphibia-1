@@ -391,6 +391,7 @@ public final class Editor extends BaseTaskPane {
                     histories.add(0, "0=" + filePath);
                     Path contentPath = zipfs.getPath("0/content.json");
                     Files.deleteIfExists(contentPath);
+                    Files.createDirectories(zipfs.getPath("0"));
                     Files.write(contentPath, newContent.getBytes(), StandardOpenOption.CREATE);
 
                     histories.add(1, time + "=" + filePath);

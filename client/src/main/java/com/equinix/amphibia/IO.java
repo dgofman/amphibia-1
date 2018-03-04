@@ -102,7 +102,12 @@ public class IO {
     }
     
     public static JSON getJSON(URI uri) throws Exception {
-        return getJSON(uri.toURL().openStream());
+        InputStream is = uri.toURL().openStream();
+        try {
+            return getJSON(is);
+        } finally {
+            is.close();
+        }
     }
     
     public static File getBackupFile(File file) {
@@ -164,7 +169,12 @@ public class IO {
     }
     
     public static String readFile(URI uri) throws IOException {
-        return readInputStream(uri.toURL().openStream());
+        InputStream is = uri.toURL().openStream();
+        try {
+            return readInputStream(is);
+        } finally {
+            is.close();
+        }
     }
 
     public static String readFile(File file) throws IOException {
@@ -210,11 +220,21 @@ public class IO {
     }
     
     public static JSON getJSON(URI uri, BaseTaskPane pane) {
+        InputStream is = null;
         try {
-            return getJSON(uri.toURL().openStream());
+            is = uri.toURL().openStream();
+            return getJSON(is);
         } catch (Exception ex) {
             pane.addError(ex, uri.toString());
             return null;
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    pane.addError(ex, uri.toString());
+                }
+            }
         }
     }
 
@@ -285,17 +305,36 @@ public class IO {
     
     public static void write(String content, File file) throws IOException {
         FileManager.deleteContent(file);
-        IOUtils.write(content, new FileOutputStream(file));
+        OutputStream os = new FileOutputStream(file);
+        try {
+            IOUtils.write(content, os);
+        } finally {
+            os.close(); 
+        }
     }
 
     public static void copy(File source, File target) throws IOException {
         FileManager.deleteContent(target);
-        copy(new FileInputStream(source), new FileOutputStream(target));
+        InputStream is = new FileInputStream(source);
+        OutputStream os = new FileOutputStream(target);
+        try {
+            copy(is, os);
+        } finally {
+            is.close();
+            os.close(); 
+        }
     }
 
     public static void copy(URI source, File target) throws IOException {
         FileManager.deleteContent(target);
-        copy(source.toURL().openStream(), new FileOutputStream(target));
+        InputStream is = source.toURL().openStream();
+        OutputStream os = new FileOutputStream(target);
+        try {
+            copy(is, os);
+        } finally {
+            is.close();
+            os.close(); 
+        }
     }
     
     public static void copy(InputStream source, OutputStream target) throws IOException {

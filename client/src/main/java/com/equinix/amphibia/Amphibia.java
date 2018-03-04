@@ -243,6 +243,10 @@ public final class Amphibia extends JFrame {
             }
         });
     }
+    
+    public static boolean isTestEnv() {
+        return System.getProperty("userPreferenceType") != null;
+    }
 
     public static File getAmphibiaHome() {
         return ProjectAbstract.getAmphibiaHome();
@@ -355,17 +359,18 @@ public final class Amphibia extends JFrame {
                 collection.setProjectFile(file);
                 mainPanel.loadProject(collection);
             }
-            userPreferences.put(Amphibia.P_PROJECT_UUIDS, list.toString());
-            createRecentProjectMenu(collection);
         }
         logger.info("Register APP");
+        userPreferences.put(Amphibia.P_PROJECT_UUIDS, list.toString());
+
+        createRecentProjectMenu(collection);
+
         mainPanel.treeModel.reload();
         resetEnvironmentModel();
 
         logger.info("Reload APP");
         mainPanel.runner.openReport();
         mainPanel.reloadAll(false);
-        mainPanel.wizard.openTabs();
         logger.info("Init End");
     }
 
@@ -455,7 +460,7 @@ public final class Amphibia extends JFrame {
         JSONArray recentProjects = IO.toJSONArray(projects);
         for (int i = recentProjects.size() - 1; i >= 0; i--) {
             File projectFile = IO.getFile(recentProjects.getString(i));
-            if (projectFile.exists()) {
+            if (projectFile.exists() && collection != null) {
                 try {
                     JSONObject profile = collection.getProjectProfile();
                     String projectName = profile.getJSONObject("project").getString("name");
@@ -478,7 +483,15 @@ public final class Amphibia extends JFrame {
     }
 
     public static Preferences getUserPreferences() {
-        return Preferences.userNodeForPackage(Amphibia.class);
+        Class userPreferenceClass = Amphibia.class;
+        try {
+            if (isTestEnv()) {
+                userPreferenceClass = Class.forName(System.getProperty("userPreferenceType"));
+            }
+        } catch (ClassNotFoundException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+        return Preferences.userNodeForPackage(userPreferenceClass);
     }
 
     public static void setText(JTextComponent txt, JScrollPane sb, String text) {
