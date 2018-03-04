@@ -514,6 +514,7 @@ public final class Amphibia extends JFrame {
         }
         frame.setIconImage(Amphibia.instance.icon.getImage());
         dialog.setResizable(isResizable);
+        dialog.setName(title + frame.getOwnedWindows().length);
         return dialog;
     }
 
