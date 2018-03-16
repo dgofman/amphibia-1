@@ -24,7 +24,7 @@ public class Validator {
             if (param.containsKey("in")) {
                 in = StringUtils.capitalize(param.get("in").toString());
             }
-            Converter.addResult(RESOURCE_TYPE.warnings, in + " [" + param.get("name") + "] doesn't have a default value. Path: " + path);
+            Converter.addResult(RESOURCE_TYPE.warnings, in + " [" + param.get("name") + "] missing default value. Path: " + path);
         }
     }
 
@@ -48,7 +48,7 @@ public class Validator {
             if (!uniqWarningKeys.containsKey(definitionName + ':' + property)) {
                 uniqWarningKeys.put(definitionName + ':' + property, true);
                 String[] path = Stream.concat(Arrays.stream(paths.toArray()), Arrays.stream(new String[]{property})).toArray(String[]::new);
-                Converter.addResult(RESOURCE_TYPE.warnings, "Field [" + String.join(".", path) + "] doesn't have a default value.' Definition: " + definitionName);
+                Converter.addResult(RESOURCE_TYPE.warnings, "Field [" + String.join(".", path) + "] missing default value.' Definition: " + definitionName);
             }
         }
     }
@@ -66,7 +66,11 @@ public class Validator {
             }
             if (schema.containsKey("$ref")) {
                 String ref = schema.getString("$ref");
-                definitionName = Swagger.getDefinitionName(ref);
+                String refDefinitionName = Swagger.getDefinitionName(ref);
+                if (refDefinitionName.equals(definitionName)) {
+                    return false;
+                }
+                definitionName = refDefinitionName;
                 JSONObject definitions = doc.getJSONObject("definitions");
                 if (!definitions.containsKey(definitionName)) {
                     Converter.addResult(RESOURCE_TYPE.errors, "Definition '" + definitionName + "' is undefined");

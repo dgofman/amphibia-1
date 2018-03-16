@@ -30,6 +30,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
 

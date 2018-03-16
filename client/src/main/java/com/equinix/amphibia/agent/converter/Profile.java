@@ -464,11 +464,17 @@ public class Profile {
             } else {
                 Map<Object, Object> child = new LinkedHashMap<>();
                 if (val.containsKey("$ref")) {
-                    addBodyAndProperties(info, val.getString("$ref"), properties, child, examples, id);
+                    String refDefinitionName = Swagger.getDefinitionName(val.getString("$ref"));
+                    if (!refDefinitionName.equals(definitionName)) {
+                        addBodyAndProperties(info, val.getString("$ref"), properties, child, examples, id);
+                    }
                 } else if (val.containsKey("items")) {
                     JSONObject items = val.getJSONObject("items");
                     if (items.containsKey("$ref")) {
-                        addBodyAndProperties(info, items.getString("$ref"), properties, child, examples, id);
+                        String refDefinitionName = Swagger.getDefinitionName(items.getString("$ref"));
+                        if (!refDefinitionName.equals(definitionName)) {
+                            addBodyAndProperties(info, items.getString("$ref"), properties, child, examples, id);
+                        }
                     } else if (items.containsKey("properties")) {
                         addBodyAndProperty(info, definitionName, items.getJSONObject("properties"), properties, child,
                                 examples, id);
@@ -525,22 +531,25 @@ public class Profile {
     }
 
     @SuppressWarnings("NonPublicExported")
-    protected void addBodyAndProperty(Map<Object, Object> resBody, Map<Object, Object> properties, String ids) {
+    protected Object addBodyAndProperty(Map<Object, Object> resBody, Map<Object, Object> properties, String ids) {
         resBody.keySet().forEach((key) -> {
             String id = ids + (ids.length() == 0 ? "" : ".") + key;
-
             Object val = resBody.get(key);
-            String param = escapeParam(val, "${#" + id + "}");
-            properties.put(id, val);
-            resBody.put(key, param);
             if (val instanceof JSONObject) {
                 addBodyAndProperty((JSONObject) val, properties, id);
             } else if (val instanceof JSONArray) {
-                ((JSONArray) val).forEach((item) -> {
-                    addBodyAndProperty((JSONObject) item, properties, id);
-                });
+                JSONArray list = (JSONArray) val;
+                for (int i = 0; i < list.size(); i++) {
+                    JSONObject item = list.getJSONObject(i);
+                    list.set(i, addBodyAndProperty(item, properties, id + "." + i));
+                }
+            } else {
+                String param = escapeParam(val, "${#" + id + "}");
+                properties.put(id, val);
+                resBody.put(key, param);
             }
         });
+        return resBody;
     }
 
     protected String escapeParam(Object val, String param) {
@@ -551,9 +560,9 @@ public class Profile {
         String[] path = key.split("\\.");
         Object example = examples;
         if (examples.containsKey("application/json")) {
-            example = examples.getJSONObject("application/json");
+            example = JSONObject.fromObject(examples.getString("application/json"));
         } else if (examples.containsKey("application/javascript")) {
-            example = examples.getJSONArray("application/javascript");
+            example = JSONArray.fromObject(examples.getString("application/javascript"));
         }
         return new Object() {
             Object walk(Object example, String[] path, int index) {
@@ -574,14 +583,7 @@ public class Profile {
     @SuppressWarnings("NonPublicExported")
     public void addPropertyValue(ApiInfo info, String definitionName, JSONObject examples,
             Map<Object, Object> properties, Object key, Object value) {
-        if (isNullValidation && value == null) {
-            if (!examples.isEmpty()) {
-                value = findPropertyValueFromExamples(examples, key.toString());
-                if (value != null) {
-                    properties.put(key, value);
-                    return;
-                }
-            }
+        if (isNullValidation && ProjectAbstract.isNULL(value)) {
             String errorKey = definitionName + "|" + key + "|" + value;
             if (!invalidPropertyValues.containsKey(errorKey)) {
                 invalidPropertyValues.put(errorKey, true);
@@ -594,6 +596,13 @@ public class Profile {
                 invalidPropertyValues.put(errorKey, true);
                 Converter.addResult(RESOURCE_TYPE.warnings, "'" + key + "' parameter is set as BOOLEAN STRING. ("
                         + (definitionName != null ? "Definition: " + definitionName : "Path: " + info.path) + ")");
+            }
+        }
+        if (!examples.isEmpty()) {
+            value = findPropertyValueFromExamples(examples, key.toString());
+            if (value != null) {
+                properties.put(key, value);
+                return;
             }
         }
         properties.put(key, value);
@@ -636,7 +645,7 @@ public class Profile {
         Map<Object, Object> responseProperties = new LinkedHashMap<>();
         String responseJSON = null;
         String responseBody = null;
-        String responseSchema = null;
+        String responseSchema;
         if (api.containsKey("responses")) {
             JSONObject responses = api.getJSONObject("responses");
             for (Object httpCode : responses.keySet()) {
@@ -702,6 +711,34 @@ public class Profile {
                             }
                         }
                     }
+                } else if (response.containsKey("examples")) {
+                    Map<Object, Object> resBody = new LinkedHashMap<>();
+                    JSONObject examples = response.getJSONObject("examples");
+                    String example;
+                    if (examples.containsKey("application/json")) {
+                        example = examples.getString("application/json");
+                    } else if (examples.containsKey("application/javascript")) {
+                        example = examples.getString("application/javascript");
+                    } else {
+                        continue;
+                    }
+                    if (example.startsWith("[")) {
+                        JSONArray arr = JSONArray.fromObject(example);
+                        if (arr.size() > 0) {
+                            resBody = arr.getJSONObject(0);
+                        }
+                    } else {
+                        resBody = JSONObject.fromObject(example);
+                    }
+
+                    addBodyAndProperty(resBody, responseProperties, "");
+                    if (!resBody.isEmpty()) {
+                        responseJSON = Swagger.getJson(resBody);
+                    }
+                }
+
+                if (ProjectAbstract.isNULL(responseJSON)) {
+                    Converter.addResult(RESOURCE_TYPE.warnings, "Response body is NULL: " + info.methodName + " " + httpCode + "::" + info.path);
                 }
 
                 if (isResponseCode) {
@@ -709,7 +746,8 @@ public class Profile {
                 } else {
                     String httpFile = httpCode + ".json";
                     if (Swagger.asserts.containsKey(httpFile)) {
-                        if (!Swagger.asserts.get(httpFile).equals(responseJSON)) {
+                        Object data = Swagger.asserts.get(httpFile);
+                        if (data != null && !data.equals(responseJSON)) {
                             Swagger.asserts.put(getPath(info) + "_" + httpCode + ".json", responseJSON);
                         }
                     } else {

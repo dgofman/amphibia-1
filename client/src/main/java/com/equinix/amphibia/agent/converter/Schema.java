@@ -118,8 +118,10 @@ public final class Schema {
         String definitionName = Swagger.getDefinitionName(ref);
         details.put("$ref", definitionName);
         Map<Object, Object> definition = new LinkedHashMap<>();
-        definitions.put(definitionName, definition);
-        parse(definition, ref, paths);
+        if (!definitions.containsKey(definitionName)) {
+            definitions.put(definitionName, definition);
+            parse(definition, ref, paths);
+        }
     }
 
     public static File getSchemasDir(File dataDir) {
