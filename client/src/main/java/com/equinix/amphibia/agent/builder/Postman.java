@@ -42,7 +42,7 @@ public class Postman extends ProjectAbstract {
     @Override
     protected void readInputData() throws Exception {
         super.readInputData();
-        jsonContent = this.getFileContent(getTemplateFile("postman/postman.json"));
+        jsonContent = getFileContent(getTemplateFile("postman/postman.json"));
     }
 
     @Override
@@ -74,7 +74,7 @@ public class Postman extends ProjectAbstract {
     }
 
     private void addProperty(List<String> list, Object name, Object value) throws Exception {
-        String propertyJSON = this.getFileContent(getTemplateFile("postman/property.json"));
+        String propertyJSON = getFileContent(getTemplateFile("postman/property.json"));
         propertyJSON = replace(propertyJSON, "<% NAME %>", name);
         propertyJSON = replace(propertyJSON, "<% VALUE %>", value);
         list.add(tabs(propertyJSON, "\t\t\t\t"));
@@ -86,7 +86,7 @@ public class Postman extends ProjectAbstract {
         List<String> globalList = new ArrayList<>();
         for (Object item : globals) {
             JSONObject globalItem = (JSONObject) item;
-            String parameterJSON = this.getFileContent(getTemplateFile("postman/property.json"));
+            String parameterJSON = getFileContent(getTemplateFile("postman/property.json"));
             parameterJSON = replace(parameterJSON, "<% NAME %>", globalItem.get("name"));
             parameterJSON = replace(parameterJSON, "<% VALUE %>", getValue(globalItem.get("value")));
             globalList.add(tabs(parameterJSON, "\t\t"));
@@ -101,7 +101,7 @@ public class Postman extends ProjectAbstract {
         for (Object name : projectPropertiesJSON.keySet()) {
             addProperty(environmentList, name, getValue(projectPropertiesJSON.get(name)));
         }
-        String envJSON = this.getFileContent(getTemplateFile("postman/environment.json"));
+        String envJSON = getFileContent(getTemplateFile("postman/environment.json"));
         envJSON = replace(envJSON, "<% NAME %>", projectName);
         envJSON = replace(envJSON, "<% PARAMETERS %>", String.join(",\n", environmentList));
         jsonContent = replace(jsonContent, "<% ENVIRONMENTS %>", envJSON);
@@ -114,7 +114,7 @@ public class Postman extends ProjectAbstract {
         for (int index = 0; index < interfaces.size(); index++) {
             JSONObject interfaceItem = interfaces.getJSONObject(index);
             if (interfaceItem.containsKey("headers")) {
-                String headerJSON = this.getFileContent(getTemplateFile("postman/header.json"));
+                String headerJSON = getFileContent(getTemplateFile("postman/header.json"));
                 headerJSON = replace(headerJSON, "<% ID %>", getId());
                 headerJSON = replace(headerJSON, "<% NAME %>", interfaceItem.getString("name"));
                 headerJSON = replace(headerJSON, "<% TIMESTAMP %>", getTimestamp());
@@ -156,7 +156,7 @@ public class Postman extends ProjectAbstract {
                 buildTestCases(testSuiteRequests, resource, name.toString(), testSuiteItem, properties, interfacesJson.getJSONObject(iId).getString("basePath"), headers);
                 requestList.putAll(testSuiteRequests);
 
-                String testSuiteJSON = this.getFileContent(getTemplateFile("postman/folder.json"));
+                String testSuiteJSON = getFileContent(getTemplateFile("postman/folder.json"));
                 String id = getId();
                 testSuiteJSON = replace(testSuiteJSON, "<% NAME %>", name);
                 testSuiteJSON = replace(testSuiteJSON, "<% ID %>", id);
@@ -179,7 +179,7 @@ public class Postman extends ProjectAbstract {
                 properties.setTestCase(testCaseItem.getJSONObject("properties"));
 
                 String id = getId();
-                String testcase = this.getFileContent(getTemplateFile("postman/request.json"));
+                String testcase = getFileContent(getTemplateFile("postman/request.json"));
                 testcase = replace(testcase, "<% ID %>", id);
                 testcase = replace(testcase, "<% NAME %>", testCaseItem.getString("name"));
                 testcase = replace(testcase, "<% SUMMARY %>", testCaseItem.getString("summary"));

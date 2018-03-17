@@ -38,7 +38,7 @@ public class SoapUI extends ProjectAbstract {
     @Override
     protected void readInputData() throws Exception {
         super.readInputData();
-        xmlContent = this.getFileContent(getTemplateFile("soapui/soapui.xml"));
+        xmlContent = getFileContent(getTemplateFile("soapui/soapui.xml"));
     }
 
     @Override
@@ -156,7 +156,7 @@ public class SoapUI extends ProjectAbstract {
         super.buildProperties(properties);
         List<String> propertyList = new ArrayList<>();
         for (Object key : properties.keySet()) {
-            String propertyXML = this.getFileContent(getTemplateFile("soapui/property.xml"));
+            String propertyXML = getFileContent(getTemplateFile("soapui/property.xml"));
             propertyXML = replace(propertyXML, "<% NAME %>", key);
             propertyXML = replace(propertyXML, "<% VALUE %>", properties.get(key));
             propertyList.add(tabs(propertyXML, "\t\t"));
@@ -172,17 +172,17 @@ public class SoapUI extends ProjectAbstract {
             JSONObject interfaceItem = interfaces.getJSONObject(index);
             interfacesJson.put(index, interfaceItem);
             List<String> resourceList = new ArrayList<>();
-            String interfaceXML = this.getFileContent(getTemplateFile("soapui/interface.xml"));
+            String interfaceXML = getFileContent(getTemplateFile("soapui/interface.xml"));
             xmlContent = replace(xmlContent, "<% INTERFACE_NAME %>", interfaceItem.get("basePath"));
             interfaceXML = replace(interfaceXML, "<% INTERFACE_NAME %>", interfaceItem.get("basePath"));
             interfaceXML = replace(interfaceXML, "<% INTERFACE_TYPE %>", interfaceItem.get("type"));
             interfaceXML = replace(interfaceXML, "<% ENDPOINT %>", "${#Global#RestEndPoint" + index + "}");
 
             JSONObject headers = interfaceItem.getJSONObject("headers");
-            String resourcesXML = this.getFileContent(getTemplateFile("soapui/resource.xml"));
+            String resourcesXML = getFileContent(getTemplateFile("soapui/resource.xml"));
             List<String> parameterList = new ArrayList<>();
             for (Object key : headers.keySet()) {
-                String parameterXML = this.getFileContent(getTemplateFile("soapui/resource_parameters.xml"));
+                String parameterXML = getFileContent(getTemplateFile("soapui/resource_parameters.xml"));
                 parameterXML = replace(parameterXML, "<% STYLE %>", "HEADER");
                 parameterXML = replace(parameterXML, "<% NAME %>", key);
                 parameterXML = replace(parameterXML, "<% VALUE %>", headers.get(key));
@@ -210,14 +210,14 @@ public class SoapUI extends ProjectAbstract {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
 
                 List<String> testCaseList = new ArrayList<>();
-                String testSuiteXML = this.getFileContent(getTemplateFile("soapui/testSuite.xml"));
+                String testSuiteXML = getFileContent(getTemplateFile("soapui/testSuite.xml"));
                 testSuiteXML = replace(testSuiteXML, "<% TESTSUITE_NAME %>", name.toString());
                 buildTestCases(name.toString(), testCaseList, resource, headers, testSuiteItem);
                 testSuiteXML = replace(testSuiteXML, "<% TESTCASES %>", String.join("\n", testCaseList));
                 JSONObject props = testSuiteItem.getJSONObject("properties");
                 List<String> propertyList = new ArrayList<>();
                 for (Object key : props.keySet()) {
-                    String propertyXML = this.getFileContent(getTemplateFile("soapui/property.xml"));
+                    String propertyXML = getFileContent(getTemplateFile("soapui/property.xml"));
                     propertyXML = replace(propertyXML, "<% NAME %>", key);
                     propertyXML = replace(propertyXML, "<% VALUE %>", props.get(key));
                     propertyList.add(tabs(propertyXML, "\t\t\t"));
@@ -234,14 +234,14 @@ public class SoapUI extends ProjectAbstract {
         for (Object item : testcases) {
             JSONObject testCaseItem = (JSONObject) item;
             List<String> testStepList = new ArrayList<>();
-            String testCaseXML = this.getFileContent(getTemplateFile("soapui/testCase.xml"));
+            String testCaseXML = getFileContent(getTemplateFile("soapui/testCase.xml"));
             testCaseXML = replace(testCaseXML, "<% TESTCASE_NAME %>", testCaseItem.get("name"));
             buildTestSteps(testSuiteName, testStepList, resourceItem, headers, testCaseItem);
             testCaseXML = replace(testCaseXML, "<% TEST_STEPS %>", String.join("\n", testStepList));
             JSONObject props = testCaseItem.getJSONObject("properties");
             List<String> propertyList = new ArrayList<>();
             for (Object key : props.keySet()) {
-                String propertyXML = this.getFileContent(getTemplateFile("soapui/property.xml"));
+                String propertyXML = getFileContent(getTemplateFile("soapui/property.xml"));
                 propertyXML = replace(propertyXML, "<% NAME %>", key);
                 propertyXML = replace(propertyXML, "<% VALUE %>", props.get(key));
                 propertyList.add(tabs(propertyXML, "\t\t\t\t"));
@@ -253,7 +253,7 @@ public class SoapUI extends ProjectAbstract {
 
     protected void buildTestSteps(String testSuiteName, List<String> testStepList, JSONObject resourceItem, JSONObject headers, JSONObject testCaseItem) throws Exception {
         String type = (String) testCaseItem.get("type");
-        String testStepXML = this.getFileContent(getTemplateFile("soapui/teststeps/" + type + ".xml"));
+        String testStepXML = getFileContent(getTemplateFile("soapui/teststeps/" + type + ".xml"));
 
         testStepXML = replace(testStepXML, "<% TESTSTEP_NAME %>", testCaseItem.containsKey("operationId") ? testCaseItem.get("operationId") : testCaseItem.get("name"));
 
@@ -271,7 +271,7 @@ public class SoapUI extends ProjectAbstract {
         List<String> assertionList = new ArrayList<>();
         for (Object assertion : assertions) {
             JSONObject assertionItem = (JSONObject) assertion;
-            String assertionXML = this.getFileContent(getTemplateFile("soapui/assertions/" + assertionItem.get("type") + ".xml"));
+            String assertionXML = getFileContent(getTemplateFile("soapui/assertions/" + assertionItem.get("type") + ".xml"));
             JSONObject replace = assertionItem.getJSONObject("replace");
             for (Object key : replace.keySet()) {
                 assertionXML = replace(assertionXML, "<% " + key.toString().toUpperCase() + " %>", replace.get(key));

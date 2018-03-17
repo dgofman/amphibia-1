@@ -10,6 +10,7 @@
 		<version.soapui>5.3.0</version.soapui>
 		<sourceDirectory>${basedir}/src</sourceDirectory>
 		<outputDirectory>${basedir}/target</outputDirectory>
+		<resourceDirectory>${basedir}/../resources</resourceDirectory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -19,6 +20,19 @@
 		<sourceDirectory>${sourceDirectory}</sourceDirectory>
 		<directory>${outputDirectory}</directory>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.7.0</version>
+				<configuration>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+					<compilerArgs>
+						<arg>-Xlint:deprecation</arg>
+						<arg>-Xlint:unchecked</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -47,9 +61,8 @@
 			<artifactId>json-lib</artifactId>
 			<version>2.4.fix</version>
 			<scope>system</scope>
-			<systemPath>${project.basedir}/../resources/json-lib-2.4.fix.jar</systemPath>
+			<systemPath>${resourceDirectory}/json-lib-2.4.fix.jar</systemPath>
 		</dependency>
-
 		<dependency>
 			<groupId>javafx</groupId>
 			<artifactId>jfxrt</artifactId>
@@ -57,7 +70,6 @@
 			<scope>system</scope>
 			<systemPath>${JAVA_HOME}/jre/lib/ext/jfxrt.jar</systemPath>
 		</dependency>
-
 		<dependency>
 			<groupId>com.smartbear.soapui</groupId>
 			<artifactId>soapui</artifactId>

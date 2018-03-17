@@ -37,8 +37,8 @@ public class Mocha extends ProjectAbstract {
     @Override
     protected void readInputData() throws Exception {
         super.readInputData();
-        packageJSON = this.getFileContent(getTemplateFile("mocha/package.json"));
-        testsJS = this.getFileContent(getTemplateFile("mocha/tests.js"));
+        packageJSON = getFileContent(getTemplateFile("mocha/package.json"));
+        testsJS = getFileContent(getTemplateFile("mocha/tests.js"));
     }
 
     @Override
@@ -152,7 +152,7 @@ public class Mocha extends ProjectAbstract {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
 
-                String test = this.getFileContent(getTemplateFile("mocha/test.js"));
+                String test = getFileContent(getTemplateFile("mocha/test.js"));
 
                 test = replace(test, "<% TESTSUITE_NAME %>", name);
                 test = replace(test, "<% ENDPOINT %>", resource.getString("endpoint"));
@@ -173,7 +173,7 @@ public class Mocha extends ProjectAbstract {
             if ("restrequest".equals(testCaseItem.get("type"))) {
                 properties.setTestCase(testCaseItem.getJSONObject("properties"));
 
-                String testcase = this.getFileContent(getTemplateFile("mocha/testcase.js"));
+                String testcase = getFileContent(getTemplateFile("mocha/testcase.js"));
                 testcase = replace(testcase, "<% SUMMARY %>", testCaseItem.getString("summary"));
                 testcase = replace(testcase, "<% TESTCASE_NAME %>", testCaseItem.getString("name"));
 

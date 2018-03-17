@@ -37,8 +37,8 @@ public class JUnit extends ProjectAbstract {
     protected void readInputData() throws Exception {
         super.readInputData();
         testCaseOrder = new ArrayList<>();
-        pomXML = this.getFileContent(getTemplateFile("junit/pom.xml"));
-        tests = this.getFileContent(getTemplateFile("junit/Tests.java"));
+        pomXML = getFileContent(getTemplateFile("junit/pom.xml"));
+        tests = getFileContent(getTemplateFile("junit/Tests.java"));
     }
 
     @Override
@@ -69,7 +69,7 @@ public class JUnit extends ProjectAbstract {
         writer.close();
         LOGGER.log(Level.INFO, "The pom.xml file saved successfully.\n{0}", pomFile);
 
-        String content = this.getFileContent(getTemplateFile("junit/project"));
+        String content = getFileContent(getTemplateFile("junit/project"));
         writer = new PrintWriter(new FileOutputStream(new File(outputDirPath, ".project"), false));
         writer.println(replace(content, "<% PROJECT_NAME %>", projectName));
         writer.close();
@@ -154,7 +154,7 @@ public class JUnit extends ProjectAbstract {
                 JSONObject testSuiteItem = testsuites.getJSONObject(name.toString());
                 properties.setTestSuite(testSuiteItem.getJSONObject("properties"));
 
-                String test = this.getFileContent(getTemplateFile("junit/Test.java"));
+                String test = getFileContent(getTemplateFile("junit/Test.java"));
                 String testSuiteName = stripName(name.toString());
                 testCaseOrder.add(testSuiteName + ".class");
                 test = replace(test, "<% TESTSUITE_CLASS_NAME %>", testSuiteName);
@@ -176,7 +176,7 @@ public class JUnit extends ProjectAbstract {
             if ("restrequest".equals(testCaseItem.get("type"))) {
                 properties.setTestCase(testCaseItem.getJSONObject("properties"));
 
-                String testcase = this.getFileContent(getTemplateFile("junit/TestCase.java"));
+                String testcase = getFileContent(getTemplateFile("junit/TestCase.java"));
                 testcase = replace(testcase, "<% SUMMARY %>", testCaseItem.getString("summary"));
                 testcase = replace(testcase, "<% TESTCASE_CLASS_NAME %>", testCaseItem.getString("name"));
 

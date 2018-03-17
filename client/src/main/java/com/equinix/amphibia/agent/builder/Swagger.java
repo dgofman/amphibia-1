@@ -39,7 +39,7 @@ public class Swagger extends ProjectAbstract {
     @Override
     protected void readInputData() throws Exception {
         super.readInputData();
-        swaggerJSON = this.getFileContent(getTemplateFile("swagger/swagger.json"));
+        swaggerJSON = getFileContent(getTemplateFile("swagger/swagger.json"));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class Swagger extends ProjectAbstract {
     protected void buildInterfaces(JSONArray interfaces) throws Exception {
         super.buildInterfaces(interfaces);
         List<String> parameters = new ArrayList<>();
-        String refJSON = this.getFileContent(getTemplateFile("swagger/ref.json"));
+        String refJSON = getFileContent(getTemplateFile("swagger/ref.json"));
         for (int index = 0; index < interfaces.size(); index++) {
             JSONObject interfaceItem = interfaces.getJSONObject(index);
             if (interfaceItem.containsKey("headers")) {
@@ -93,7 +93,7 @@ public class Swagger extends ProjectAbstract {
                 List<String> params = new ArrayList<>();
                 for (Object key : headers.keySet()) {
                     String name = "param" + (parameters.size() + 1);
-                    String parameterJSON = this.getFileContent(getTemplateFile("swagger/headerParam.json"));
+                    String parameterJSON = getFileContent(getTemplateFile("swagger/headerParam.json"));
                     parameterJSON = replace(parameterJSON, "<% PARAM %>", name);
                     parameterJSON = replace(parameterJSON, "<% IN %>", "header");
                     parameterJSON = replace(parameterJSON, "<% NAME %>", key);
@@ -142,7 +142,7 @@ public class Swagger extends ProjectAbstract {
                 List<String> params = new ArrayList<>();
                 params.addAll(headerParams);
 
-                String test = this.getFileContent(getTemplateFile("swagger/path.json"));
+                String test = getFileContent(getTemplateFile("swagger/path.json"));
                 test = replace(test, "<% TAG %>", testSuiteName);
                 test = replace(test, "<% SUMMARY %>", testcase.getString("summary"));
 
@@ -166,7 +166,7 @@ public class Swagger extends ProjectAbstract {
                             Matcher m2 = Pattern.compile("_[A-Z][A-Z0-9_]+", Pattern.DOTALL).matcher(key);
                             if (m2.find()) {
                                 String param = m2.group(0).substring(1).toLowerCase();
-                                String parameterJSON = this.getFileContent(getTemplateFile("swagger/parameter.json"));
+                                String parameterJSON = getFileContent(getTemplateFile("swagger/parameter.json"));
                                 parameterJSON = replace(parameterJSON, "<% REQUIRED %>", i == 0);
                                 parameterJSON = replace(parameterJSON, "<% IN %>", i == 0 ? "path" : "query");
                                 parameterJSON = replace(parameterJSON, "<% NAME %>", param);
@@ -185,12 +185,12 @@ public class Swagger extends ProjectAbstract {
                     Object body = Properties.getBody(projectDir, resourceId, testSuiteName, testcase.getString("name"), true);
                     if (!isNULL(body)) {
                         body = properties.replace(prettyJson(body));
-                        String bodyJSON = this.getFileContent(getTemplateFile("swagger/body.json"));
+                        String bodyJSON = getFileContent(getTemplateFile("swagger/body.json"));
                         if (testcase.containsKey("definition")) {
                             String defName = testcase.getString("definition");
                             params.add(bodyJSON.replace("<% SCHEMA %>", "\"$ref\": \"#/definitions/" + defName + "\""));
                             if (!definitions.containsKey(defName)) {
-                                definitions.put(defName, this.getFileContent(getTemplateFile("swagger/definition.json"))
+                                definitions.put(defName, getFileContent(getTemplateFile("swagger/definition.json"))
                                         .replace("<% NAME %>", defName)
                                         .replace("<% EXAMPLE %>", body.toString()));
                             }
@@ -205,7 +205,7 @@ public class Swagger extends ProjectAbstract {
                 if (testcase.containsKey("assertions")) {
                     for (Object assertion : testcase.getJSONArray("assertions")) {
                         JSONObject assertionItem = (JSONObject) assertion;
-                        String assertionJSON = this.getFileContent(getTemplateFile("swagger/assertion.json"));
+                        String assertionJSON = getFileContent(getTemplateFile("swagger/assertion.json"));
                         Object value = ((Map<?, ?>) assertionItem.get("replace")).get("value");
                         assertionJSON = replace(assertionJSON, "<% NAME %>", assertionItem.get("type"));
                         assertionJSON = replace(assertionJSON, "<% VALUE %>", properties.replace(value));

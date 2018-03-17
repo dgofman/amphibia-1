@@ -18,8 +18,6 @@ import java.awt.Color;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -30,7 +28,6 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
@@ -76,7 +73,7 @@ public abstract class ProjectAbstract {
             fileHandler = new FileHandler(new File(amphibiaHome, "amphibia.log").getAbsolutePath(), LOG_LIMIT, NUM_LOGS, false);
 
             final Formatter formatter = new Formatter() {
-                final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                //final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 //System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS [%4$-7s] (%2$s)     %5$s%6$s%n");
 
                 @Override
