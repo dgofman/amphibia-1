@@ -10,7 +10,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import net.sf.json.JSONObject;
-import com.equinix.amphibia.agent.mock.Project;
 
 public class Runner {
 
@@ -27,7 +26,7 @@ public class Runner {
         CommandLine cmd = validateArguments(options, args);
 
         results = new LinkedHashMap<>();
-        new Project(cmd, cmd.getOptionValue(PROJECT));
+        System.out.println("TODO " + cmd.getOptionValue(PROJECT));
         if (results != null) {
             System.out.println(JSONObject.fromObject(results));
         }

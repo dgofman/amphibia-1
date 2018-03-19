@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,22 +27,17 @@ public class Project implements HttpHandler {
 
     private static final Logger LOGGER = Logger.getLogger(Project.class.getName());
 
-    private final File projectDir;
-    private final JSONObject projectJSON;
+    private final Map<String, PathInfo> pathInfo = new HashMap<>();
 
-    private JSONObject interfacesJSON;
-    private JSONObject pathJSON;
+    public Project() {
+    }
 
     public Project(CommandLine cmd, String projectFile) throws IOException {
-        LOGGER.log(Level.INFO, "projectFile: " + projectFile);
-        File file = new File(projectFile);
-        projectDir = file.getParentFile();
-        projectJSON = getContent(new FileInputStream(file));
-        init();
+        init(new File(projectFile));
         startServer(cmd.getOptionValue(Server.PORT));
     }
 
-    protected void startServer(String p) throws IOException {
+    public void startServer(String p) throws IOException {
         int port = p == null ? Server.DEFAUL_PORT : Integer.parseInt(p);
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/", this);
@@ -49,9 +46,10 @@ public class Project implements HttpHandler {
         LOGGER.log(Level.INFO, "v1.0 | Server is running on port: " + port);
     }
 
-    protected void init() {
-        pathJSON = new JSONObject();
-        interfacesJSON = new JSONObject();
+    protected void init(File file) throws IOException {
+        LOGGER.log(Level.INFO, "projectFile: " + file.getAbsolutePath());
+        JSONObject projectJSON = getContent(new FileInputStream(file));
+        JSONObject interfacesJSON = new JSONObject();
 
         projectJSON.getJSONArray("interfaces").forEach((item) -> {
             JSONObject intrf = (JSONObject) item;
@@ -74,8 +72,8 @@ public class Project implements HttpHandler {
                         testcase.put("resourceId", resource.getString("resourceId"));
                         testcase.put("testsuiteName", key);
                         String basePath = iterfJSON.getString("basePath");
-                        pathJSON.put(testcase.get("method") + "::" + (basePath.startsWith("/") ? "" : "/") + basePath
-                                + testcase.getString("path").split("\\?")[0], testcase);
+                        pathInfo.put(fixPath(testcase.get("method") + "::" + (basePath.startsWith("/") ? "" : "/") + basePath
+                                + testcase.getString("path").split("\\?")[0]), new PathInfo(file.getParentFile(), testcase));
                     });
                 });
             }
@@ -86,13 +84,14 @@ public class Project implements HttpHandler {
     public void handle(HttpExchange request) throws IOException {
         String response = "";
         try {
-            String reqName = request.getRequestMethod() + "::" + request.getRequestURI().getPath();
-            if (pathJSON.containsKey(reqName)) {
-                JSONObject testcase = pathJSON.getJSONObject(reqName);
+            String reqName = fixPath(request.getRequestMethod() + "::" + request.getRequestURI().getPath());
+            if (pathInfo.containsKey(reqName)) {
+                PathInfo info = pathInfo.get(reqName);
+                JSONObject testcase = info.testcase;
                 String resourceId = testcase.getString("resourceId");
                 String testSuiteName = testcase.getString("testsuiteName");
                 String testCaseName = testcase.getString("name");
-                response = Properties.getBody(projectDir, resourceId, testSuiteName, testCaseName, false);
+                response = Properties.getBody(info.projectDir, resourceId, testSuiteName, testCaseName, false);
                 if (response != null) {
                     JSONObject properties = testcase.getJSONObject("properties");
                     request.getResponseHeaders().set("Content-Type", "appication/json");
@@ -117,10 +116,24 @@ public class Project implements HttpHandler {
         }
     }
 
+    protected String fixPath(String path) { 
+        return path.replaceAll("//", "/");
+    }
+
     protected JSONObject getContent(InputStream is) throws IOException {
         if (is == null) {
             return null;
         }
         return JSONObject.fromObject(IOUtils.toString(is));
+    }
+}
+
+class PathInfo {
+    public final File projectDir;
+    public final JSONObject testcase;
+    
+    public PathInfo(File projectDir, JSONObject testcase) {
+        this.projectDir = projectDir;
+        this.testcase = testcase;
     }
 }

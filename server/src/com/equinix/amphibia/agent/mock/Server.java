@@ -23,6 +23,7 @@ public final class Server {
     public static final int DEFAUL_PORT = 8090;
 
     public static void execute(String[] args) throws Exception {
+        //TODO call in UI Mock Server
         Options options = new Options();
         options.addOption(new Option("p", PORT, true, "Server port number. Default: " + DEFAUL_PORT));
 
@@ -36,7 +37,7 @@ public final class Server {
 
     public static void main(String[] args) throws Exception {
         Options options = new Options();
-        options.addOption(new Option("a", PROJECT, true, "Amphibia Project file"));
+        options.addOption(new Option("a", PROJECT, true, "Amphibia Project file(s)"));
         options.addOption(new Option("p", PORT, true, "Server port number. Default: " + DEFAUL_PORT));
         Option input = new Option("i", INPUT, true, "Comma-separated list of Swagger file(s) or URL(s)");
         input.setRequired(true);
@@ -45,12 +46,22 @@ public final class Server {
         CommandLine cmd = validateArguments(options, args);
 
         String projectPath = cmd.getOptionValue(PROJECT);
-        if (projectPath == null || !new File(projectPath).exists()) {
-            String[] params = new String[] { "-i=" + cmd.getOptionValue(INPUT), "-j=true", "-d=true" };
+        if (projectPath == null) {
+            projectPath = "";
+        }
+        String[] projects = projectPath.split(",");
+        if (projects.length == 1 || !new File(projects[0]).exists()) {
+            String[] params = new String[] { "-i=" + cmd.getOptionValue(INPUT), "-j=true", "-d=true -e=false" };
             Map<RESOURCE_TYPE, Object> results = Converter.execute(params);
             projectPath = results.get(RESOURCE_TYPE.project).toString();
+            new Project(cmd, projectPath);
+        } else {
+            Project project = new Project();
+            for (String path : projects) {
+                project.init(new File(path));
+            }
+            project.startServer(cmd.getOptionValue(Server.PORT));
         }
-        new Project(cmd, projectPath);
     }
 
     private static CommandLine validateArguments(final Options options, String[] args) throws ParseException {
