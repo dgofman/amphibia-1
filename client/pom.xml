@@ -63,6 +63,13 @@
 				<configuration>
 					<descriptor>assembly.xml</descriptor>
 					<archive>
+						<manifestEntries>
+							<Implementation-Title>${project.name}</Implementation-Title>
+							<Implementation-Version>${project.version}</Implementation-Version>
+							<Specification-Title>${project.name} Library</Specification-Title>
+							<Specification-Version>${project.version}</Specification-Version>
+							<Created-By>David Gofman</Created-By>
+						</manifestEntries>
 						<manifest>
 							<mainClass>com.equinix.amphibia.Amphibia</mainClass>
 							<addClasspath>false</addClasspath>

@@ -13,6 +13,11 @@
 		<dependencySet>
 			<unpack>true</unpack>
 			<useProjectArtifact>false</useProjectArtifact>
+			<scope>runtime</scope>
+		</dependencySet>
+		<dependencySet>
+			<unpack>true</unpack>
+			<scope>system</scope>
 		</dependencySet>
 	</dependencySets>
 	<fileSets>
