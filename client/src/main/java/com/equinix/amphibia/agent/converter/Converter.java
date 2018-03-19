@@ -35,6 +35,7 @@ public class Converter {
 
     public static final String NAME = "name";
     public static final String PATH = "path";
+    public static final String EMPTY = "delete";
     public static final String INPUT = "input";
     public static final String MERGE = "merge";
     public static final String PROPERTIES = "properties";
@@ -76,6 +77,7 @@ public class Converter {
         Options options = new Options();
         options.addOption(new Option("n", NAME, true, "Project name (Optional)"));
         options.addOption(new Option("a", PATH, true, "Absolute path (Optional)"));
+        options.addOption(new Option("e", EMPTY, true, "Delete old project(s). Default: true"));
         options.addOption(new Option("m", MERGE, true, "Merge properties into project file. Default: false"));
         options.addOption(new Option("p", PROPERTIES, true, "Comma-separated list of property file(s) (Optional)"));
         options.addOption(new Option("f", INTERFACES, true, "Comma-separated list of interface name(s) (Optional)"));
@@ -140,10 +142,12 @@ public class Converter {
             outputDir.mkdirs();
         }
 
-        try {
-            FileUtils.deleteDirectory(new File(Profile.PROJECT_DIR, Profile.DATA_DIR));
-        } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, ex.toString(), ex);
+        if (!"false".equals(cmd.getOptionValue(EMPTY))) {
+            try {
+                FileUtils.deleteDirectory(new File(Profile.PROJECT_DIR, Profile.DATA_DIR));
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, ex.toString(), ex);
+            }
         }
         Profile profile = new Profile();
         JSONObject output = new JSONObject();
