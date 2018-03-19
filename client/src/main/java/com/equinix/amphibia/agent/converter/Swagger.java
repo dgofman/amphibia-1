@@ -1,8 +1,5 @@
 package com.equinix.amphibia.agent.converter;
 
-import com.equinix.amphibia.agent.builder.ProjectAbstract;
-import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
-
 import java.io.File;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -18,6 +15,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
 import org.apache.commons.cli.CommandLine;
+import org.yaml.snakeyaml.Yaml;
+
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
+import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
@@ -39,9 +40,16 @@ public final class Swagger {
     public static final JSONNull NULL = JSONNull.getInstance();
 
     public Swagger(CommandLine cmd, String resourceId, JSONObject rulesAndPrperties, InputStream input, JSONObject output, Profile profile) throws Exception {
+        String content = ProjectAbstract.getFileContent(input);
+        if (content.trim().startsWith("{")) {
+            this.doc = JSONObject.fromObject(content);
+        } else {
+            Yaml yaml = new Yaml();
+            Object json = yaml.load(content);
+            this.doc = JSONObject.fromObject(json);
+        }
         this.cmd = cmd;
         this.rulesAndPrperties = rulesAndPrperties;
-        this.doc = ProjectAbstract.getJSON(input);
         this.output = output;
         this.profile = profile;
         this.isMerge = "true".equals(Converter.cmd.getOptionValue(Converter.MERGE));

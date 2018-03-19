@@ -164,7 +164,7 @@ public class Validator {
                         case "object":
                             if (value2 instanceof Map) {
                                 Object ref = ((Map<Object, Object>) value2).get("$ref");
-                                if (ref != null) {
+                                if (ref != null && value1 instanceof Map) {
                                     walk(defintionPath, (Map<Object, Object>) value1, (Map<Object, Object>) defintions.get(ref), defintions, paths);
                                 }
                             }

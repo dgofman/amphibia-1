@@ -50,8 +50,8 @@ public final class Server {
             projectPath = "";
         }
         String[] projects = projectPath.split(",");
-        if (projects.length == 1 || !new File(projects[0]).exists()) {
-            String[] params = new String[] { "-i=" + cmd.getOptionValue(INPUT), "-j=true", "-d=true -e=false" };
+        if (projects.length == 1 && !new File(projects[0]).exists()) {
+            String[] params = new String[] { "-i=" + cmd.getOptionValue(INPUT), "-j=true", "-d=true", "-e=false" };
             Map<RESOURCE_TYPE, Object> results = Converter.execute(params);
             projectPath = results.get(RESOURCE_TYPE.project).toString();
             new Project(cmd, projectPath);

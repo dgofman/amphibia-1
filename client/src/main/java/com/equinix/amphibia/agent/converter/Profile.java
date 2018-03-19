@@ -560,7 +560,12 @@ public class Profile {
         String[] path = key.split("\\.");
         Object example = examples;
         if (examples.containsKey("application/json")) {
-            example = JSONObject.fromObject(examples.getString("application/json"));
+            String json = examples.getString("application/json");
+            if (json.trim().startsWith("{")) {
+                example = JSONObject.fromObject(json);
+            } else {
+                example = JSONArray.fromObject(json);
+            }
         } else if (examples.containsKey("application/javascript")) {
             example = JSONArray.fromObject(examples.getString("application/javascript"));
         }
