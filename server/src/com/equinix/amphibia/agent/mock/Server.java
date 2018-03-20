@@ -65,9 +65,12 @@ public final class Server {
             List<String> projects = new ArrayList<>();
             List<String> paths = new ArrayList<>();
             JSONArray json = JSONArray.fromObject(IOUtils.toString(new FileInputStream(new File(buildFile))));
-            String[] files = new File(Profile.PROJECT_DIR).list();
-            for (String file : files) {
-                File dir = new File(Profile.PROJECT_DIR, file);
+            File projectDir = new File(Profile.PROJECT_DIR);
+            if (projectDir.list() == null) {
+                projectDir = new File(".");
+            }
+            for (String file : projectDir.list()) {
+                File dir = new File(projectDir, file);
                 if (dir.isDirectory()) {
                     FileUtils.deleteDirectory(dir);
                 }
@@ -76,7 +79,7 @@ public final class Server {
                 try {
                     JSONObject item = json.getJSONObject(i);
                     paths.add(item.getString("path"));
-                    List<String> params = new ArrayList<>(Arrays.asList("-i=" + item.getString("path"), "-j=true", "-d=true"));
+                    List<String> params = new ArrayList<>(Arrays.asList("-i=" + item.getString("path"), "-r" + projectDir.getAbsolutePath(), "-j=true", "-d=true"));
                     if (!ProjectAbstract.isNULL(item.get("name"))) {
                         params.add("-n=" + item.get("name"));
                     }
@@ -90,7 +93,7 @@ public final class Server {
                 }
             }
             projectPath = String.join(",", projects);
-            ProjectAbstract.saveFile(new File(Profile.PROJECT_DIR, "readme.txt"), String.join("\n", paths) + "\n\n" + "java -jar amphibia-server.jar -i=" + projectPath);
+            ProjectAbstract.saveFile(new File(projectDir, "readme.txt"), String.join("\n", paths) + "\n\n" + "java -jar amphibia-server.jar -i=" + projectPath);
         }
 
         String[] projects = projectPath.split(",");

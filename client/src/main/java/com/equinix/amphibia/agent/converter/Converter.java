@@ -39,6 +39,7 @@ public class Converter {
     public static final String PATH = "path";
     public static final String INPUT = "input";
     public static final String MERGE = "merge";
+    public static final String PROJECT_DIR = "dir";
     public static final String PROPERTIES = "properties";
     public static final String INTERFACES = "interfaces";
     public static final String SCHEMA = "schema";
@@ -79,6 +80,7 @@ public class Converter {
         options.addOption(new Option("n", NAME, true, "Project name (Optional)"));
         options.addOption(new Option("a", PATH, true, "Absolute path (Optional)"));
         options.addOption(new Option("m", MERGE, true, "Merge properties into project file. Default: false"));
+        options.addOption(new Option("r", PROJECT_DIR, true, "Project dir. Default: " + Profile.PROJECT_DIR));
         options.addOption(new Option("p", PROPERTIES, true, "Comma-separated list of property file(s) (Optional)"));
         options.addOption(new Option("f", INTERFACES, true, "Comma-separated list of interface name(s) (Optional)"));
         options.addOption(new Option("s", SCHEMA, true, "Generate JSON schemas. Default: true"));
@@ -132,12 +134,17 @@ public class Converter {
         File projectFile = null;
         String[] inputParams = cmd.getOptionValue(INPUT).split(",");
         String projectPath = cmd.getOptionValue(Converter.PATH);
-        String projectDir;
+        String projectDir = cmd.getOptionValue(Converter.PROJECT_DIR);
         if (projectPath != null) {
             projectFile = new File(projectPath);
-            projectDir = projectFile.getParentFile().getAbsolutePath();
+            if (projectDir == null) {
+                projectDir = projectFile.getParentFile().getAbsolutePath();
+            }
         } else {
-            projectDir = new File(Profile.PROJECT_DIR, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date())).getAbsolutePath();
+            if (projectDir == null) {
+                projectDir = Profile.PROJECT_DIR;
+            }
+            projectDir = new File(projectDir, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date())).getAbsolutePath();
         }
 
         File outputDir = new File(new File(projectDir).getAbsolutePath());
