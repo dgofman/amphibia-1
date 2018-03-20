@@ -1,6 +1,5 @@
 package com.equinix.amphibia.agent.builder;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -86,10 +85,6 @@ public class Builder {
         }
 
         return results;
-    }
-
-    public static void addResult(String addType, File file) {
-        addResult(addType, ProjectAbstract.getRelativePath(file.toURI()));
     }
 
     public static void addResult(String type, Object value) {

@@ -22,6 +22,7 @@ import net.sf.json.JSONObject;
 public final class Schema {
 
     private final Swagger swagger;
+    private final String projectDir;
     private JSONObject docDefinitions;
     private Map<Object, Object> fields;
     private Map<Object, Object> definitions;
@@ -32,8 +33,9 @@ public final class Schema {
     private static final Logger LOGGER = ProjectAbstract.getLogger(Schema.class.getName());
 
     @SuppressWarnings("unchecked")
-    public Schema(Swagger swagger, String ref, String childDir) throws Exception {
+    public Schema(Swagger swagger, String projectDir, String ref, String childDir) throws Exception {
         this.swagger = swagger;
+        this.projectDir = projectDir;
         this.schema = new HashMap<Object, Object>() {
             {
                 put("type", "schema");
@@ -136,12 +138,12 @@ public final class Schema {
         if (childDir != null) {
             path = new File(path, childDir);
         }
-        File outputDir = new File(Profile.PROJECT_DIR, path.getPath());
+        File outputDir = new File(projectDir, path.getPath());
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
         File outputFile = new File(outputDir, fileName + ".json");
-        String filePath = ProjectAbstract.getRelativePath(outputFile.toURI());
+        String filePath = ProjectAbstract.getRelativePath(projectDir, outputFile.toURI());
 
         if (!outputFile.exists()) {
             PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));

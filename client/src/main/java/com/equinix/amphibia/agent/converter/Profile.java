@@ -22,6 +22,7 @@ public class Profile {
 
     protected JSONObject definitions;
     protected Swagger swagger;
+    protected final String projectDir;
     protected final boolean isMerge;
     protected final boolean isJSON;
     protected final boolean isNullTests;
@@ -49,7 +50,8 @@ public class Profile {
 
     public static final String HTTP_STATUS_CODE = "HTTPStatusCode";
 
-    public Profile() throws Exception {
+    public Profile(String dir) throws Exception {
+        projectDir = dir;
         resources = new ArrayList<>();
         testsuites = new ArrayList<>();
         common = new LinkedHashMap<>();
@@ -138,17 +140,18 @@ public class Profile {
         resources.add(resourceMap);
     }
 
+    public void saveFile(File outputFile, String content) throws Exception {
+        ProjectAbstract.saveFile(outputFile, content);
+        LOGGER.log(Level.INFO, "saved successfully.\n{0}", outputFile);
+    }
+
     public void saveFile(JSONObject output, File outputFile) throws Exception {
         for (Object fileName : Swagger.asserts.keySet()) {
             String body = Swagger.asserts.get(fileName);
             save(swagger.getDataDir(), body, fileName.toString(), "asserts", RESOURCE_TYPE.asserts);
         }
         save(new File(DATA_DIR), Swagger.getJson(profile), "profile.json", null, RESOURCE_TYPE.profile);
-
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(Swagger.getJson(output.toString()));
-        writer.close();
-        LOGGER.log(Level.INFO, "The test file saved successfully.\n{0}", outputFile);
+        saveFile(outputFile, Swagger.getJson(output.toString()));
         Converter.addResult(RESOURCE_TYPE.project, outputFile.getCanonicalPath());
     }
 
@@ -159,18 +162,15 @@ public class Profile {
         if (childDir != null) {
             dataDir = new File(dataDir, childDir);
         }
-        File outputDir = new File(PROJECT_DIR, dataDir.getPath());
+        File outputDir = new File(projectDir, dataDir.getPath());
         File outputFile = new File(outputDir, fileName);
         if (!outputFile.getParentFile().exists()) {
             outputFile.getParentFile().mkdirs();
         }
-        String filePath = ProjectAbstract.getRelativePath(outputFile.toURI());
+        String filePath = ProjectAbstract.getRelativePath(projectDir, outputFile.toURI());
 
         if (!outputFile.exists()) {
-            PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-            writer.println(json);
-            writer.close();
-            LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
+            saveFile(outputFile, json);
             if (type != null) {
                 Converter.addResult(type, filePath);
             }

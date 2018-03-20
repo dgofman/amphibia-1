@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +37,6 @@ public class Converter {
 
     public static final String NAME = "name";
     public static final String PATH = "path";
-    public static final String EMPTY = "delete";
     public static final String INPUT = "input";
     public static final String MERGE = "merge";
     public static final String PROPERTIES = "properties";
@@ -77,7 +78,6 @@ public class Converter {
         Options options = new Options();
         options.addOption(new Option("n", NAME, true, "Project name (Optional)"));
         options.addOption(new Option("a", PATH, true, "Absolute path (Optional)"));
-        options.addOption(new Option("e", EMPTY, true, "Delete old project(s). Default: true"));
         options.addOption(new Option("m", MERGE, true, "Merge properties into project file. Default: false"));
         options.addOption(new Option("p", PROPERTIES, true, "Comma-separated list of property file(s) (Optional)"));
         options.addOption(new Option("f", INTERFACES, true, "Comma-separated list of interface name(s) (Optional)"));
@@ -132,24 +132,25 @@ public class Converter {
         File projectFile = null;
         String[] inputParams = cmd.getOptionValue(INPUT).split(",");
         String projectPath = cmd.getOptionValue(Converter.PATH);
+        String projectDir;
         if (projectPath != null) {
             projectFile = new File(projectPath);
-            Profile.PROJECT_DIR = projectFile.getParentFile().getAbsolutePath();
+            projectDir = projectFile.getParentFile().getAbsolutePath();
+        } else {
+            projectDir = new File(Profile.PROJECT_DIR, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date())).getAbsolutePath();
         }
 
-        File outputDir = new File(new File(Profile.PROJECT_DIR).getAbsolutePath());
+        File outputDir = new File(new File(projectDir).getAbsolutePath());
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
-        if (!"false".equals(cmd.getOptionValue(EMPTY))) {
-            try {
-                FileUtils.deleteDirectory(new File(Profile.PROJECT_DIR, Profile.DATA_DIR));
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, ex.toString(), ex);
-            }
+        try {
+            FileUtils.deleteDirectory(new File(projectDir, Profile.DATA_DIR));
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, ex.toString(), ex);
         }
-        Profile profile = new Profile();
+        Profile profile = new Profile(projectDir);
         JSONObject output = new JSONObject();
         Map<String, JSONObject> rulesAndPrperties = new LinkedHashMap<>();
         for (int i = 0; i < inputParams.length; i++) {
@@ -171,7 +172,7 @@ public class Converter {
                 if (i < properties.length && (file = new File(properties[i])).exists()) {
                     propertiesFile = properties[i];
                     if (!rulesAndPrperties.containsKey(propertiesFile)) {
-                        rulesAndPrperties.put(propertiesFile, getRulesAndProperties(file));
+                        rulesAndPrperties.put(propertiesFile, getRulesAndProperties(projectDir, file));
                     }
                     JSONArray resources = rulesAndPrperties.get(propertiesFile).getJSONObject("info").getJSONArray("resources");
                     for (Object item : resources) {
@@ -186,7 +187,7 @@ public class Converter {
                     }
                 }
             }
-            Swagger swagger = new Swagger(cmd, resourceId, rulesAndPrperties.get(propertiesFile), is, output, profile);
+            Swagger swagger = new Swagger(cmd, projectDir, resourceId, rulesAndPrperties.get(propertiesFile), is, output, profile);
             profile.setSwagger(swagger, swagger.getRulesAndPrperties());
             name = swagger.init(name, i, inputParam, isURL, propertiesFile);
             IOUtils.closeQuietly(is);
@@ -195,13 +196,17 @@ public class Converter {
         profile.finalize(name);
 
         if (projectFile == null) {
-            projectFile = new File(Profile.PROJECT_DIR, name + ".json");
+            projectFile = new File(projectDir, name + ".json");
         }
         profile.saveFile(output, projectFile);
+        profile.saveFile(new File(projectDir, name + ".txt"),
+            cmd.getOptionValue(INPUT) +
+            "\n\nERRORS:\n" + JSONArray.fromObject(results.get(RESOURCE_TYPE.errors)).toString(4) + 
+            "\n\nWARNINGS:\n" + JSONArray.fromObject(results.get(RESOURCE_TYPE.warnings)).toString(4));
         return results;
     }
 
-    private static JSONObject getRulesAndProperties(File file) throws IOException {
+    private static JSONObject getRulesAndProperties(String projectDir, File file) throws IOException {
         if (file.getName().endsWith(".json")) {
             return ProjectAbstract.getJSON(file);
         } else if (file.getName().endsWith(".zip")) {
@@ -214,7 +219,7 @@ public class Converter {
                     json = ProjectAbstract.getJSON(zipFile.getInputStream(entry));
                 } else {
                     InputStream stream = zipFile.getInputStream(entry);
-                    file = new File(Profile.PROJECT_DIR, entry.getName());
+                    file = new File(projectDir, entry.getName());
                     file.getParentFile().mkdirs();
                     Files.copy(stream, file.toPath());
                     stream.close();

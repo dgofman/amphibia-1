@@ -1,9 +1,8 @@
 package com.equinix.amphibia.agent.builder;
 
-import com.equinix.amphibia.agent.converter.Profile;
-
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -24,9 +23,11 @@ import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.cli.CommandLine;
@@ -143,8 +144,8 @@ public abstract class ProjectAbstract {
         return logger;
     }
 
-    public static String getRelativePath(URI file) {
-        return getRelativePath(new File(Profile.PROJECT_DIR).toURI(), file);
+    public static String getRelativePath(String projectDir, URI file) {
+        return getRelativePath(new File(projectDir).toURI(), file);
     }
 
     public static String getRelativePath(URI base, URI file) {
@@ -160,6 +161,8 @@ public abstract class ProjectAbstract {
             return true;
         } else if (value instanceof JSONObject) {
             return ((JSONObject) value).isNullObject();
+        } else if (value instanceof JSONNull) {
+            return true;
         }
         return false;
     }
@@ -172,6 +175,12 @@ public abstract class ProjectAbstract {
             saveResources();
         }
         printEnd();
+    }
+
+    public static void saveFile(File outputFile, String content) throws Exception {
+        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
+        writer.println(content);
+        writer.close();
     }
 
     protected String tabs(String source, String tabs) {

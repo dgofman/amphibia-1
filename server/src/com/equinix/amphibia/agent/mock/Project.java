@@ -8,9 +8,12 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.IOUtils;
@@ -27,7 +30,8 @@ public class Project implements HttpHandler {
 
     private static final Logger LOGGER = Logger.getLogger(Project.class.getName());
 
-    private final Map<String, PathInfo> pathInfo = new HashMap<>();
+    private final Map<Pattern, PathInfo> pathInfo = new HashMap<>();
+    private final Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
 
     public Project() {
     }
@@ -72,8 +76,12 @@ public class Project implements HttpHandler {
                         testcase.put("resourceId", resource.getString("resourceId"));
                         testcase.put("testsuiteName", key);
                         String basePath = iterfJSON.getString("basePath");
-                        pathInfo.put(fixPath(testcase.get("method") + "::" + (basePath.startsWith("/") ? "" : "/") + basePath
-                                + testcase.getString("path").split("\\?")[0]), new PathInfo(file.getParentFile(), testcase));
+                        String path = fixPath(testcase.get("method") + "::" + (basePath.startsWith("/") ? "" : "/") + basePath
+                                + testcase.getString("path").split("\\?")[0]);
+                        path = SPECIAL_REGEX_CHARS.matcher(path).replaceAll("\\\\$0");
+                        path = path.replaceAll("\\\\\\$\\\\\\{#.*\\\\\\}", ".*").replaceAll("\\\\\\{.*\\\\\\}", ".*");
+                        pathInfo.put(Pattern.compile(path), new PathInfo(file.getParentFile(), testcase));
+                        System.out.println(path);
                     });
                 });
             }
@@ -85,8 +93,12 @@ public class Project implements HttpHandler {
         String response = "";
         try {
             String reqName = fixPath(request.getRequestMethod() + "::" + request.getRequestURI().getPath());
-            if (pathInfo.containsKey(reqName)) {
-                PathInfo info = pathInfo.get(reqName);
+            List<Pattern> values  = pathInfo.keySet()
+                    .stream()
+                    .filter(pattern -> pattern.matcher(reqName).matches())
+                    .collect(Collectors.toList());
+            if (values != null && !values.isEmpty()) {
+                PathInfo info = pathInfo.get(values.get(0));
                 JSONObject testcase = info.testcase;
                 String resourceId = testcase.getString("resourceId");
                 String testSuiteName = testcase.getString("testsuiteName");

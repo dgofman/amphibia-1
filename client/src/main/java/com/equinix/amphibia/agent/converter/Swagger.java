@@ -28,6 +28,7 @@ import net.sf.json.JSONObject;
 public final class Swagger {
 
     private final CommandLine cmd;
+    private final String projectDir;
     private final JSONObject doc;
     private final JSONObject output;
     private final JSONObject rulesAndPrperties;
@@ -39,7 +40,7 @@ public final class Swagger {
     public static final Map<Object, String> asserts = new LinkedHashMap<>();
     public static final JSONNull NULL = JSONNull.getInstance();
 
-    public Swagger(CommandLine cmd, String resourceId, JSONObject rulesAndPrperties, InputStream input, JSONObject output, Profile profile) throws Exception {
+    public Swagger(CommandLine cmd, String projectDir, String resourceId, JSONObject rulesAndPrperties, InputStream input, JSONObject output, Profile profile) throws Exception {
         String content = ProjectAbstract.getFileContent(input);
         if (content.trim().startsWith("{")) {
             this.doc = JSONObject.fromObject(content);
@@ -49,6 +50,7 @@ public final class Swagger {
             this.doc = JSONObject.fromObject(json);
         }
         this.cmd = cmd;
+        this.projectDir = projectDir;
         this.rulesAndPrperties = rulesAndPrperties;
         this.output = output;
         this.profile = profile;
@@ -210,16 +212,23 @@ public final class Swagger {
         if (param != null) {
             String[] params = param.split(",");
             if (params.length > index && !params[index].isEmpty()) {
-                interfaceName = params[index];
+                if (params[index].contains("::")) {
+                    String[] pair = params[index].split("::");
+                    interfaceName = pair[0];
+                    interfaceBasePath = pair[1];
+                } else {
+                    interfaceName = params[index];
+                }
             }
         }
 
         final String name = "/".equals(interfaceName) ? "interface" + (index + 1) : interfaceName;
+        final String basePath = interfaceBasePath;
         interfaces.add(new LinkedHashMap<String, Object>() {
             {
                 put("id", interfaceId);
                 put("name", name);
-                put("basePath", interfaceBasePath);
+                put("basePath", basePath);
                 put("type", "rest");
                 put("headers", headers);
             }
@@ -348,7 +357,7 @@ public final class Swagger {
 
         JSONObject responses = api.getJSONObject("responses");
         for (Object httpCode : responses.keySet()) {
-            properties.put(Profile.HTTP_STATUS_CODE, Integer.parseInt(httpCode.toString()));
+            properties.put(Profile.HTTP_STATUS_CODE, "default".equals(httpCode) ? 200 : Integer.parseInt(httpCode.toString()));
             break;
         }
 
@@ -376,7 +385,7 @@ public final class Swagger {
             JSONObject response = responses.getJSONObject(httpCode.toString());
             if (response != null) {
                 if (response.containsKey("schema") && response.getJSONObject("schema").containsKey("$ref")) {
-                    new Schema(this, response.getJSONObject("schema").getString("$ref"), "responses");
+                    new Schema(this, projectDir, response.getJSONObject("schema").getString("$ref"), "responses");
                 }
             }
         }
@@ -389,45 +398,48 @@ public final class Swagger {
             String methodName = info.methodName;
             for (Object item : api.getJSONArray("parameters")) {
                 JSONObject param = (JSONObject) item;
-                String in = null;
-                if (param.containsKey("in")) {
-                    in = param.getString("in");
-                }
-                String type = null;
-                if (param.containsKey("type")) {
-                    type = param.getString("type");
-                }
-                if (null != in) {
-                    switch (in) {
-                        case "body":
-                            JSONObject schema = param.getJSONObject("schema");
-                            Schema newSchema = null;
-                            if (schema.containsKey("$ref")) {
-                                definition.ref = schema.getString("$ref");
-                                definition.getRef(definition.ref);
-                                newSchema = new Schema(this, definition.ref, "requests");
-                            }
-                            JSONObject example = definition.getExample();
-                            if (newSchema != null && example != null) {
-                                Validator.validateExample(schema.getString("$ref"), (Map<Object, Object>) example, newSchema);
-                            }
-                            break;
-                        case "query":
-                            if (param.containsKey("default") || param.containsKey("enum")) {
-                                definition.addQueryParam(info, param.getString("name"), Definition.getEnumOrDefault(param), properties, type);
-                            } else {
-                                definition.addQueryParam(info, param.getString("name"), properties, type);
-                            }
-                            break;
-                        case "path":
-                            definition.addParameter(info, param.getString("name"), Definition.getEnumOrDefault(param), properties, param.getString("type"));
-                            break;
-                        default:
-                            break;
+                try {
+                    String in = null;
+                    if (param.containsKey("in")) {
+                        in = param.getString("in");
                     }
+                    String type = null;
+                    if (param.containsKey("type")) {
+                        type = param.getString("type");
+                    }
+                    if (null != in) {
+                        switch (in) {
+                            case "body":
+                                JSONObject schema = param.getJSONObject("schema");
+                                Schema newSchema = null;
+                                if (schema.containsKey("$ref")) {
+                                    definition.ref = schema.getString("$ref");
+                                    definition.getRef(definition.ref);
+                                    newSchema = new Schema(this, projectDir, definition.ref, "requests");
+                                }
+                                JSONObject example = definition.getExample();
+                                if (newSchema != null && example != null) {
+                                    Validator.validateExample(schema.getString("$ref"), (Map<Object, Object>) example, newSchema);
+                                }
+                                break;
+                            case "query":
+                                if (param.containsKey("default") || param.containsKey("enum")) {
+                                    definition.addQueryParam(info, param.getString("name"), Definition.getEnumOrDefault(param), properties, type);
+                                } else {
+                                    definition.addQueryParam(info, param.getString("name"), properties, type);
+                                }
+                                break;
+                            case "path":
+                                definition.addParameter(info, param.getString("name"), Definition.getEnumOrDefault(param), properties, param.getString("type"));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    Validator.validatePathsParam(methodName + " - " + info.path, doc, param);
+                } catch (Exception e) {
+                    Converter.addResult(RESOURCE_TYPE.errors, methodName + "::" + info.path + " - "+ e.toString() + " (" + param + ")");
                 }
-
-                Validator.validatePathsParam(methodName + " - " + info.path, doc, param);
             }
         }
     }
