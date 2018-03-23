@@ -456,6 +456,7 @@ public final class MainPanel extends javax.swing.JPanel {
             case LINK:
             case INTERFACES:
             case INTERFACE:
+            case WIZARD:
             case RULES:
             case SWAGGER:
             case REQUEST_ITEM:
@@ -638,7 +639,6 @@ public final class MainPanel extends javax.swing.JPanel {
         Map<String, TreeIconNode.ResourceInfo> resourceInfoMap = new HashMap<>();
 
         JSONArray projectResources = projectJson.getJSONArray("projectResources");
-        JSONArray interfacesJSON = projectJson.getJSONArray("interfaces");
         JSONArray resources = json.getJSONArray("resources");
         JSONArray testsuites = json.getJSONArray("testsuites");
         JSONObject common = json.getJSONObject("common");
@@ -649,34 +649,33 @@ public final class MainPanel extends javax.swing.JPanel {
             resourceMap.put(resource.getString("resourceId"), resource);
         });
         
-        Map<Object, JSONObject> interfacesMap = new HashMap<>();
+        Map<Object, JSONObject> interfaceResourceMap = new HashMap<>();
         JSONArray interfaceList = new JSONArray();
-        interfacesJSON.forEach((item) -> {
-            JSONObject interfaceJSON = IO.toJSONObject(item);
-            String interfaceId = interfaceJSON.getString("id");
-            resources.forEach((r) -> {
-                JSONObject resource = (JSONObject) r;
-                if (interfaceId.equals(resource.getString("interface"))) {
-                    if (resource.containsKey("name")) {
-                        interfaceJSON.element("name", resource.getString("name"));
+        resources.forEach((item) -> {
+            JSONObject interfaceItem = IO.toJSONObject(item);
+            JSONObject headers = new JSONObject();
+            projectJson.getJSONArray("interfaces").forEach((r) -> {
+                JSONObject intf = (JSONObject) r;
+                if (intf.getString("id").equals(interfaceItem.getOrDefault("interface", null))) {
+                    if (!interfaceItem.containsKey("name")) {
+                        interfaceItem.element("name", intf.getString("name"));
                     }
-                    if (resource.containsKey("basePath")) {
-                        interfaceJSON.element("basePath", resource.getString("basePath"));
+                    if (!interfaceItem.containsKey("basePath")) {
+                        interfaceItem.element("basePath", intf.getString("basePath"));
                     }
-                    JSONObject headers = resource.getJSONObject("headers");
-                    headers.keySet().forEach((key) -> {
-                        interfaceJSON.getJSONObject("headers").put(key, headers.get(key));
-                    });
-                    interfacesMap.put(interfaceJSON.getString("id"), interfaceJSON);
-                    TreeIconNode iNode = collection.addTreeNode(collection.interfaces, interfaceJSON.getString("name"), INTERFACE, false)
-                            .addProperties(INTERFACE_PROPERTIES)
-                            .addTooltip(interfaceJSON.getString("basePath"))
-                            .addJSON(interfaceJSON);
-                    iNode.info = new TreeIconNode.ResourceInfo(collection.getProfile());
-                    iNode.info.resource = resource;
-                    interfaceList.add(interfaceJSON);
+                    headers.putAll(intf.getJSONObject("headers"));
                 }
             });
+            headers.putAll(interfaceItem.getJSONObject("headers"));
+            interfaceItem.put("headers", headers);
+            interfaceResourceMap.put(interfaceItem.getString("id"), interfaceItem);
+            TreeIconNode iNode = collection.addTreeNode(collection.interfaces, interfaceItem.getString("name"), INTERFACE, false)
+                    .addProperties(INTERFACE_PROPERTIES)
+                    .addTooltip(interfaceItem.getString("basePath"))
+                    .addJSON(interfaceItem);
+            iNode.info = new TreeIconNode.ResourceInfo(collection.getProfile(), (JSONObject) item, interfaceItem);
+            interfaceList.add(interfaceItem);
+                    
         });
         collection.interfaces.addJSON(interfaceList);
 
@@ -688,9 +687,10 @@ public final class MainPanel extends javax.swing.JPanel {
             if (testSuiteInfo.isEmpty()) {
                 continue;
             }
+            JSONObject interfaceJSON = interfaceResourceMap.get(resourceId);
             String dirPath = String.format(ExpertNodes.dirFormat, resourceId, testsuite.getString("name"));
             File dir = IO.getFile(collection, dirPath);
-            TreeIconNode.ResourceInfo info = new TreeIconNode.ResourceInfo(dir, resource, testsuite, testSuiteInfo, null, null, null);
+            TreeIconNode.ResourceInfo info = new TreeIconNode.ResourceInfo(dir, resource, interfaceJSON, testsuite, testSuiteInfo, null, null, null);
             Properties properties = projectProperties.cloneProperties();
             properties.setTestSuite(testSuiteInfo.getJSONObject("properties"));
             info.properties = properties;
@@ -702,10 +702,6 @@ public final class MainPanel extends javax.swing.JPanel {
                     JSONArray testcases = testSuiteInfo.getJSONArray("testcases");
                     for (int i = 0; i < testcases.size(); i++) {
                         JSONObject testCaseInfo = testcases.getJSONObject(i);
-                        JSONObject interfaceJSON = null;
-                        if (resource.containsKey("interfaceId") && !resource.getString("interfaceId").isEmpty()) {
-                            interfaceJSON = interfacesMap.get(resource.getString("interfaceId"));
-                        }
                         JSONObject testCaseHeaders = interfaceJSON == null ? new JSONObject() : IO.toJSONObject(interfaceJSON.getJSONObject("headers").toString());
                         if (testCaseInfo.containsKey("headers")) {
                             JSONObject headers = testCaseInfo.getJSONObject("headers");
@@ -714,7 +710,7 @@ public final class MainPanel extends javax.swing.JPanel {
                             });
                         }
                         if (!resourceInfoMap.containsKey(path) && path.equals(String.format(ExpertNodes.pathFormat, resourceId, testsuite.getString("name"), testCaseInfo.getString("name")))) {
-                            info = new TreeIconNode.ResourceInfo(file, resource, testsuite, testSuiteInfo, testCaseInfo, testCaseHeaders, (JSONObject) IO.getJSON(file, editor));
+                            info = new TreeIconNode.ResourceInfo(file, resource, interfaceJSON, testsuite, testSuiteInfo, testCaseInfo, testCaseHeaders, (JSONObject) IO.getJSON(file, editor));
                             properties = projectProperties.cloneProperties();
                             properties.setTestSuite(testSuiteInfo.getJSONObject("properties"));
                             if (testsuite.containsKey("properties")) {
@@ -740,8 +736,8 @@ public final class MainPanel extends javax.swing.JPanel {
                         .addProperties(RESOURCE_PROPERTIES)
                         .addJSON(resource);
             } else {
-                resourceNode = collection.addTreeNode(collection.resources, bundle.getString("wizard"), WIZARD, false)
-                        .addProperties(RESOURCE_PROPERTIES)
+                resourceNode = collection.addTreeNode(collection.resources, resource.getString("name"), WIZARD, false)
+                        .addProperties(RESOURCE_WIZARD_PROPERTIES)
                         .addJSON(resource);
             }
 
@@ -751,7 +747,7 @@ public final class MainPanel extends javax.swing.JPanel {
             resourceNode.info = new TreeIconNode.ResourceInfo(resource.getJSONArray("states"));
 
             if (resource.containsKey("interface")) {
-                JSONObject interfaceJSON = interfacesMap.get(resource.getString("interface"));
+                JSONObject interfaceJSON = interfaceResourceMap.get(resource.getString("interface"));
                 if (interfaceJSON != null) {
                     TreeIconNode iNode = collection.addTreeNode(resourceNode, interfaceJSON.getString("name"), INTERFACE, false)
                             .addProperties(INTERFACE_PROPERTIES)
@@ -762,11 +758,13 @@ public final class MainPanel extends javax.swing.JPanel {
                 }
             }
 
-            String props = resource.getString("properties");
-            if (props != null && !props.isEmpty()) {
-                collection.addTreeNode(resourceNode, props, RULES, true)
-                        .addProperties(RULES_PROPERTIES)
-                        .addJSON(IO.getJSON(IO.newFile(props), editor));
+            Object props = resource.getOrDefault("properties", null);
+            if (!IO.isNULL(props)) {
+                TreeIconNode propNode = collection.addTreeNode(resourceNode, props.toString(), RULES, true)
+                        .addProperties(RULES_PROPERTIES);
+                if (props.toString().endsWith(".json")) {
+                    propNode.addJSON(IO.getJSON(IO.newFile(props.toString()), editor));
+                }
             }
         }
         collection.resources.addJSON(resources);
@@ -775,12 +773,11 @@ public final class MainPanel extends javax.swing.JPanel {
         for (int i = 0; i < testsuites.size(); i++) {
             JSONObject testsuite = testsuites.getJSONObject(i);
             String name = testsuite.getString("name");
+            String alias = testsuite.getOrDefault("alias", name).toString();
             String resourceId = testsuite.getString("resource");
             JSONObject resource = resourceMap.get(resourceId);
-            JSONObject interfaceJSON;
-            if (resource.containsKey("interfaceId")) {
-                interfaceJSON = interfacesMap.get(resource.getString("interfaceId"));
-            } else {
+            JSONObject interfaceJSON = interfaceResourceMap.get(resource.getString("resourceId"));
+            if (interfaceJSON == null) {
                 interfaceJSON = IO.toJSONObject("{\"name\": \"\", \"basePath\": \"\"}");
             }
 
@@ -788,7 +785,7 @@ public final class MainPanel extends javax.swing.JPanel {
             File dir = IO.getFile(collection, relPath);
             JSONObject testsuiteJSON = new JSONObject();
             testsuiteJSON.put("disabled", testsuite.get("disabled") == Boolean.TRUE);
-            testsuiteJSON.put("name", name);
+            testsuiteJSON.put("name", alias);
             testsuiteJSON.put("endpoint", resource.getString("endpoint"));
             testsuiteJSON.put("properties", JSONNull.getInstance());
             testsuiteJSON.put("testcases", JSONNull.getInstance());
@@ -796,7 +793,7 @@ public final class MainPanel extends javax.swing.JPanel {
             testsuiteJSON.put("interface", interfaceJSON.getString("name"));
 
             if (dir.exists()) {
-                TreeIconNode testsuiteNode = collection.addTreeNode(collection.testsuites, name, TESTSUITE, false)
+                TreeIconNode testsuiteNode = collection.addTreeNode(collection.testsuites, alias, TESTSUITE, false)
                         .addProperties(TESTSUITE_PROPERTIES);
                 testsuiteNode.getTreeIconUserObject().setEnabled(testsuite.get("disabled") != Boolean.TRUE);
                 testsuiteNode.info = resourceInfoMap.get(dir.getAbsolutePath());
@@ -1080,7 +1077,7 @@ public final class MainPanel extends javax.swing.JPanel {
                 testsuiteNode.addJSON(testsuiteJSON);
             }
 
-            testsuitesJson.element(name, relPath);
+            testsuitesJson.element(alias, relPath);
         }
 
         collection.testsuites
@@ -1096,7 +1093,7 @@ public final class MainPanel extends javax.swing.JPanel {
         });
 
         if (Amphibia.isExpertView()) {
-            ExpertNodes.createNodes(collection, projectResources, resourceInfoMap, interfacesMap);
+            ExpertNodes.createNodes(collection, projectResources, resourceInfoMap, interfaceResourceMap);
         }
 
         if (collection.project.getParent() != null) {

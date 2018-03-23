@@ -337,9 +337,12 @@ public final class ExportDialog extends javax.swing.JPanel {
                 properties.putAll((JSONObject) projectTestSuite.getOrDefault("properties", new JSONObject()));
                 properties.putAll((JSONObject) original.getOrDefault("properties", new JSONObject()));
             }
-            if (!properties.isEmpty() || !testCases.isEmpty()) {
+            if (original.containsKey("alias") || !properties.isEmpty() || !testCases.isEmpty()) {
                 JSONObject testSuite = new JSONObject();
                 testSuite.put("resource", original.getString("resource"));
+                if (original.containsKey("alias")) {
+                    testSuite.put("alias", original.get("alias"));
+                }
                 if (!properties.isEmpty()) {
                     testSuite.put("properties", properties);
                 }

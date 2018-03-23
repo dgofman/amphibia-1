@@ -5,8 +5,6 @@ import com.equinix.amphibia.agent.converter.Converter.RESOURCE_TYPE;
 import com.equinix.amphibia.agent.converter.Swagger.ApiInfo;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +34,7 @@ public class Profile {
     protected final Map<Object, JSONObject> common;
     protected final Map<Object, Object> profile;
     protected final String responseCodes;
+    protected String resourceId;
 
     public static String PROJECT_DIR = "projects";
     public static final String DATA_DIR = "data";
@@ -90,6 +89,10 @@ public class Profile {
                 put("common", common);
             }
         };
+    }
+    
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 
     public Map<Object, JSONObject> getCommon() {
@@ -188,15 +191,17 @@ public class Profile {
         for (String testSuiteName : testSuiteMap.keySet()) {
             List<Map<Object, Object>> testcases = new ArrayList<>();
             JSONObject testSuiteRules = (JSONObject) testSuitesRules.getOrDefault(testSuiteName, new JSONObject());
-            if (testSuiteRules.containsKey("resource") && !resourceId.equals(testSuiteRules.get("resource"))) {
+            if (this.resourceId != null && testSuiteRules.containsKey("resource") && !resourceId.equals(testSuiteRules.get("resource"))) {
                 continue;
             }
             JSONObject testcasesRules = (JSONObject) testSuiteRules.getOrDefault("testcases", new JSONObject());
             JSONObject testSuiteTests = (JSONObject) testsRules.getOrDefault(testSuiteName, new JSONObject());
 
+            String testSuiteAlias = null;
             for (ApiInfo info : testSuiteMap.get(testSuiteName)) {
                 String testFile = getPath(info) + ".json";
                 String name = info.methodName + "_" + info.apiName;
+                testSuiteAlias = info.testSuiteAlias;
                 JSONObject testcaseRules = (JSONObject) testcasesRules.getOrDefault(name, new JSONObject());
                 JSONArray steps = addTestCase(testcases, testcaseRules, testSuiteName, name);
                 testcasesRules.remove(name);
@@ -212,6 +217,9 @@ public class Profile {
 
             Map<String, Object> testsuite = new LinkedHashMap<>();
             testsuite.put("name", testSuiteName);
+            if (testSuiteAlias != null) {
+                testsuite.put("alias", testSuiteAlias);
+            }
             testsuite.put("resource", resourceId);
             testsuite.put("testcases", testcases);
             if (testSuiteRules.containsKey("properties")) {

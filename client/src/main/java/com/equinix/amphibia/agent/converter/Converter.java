@@ -192,9 +192,13 @@ public class Converter {
                             }
                         }
                     }
+                    if (resourceId == null) {
+                        Converter.addResult(RESOURCE_TYPE.warnings, "Rules and properties are not pointing to same source: " + inputParam);
+                    }
                 }
             }
             Swagger swagger = new Swagger(cmd, projectDir, resourceId, rulesAndPrperties.get(propertiesFile), is, output, profile);
+            profile.setResourceId(resourceId);
             profile.setSwagger(swagger, swagger.getRulesAndPrperties());
             name = swagger.init(name, i, inputParam, isURL, propertiesFile);
             IOUtils.closeQuietly(is);

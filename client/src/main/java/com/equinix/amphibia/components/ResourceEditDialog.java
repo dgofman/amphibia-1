@@ -120,7 +120,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                             mainPanel.globalVarsDialog.mergeVariables(globals);
                             break;
                         case "Project":
-                            properties = collection.project.jsonObject().getJSONObject("properties");
+                            properties = collection.profile.jsonObject().getJSONObject("properties");
                             break;
                         case "TestSuite":
                             properties = node.info.testSuiteInfo.getJSONObject("properties");
@@ -132,7 +132,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                     if (properties != null) {
                         properties.put(m.group(2), value);
                     }
-                    mainPanel.history.saveAndAddHistory(collection.project);
+                    mainPanel.history.saveAndAddHistory(collection.profile);
                 }
             }
             try {

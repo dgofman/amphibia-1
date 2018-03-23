@@ -155,25 +155,15 @@ public class Wizard extends javax.swing.JPanel {
         applyInterfaceButton = new JButton(bundle.getString("apply"));
         applyInterfaceButton.addActionListener((ActionEvent evt) -> {
             saveSelectedModel(headerSaveIndex);
-            TreeIconNode node = MainPanel.selectedNode.getCollection().project;
-            JSONArray interfaces = new JSONArray();
+            TreeIconNode node = MainPanel.selectedNode.getCollection().profile;
+            JSONArray resources = new JSONArray();
             for (int i = 0; i < interfaceNameModel.getSize(); i++) {
-                interfaces.add(((ComboItem) interfaceNameModel.getElementAt(i)).json);
+                resources.add(((ComboItem) interfaceNameModel.getElementAt(i)).resourceItem);
             }
-            node.jsonObject().element("interfaces", interfaces);
+            node.jsonObject().element("resources", resources);
 
             if (!globalVariables.isEmpty()) {
                 mainPanel.globalVarsDialog.mergeVariables(globalVariables);
-                JSONArray globals = node.jsonObject().getJSONArray("globals");
-                globalVariables.forEach((newItem) -> {
-                    for (int i = globals.size() - 1; i >= 0; i--) {
-                        if (globals.getJSONObject(i).getString("name").equals(((JSONObject) newItem).getString("name"))) {
-                            globals.remove(i);
-                            break;
-                        }
-                    }
-                    globals.add(newItem);
-                });
                 globalVariables = new JSONArray();
             }
 
@@ -183,9 +173,7 @@ public class Wizard extends javax.swing.JPanel {
         });
         addInterfaceButton = new JButton(bundle.getString("newInterface"));
         addInterfaceButton.addActionListener((ActionEvent evt) -> {
-            JSONObject json = new JSONObject();
-            json.element("type", "rest");
-            if (newInterface(json)) {
+            if (newInterface(new ComboItem())) {
                 reset();
             }
         });
@@ -213,21 +201,26 @@ public class Wizard extends javax.swing.JPanel {
         if (node != null && node.getCollection() != selectedCollection) {
             selectedCollection = node.getCollection();
             updateInterfaces();
+            openTabs(selectedCollection);
         }
     }
 
     public void updateInterfaces() {
         interfaceNameModel.removeAllElements();
-        JSONObject json = selectedCollection.project.jsonObject();
-        JSONArray projectResources = selectedCollection.project.jsonObject().getJSONArray("projectResources");
-        Map<String, Boolean> interfaceIds = new HashMap<>();
-        projectResources.forEach((item) -> {
-            interfaceIds.put(((JSONObject) item).getString("interfaceId"), true);
+        JSONObject project = selectedCollection.project.jsonObject();
+        Map<String, JSONObject> interfaceIds = new HashMap<>();
+        project.getJSONArray("interfaces").forEach((item) -> {
+            JSONObject json = (JSONObject) item;
+            interfaceIds.put(json.getString("id"), json);
         });
-        json.getJSONArray("interfaces").forEach((item) -> {
-            JSONObject iJson = IO.toJSONObject(item.toString());
-            ComboItem comboItem = new ComboItem(iJson, !interfaceIds.containsKey(iJson.getString("id")));
-            interfaceNameModel.addElement(comboItem);
+        JSONArray resources = selectedCollection.profile.jsonObject().getJSONArray("resources");
+        resources.forEach((item) -> {
+            JSONObject iJson = (JSONObject) item;
+            if (iJson.containsKey("interface")) {
+                interfaceNameModel.addElement(new ComboItem(iJson, interfaceIds.get(iJson.getString("interface"))));
+            } else {
+                interfaceNameModel.addElement(new ComboItem(iJson, null));
+            }
         });
 
         for (int i = 0; i < tabNav.getTabCount(); i++) {
@@ -279,7 +272,7 @@ public class Wizard extends javax.swing.JPanel {
         }
     }
 
-    private boolean newInterface(JSONObject json) {
+    private boolean newInterface(ComboItem item) {
         boolean b = saveSelectedModel(cmdName.getSelectedIndex());
         if (b) {
             String[] names = new String[interfaceNameModel.getSize()];
@@ -289,10 +282,13 @@ public class Wizard extends javax.swing.JPanel {
             String name = Amphibia.instance.inputDialog("newInterfaceName", "", names, interfaceDialog.getParent());
             b = name != null && !name.isEmpty();
             if (b) {
+                JSONObject json = new JSONObject();
+                json.element("type", "wizard");
                 json.element("id", UUID.randomUUID().toString());
                 json.element("name", name);
-                json.element("basePath", "");
-                interfaceNameModel.addElement(new ComboItem(json, true));
+                json.element("basePath", item.basePath);
+                json.element("headers", IO.toJSONObject(item.headers));
+                interfaceNameModel.addElement(new ComboItem(json, null));
             }
             headerSaveIndex = interfaceNameModel.getSize() - 1;
             cmdName.setSelectedIndex(headerSaveIndex);
@@ -307,8 +303,12 @@ public class Wizard extends javax.swing.JPanel {
                 cellEditor.stopCellEditing();
             }
             ComboItem item = (ComboItem) interfaceNameModel.getElementAt(index);
-            JSONObject headers = (JSONObject) item.json.getOrDefault("headers", new JSONObject());
-            item.json.element("basePath", txtBasePath.getText());
+            JSONObject headers = item.headers;
+            if (item.projectItem != null && item.projectItem.getString("basePath").equals(txtBasePath.getText())) {
+                item.resourceItem.remove("basePath");
+            } else {
+                item.resourceItem.element("basePath", txtBasePath.getText());
+            }
             headers.clear();
             for (int r = 0; r < headersModel.getRowCount(); r++) {
                 Object key = headersModel.getValueAt(r, 0);
@@ -320,7 +320,7 @@ public class Wizard extends javax.swing.JPanel {
                     headers.put(key, headersModel.getValueAt(r, 1));
                 }
             }
-            item.json.element("headers", headers);
+            item.resourceItem.element("headers", headers);
             headerSaveIndex = index;
         }
         return true;
@@ -330,13 +330,7 @@ public class Wizard extends javax.swing.JPanel {
         lblError.setVisible(false);
         txtBasePath.setText("/");
         globalVariables = new JSONArray();
-        headersModel.setDataVector(new Object[][]{
-            {null, null},
-            {null, null},
-            {null, null},
-            {null, null},
-            {null, null}
-        }, headerColumns);
+        headersModel.setDataVector(new Object[][]{}, headerColumns);
     }
 
     @SuppressWarnings("NonPublicExported")
@@ -345,7 +339,8 @@ public class Wizard extends javax.swing.JPanel {
         json.element("id", "");
         json.element("name", Amphibia.getBundle().getString("none"));
         json.element("basePath", "");
-        return new ComboItem(json, false);
+        json.element("headers", new JSONObject());
+        return new ComboItem(json, null);
     }
 
     public void openInterfacePanel() {
@@ -372,8 +367,8 @@ public class Wizard extends javax.swing.JPanel {
                 }
             }
             interfaceDialog.setVisible(true);
-            updateInterfaces();
         }
+        updateInterfaces();
     }
 
     public void addWizardTab() {
@@ -390,6 +385,7 @@ public class Wizard extends javax.swing.JPanel {
         tabNav.setTabComponentAt(index, getTitlePanel(newTab, node.getTreeIconUserObject().getIcon(), node.getLabel()));
         tabNav.setSelectedIndex(index);
         newTab.updateEndPoints(endpoints);
+        newTab.updateInterfaces();
         newTab.refresh();
     }
 
@@ -413,27 +409,27 @@ public class Wizard extends javax.swing.JPanel {
         return titlePanel;
     }
 
-    public void openTabs() {
-        Enumeration projects = mainPanel.treeNode.children();
-        while (projects.hasMoreElements()) {
-            TreeIconNode project = (TreeIconNode) projects.nextElement();
-            TreeCollection collection = project.getCollection();
-            if (collection.isOpen()) {
-                Enumeration testsuites = collection.testsuites.children();
-                while (testsuites.hasMoreElements()) {
-                    TreeIconNode testsuite = (TreeIconNode) testsuites.nextElement();
-                    Enumeration testcases = testsuite.children();
-                    while (testcases.hasMoreElements()) {
-                        TreeIconNode testcase = (TreeIconNode) testcases.nextElement();
-                        if (testcase.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
-                            addWizardTab(testcase);
-                        }
-                        Enumeration teststeps = testcase.children();
-                        while (teststeps.hasMoreElements()) {
-                            TreeIconNode teststep = (TreeIconNode) teststeps.nextElement();
-                            if (teststep.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
-                                addWizardTab(teststep);
-                            }
+    private void openTabs(TreeCollection collection) {
+        for (int i = tabNav.getTabCount() - 1; i > 0; i--) {
+            if (tabNav.getComponentAt(i) instanceof WizardTab) {
+                tabNav.remove(i);
+            }
+        }
+        if (collection.isOpen()) {
+            Enumeration testsuites = collection.testsuites.children();
+            while (testsuites.hasMoreElements()) {
+                TreeIconNode testsuite = (TreeIconNode) testsuites.nextElement();
+                Enumeration testcases = testsuite.children();
+                while (testcases.hasMoreElements()) {
+                    TreeIconNode testcase = (TreeIconNode) testcases.nextElement();
+                    if (testcase.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
+                        addWizardTab(testcase);
+                    }
+                    Enumeration teststeps = testcase.children();
+                    while (teststeps.hasMoreElements()) {
+                        TreeIconNode teststep = (TreeIconNode) teststeps.nextElement();
+                        if (teststep.info.states.getInt(TreeIconNode.STATE_OPEN_PROJECT_OR_WIZARD_TAB) == 1) {
+                            addWizardTab(teststep);
                         }
                     }
                 }
@@ -641,14 +637,16 @@ public class Wizard extends javax.swing.JPanel {
         if (cmdName.getSelectedIndex() != -1) {
             if (saveSelectedModel(headerSaveIndex)) {
                 ComboItem item = (ComboItem) interfaceNameModel.getElementAt(cmdName.getSelectedIndex());
-                newInterface(IO.toJSONObject(item.json.toString()));
+                newInterface(item);
             }
         }
     }//GEN-LAST:event_btnCloneActionPerformed
 
     private void btnAddRowActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnAddRowActionPerformed
         JButton applyButton = new JButton(bundle.getString("apply"));
+        applyButton.setName("apply");
         JButton cancelButton = new JButton(bundle.getString("cancel"));
+        cancelButton.setName("cancel");
         txtHeaderName.setText("");
         txtHeaderValue.setText("");
         JDialog dialog = Amphibia.createDialog(pnlAddHeader, new Object[]{applyButton, cancelButton}, true);
@@ -712,7 +710,7 @@ public class Wizard extends javax.swing.JPanel {
     private void cmdNameItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_cmdNameItemStateChanged
         Object item = interfaceNameModel.getSelectedItem();
         btnClone.setEnabled(item != null);
-        btnDelete.setEnabled(item != null && ((ComboItem) item).canDelete);
+        btnDelete.setEnabled(item != null && ((ComboItem) item).projectItem == null);
         if (item != null) {
             if (evt != null && evt.getStateChange() == ItemEvent.DESELECTED) {
                 if (saveSelectedModel(headerSaveIndex)) {
@@ -720,15 +718,13 @@ public class Wizard extends javax.swing.JPanel {
                 }
             } else {
                 ComboItem comboItem = (ComboItem) interfaceNameModel.getElementAt(cmdName.getSelectedIndex());
-                txtBasePath.setText(comboItem.json.getOrDefault("basePath", "/").toString());
-                if (comboItem.json.containsKey("headers")) {
-                    JSONObject headers = comboItem.json.getJSONObject("headers");
-                    if (!headers.isEmpty()) {
-                        headersModel.setRowCount(0);
-                        headers.keySet().forEach((key) -> {
-                            headersModel.addRow(new Object[]{key, headers.get(key)});
-                        });
-                    }
+                txtBasePath.setText(comboItem.basePath);
+                JSONObject headers = comboItem.headers;
+                if (!headers.isEmpty()) {
+                    headersModel.setRowCount(0);
+                    headers.keySet().forEach((key) -> {
+                        headersModel.addRow(new Object[]{key, headers.get(key)});
+                    });
                 }
                 headerSaveIndex = cmdName.getSelectedIndex();
             }
@@ -771,14 +767,30 @@ public class Wizard extends javax.swing.JPanel {
 
         String id;
         String label;
-        JSONObject json;
-        boolean canDelete;
+        String basePath;
+        JSONObject resourceItem;
+        JSONObject projectItem;
+        JSONObject headers;
+        
+        ComboItem() {
+            this.basePath = "/";
+            this.headers = new JSONObject();
+        }
 
-        ComboItem(JSONObject item, boolean canDelete) {
-            this.json = item;
-            this.id = item.getString("id");
-            this.label = item.getString("name");
-            this.canDelete = canDelete;
+        ComboItem(JSONObject resourceItem, JSONObject projectItem) {
+            this();
+            this.resourceItem = resourceItem;
+            this.projectItem = projectItem;
+            this.headers = new JSONObject();
+            if (projectItem != null) {
+                this.id = projectItem.getString("id");
+                this.label = projectItem.getString("name");
+                this.basePath = projectItem.getString("basePath");
+                this.headers.putAll(projectItem.getJSONObject("headers"));
+            }
+            this.label = (String) resourceItem.getOrDefault("name", label);
+            this.basePath = (String) resourceItem.getOrDefault("basePath", basePath);
+            this.headers.putAll(resourceItem.getJSONObject("headers"));
         }
 
         @Override

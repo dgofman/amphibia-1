@@ -40,17 +40,16 @@ public class HistoryManager {
                 JSONObject json = profile.jsonObject().getJSONObject("project");
                 json.element("name", entry.value);
             } else if (type == INTERFACE) {
-                JSONArray interfaces = collection.project.jsonObject().getJSONArray("interfaces");
-                for (Object item : interfaces) {
-                    JSONObject json = (JSONObject) item;
-                    if (json.getString("id").equals(node.jsonObject().getString("id"))) {
-                        if (json.getString("name").equals(entry.value)) {
-                            node.info.resource.remove("name");
-                        } else {
-                            node.info.resource.element("name", entry.value);
-                        }
-                        break;
-                    }
+                if (node.info.interfaceJSON.getString("name").equals(node.info.resource.get("name"))) {
+                    node.info.resource.remove(entry.name);
+                } else {
+                    node.info.resource.element(entry.name, entry.value);
+                }
+            } else if (type == TESTSUITE) {
+                if (entry.value.equals(node.info.testSuite.get("name"))) {
+                    node.info.testSuite.remove("alias");
+                } else {
+                    node.info.testSuite.element("alias", entry.value);
                 }
             } else if (type == TESTCASE) {
                 info.testCase.element("name", entry.value);
@@ -89,20 +88,13 @@ public class HistoryManager {
                 updateValues(entry, collection.project.jsonObject().getJSONObject("projectProperties"), profile.jsonObject(), "properties");
             }
         } else if (type == INTERFACE) {
-            JSONArray interfaces = collection.project.jsonObject().getJSONArray("interfaces");
-            for (Object item : interfaces) {
-                JSONObject json = (JSONObject) item;
-                if (json.getString("id").equals(node.jsonObject().getString("id"))) {
-                    if ("headers".equals(entry.getParent().toString())) {
-                        updateValues(entry, json, node.info.resource, "headers");
-                    } else {
-                        if (json.getString(entry.name).equals(entry.value)) {
-                            node.info.resource.remove(entry.name);
-                        } else {
-                            node.info.resource.element(entry.name, entry.value);
-                        }
-                    }
-                    break;
+            if ("headers".equals(entry.getParent().toString())) {
+                updateValues(entry, node.info.interfaceJSON, node.info.resource, "headers");
+            } else {
+                if (node.info.interfaceJSON.getString(entry.name).equals(node.info.resource.get(entry.name))) {
+                    node.info.resource.remove(entry.name);
+                } else {
+                    node.info.resource.element(entry.name, entry.value);
                 }
             }
         } else if (type == TESTSUITE) {

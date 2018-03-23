@@ -276,6 +276,10 @@ public final class Swagger {
     }
 
     protected void addTestSuite(int index, String resourceId, String interfaceName, String interfaceBasePath, JSONObject testsuites) throws Exception {
+        JSONObject testSuitesRules = new JSONObject();
+        if (rulesAndPrperties != null) {
+            testSuitesRules.accumulateAll(rulesAndPrperties.getJSONObject("testsuites"));
+        }
         JSONObject paths = doc.getJSONObject("paths");
         Map<String, List<ApiInfo>> testSuiteMap = new TreeMap<>();
         paths.keySet().forEach((path) -> {
@@ -298,15 +302,16 @@ public final class Swagger {
                         apiList = new ArrayList<>();
                         testSuiteMap.put(testSuiteName, apiList);
                     }
-                    apiList.add(new ApiInfo(interfaceName, interfaceBasePath, testSuiteName, methodName.toString(), apiName, originalURL, api, apis));
+                    String testSuiteAlias = null;
+                    if (testSuitesRules.containsKey(testSuiteName)) {
+                        testSuiteAlias = (String) testSuitesRules.getJSONObject(testSuiteName).getOrDefault("alias", null);
+                    }
+                            
+                    apiList.add(new ApiInfo(interfaceName, interfaceBasePath, testSuiteName, testSuiteAlias, methodName.toString(), apiName, originalURL, api, apis));
                 }
             });
         });
-
-        JSONObject testSuitesRules = new JSONObject();
-        if (rulesAndPrperties != null) {
-            testSuitesRules = rulesAndPrperties.getJSONObject("testsuites");
-        }
+        
         for (String testSuiteName : testSuiteMap.keySet()) {
             JSONArray testcases = new JSONArray();
             JSONObject testSuiteRule = new JSONObject();
@@ -489,6 +494,7 @@ public final class Swagger {
         String interfaceName;
         String interfaceBasePath;
         String testSuiteName;
+        String testSuiteAlias;
         String methodName;
         String apiName;
         String path;
@@ -497,10 +503,11 @@ public final class Swagger {
 
         String testCaseName;
 
-        public ApiInfo(String interfaceName, String interfaceBasePath, String testSuiteName, String methodName, String apiName, String path, JSONObject api, JSONObject apis) {
+        public ApiInfo(String interfaceName, String interfaceBasePath, String testSuiteName, String testSuiteAlias, String methodName, String apiName, String path, JSONObject api, JSONObject apis) {
             this.interfaceName = interfaceName;
             this.interfaceBasePath = interfaceBasePath;
             this.testSuiteName = testSuiteName;
+            this.testSuiteAlias = testSuiteAlias;
             this.methodName = methodName.toUpperCase();
             this.apiName = apiName;
             this.path = path;

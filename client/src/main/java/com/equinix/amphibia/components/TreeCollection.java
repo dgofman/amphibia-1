@@ -136,8 +136,8 @@ public final class TreeCollection {
 
     public static final Object[][] TESTSUITE_PROPERTIES = new Object[][]{
         {"disabled", EDIT_LIMIT},
-        {"endpoint", VIEW},
-        {"name", VIEW},  
+        {"name", EDIT_LIMIT}, 
+        {"endpoint", VIEW}, 
         {"interface", VIEW},
         {"properties", ADD},
         {"testcases", ADD_RESOURCES, REFERENCE_EDIT}

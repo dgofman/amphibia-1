@@ -150,8 +150,6 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
             btnReload.setVisible(false);
         }
 
-        updateInterfaces();
-
         applyHeadersButton = new JButton(bundle.getString("apply"));
         applyHeadersButton.addActionListener((ActionEvent evt) -> {
             CellEditor cellEditor = tblHeadersBottom.getCellEditor();
@@ -345,15 +343,36 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
     }
 
     public void refresh() {
+        //btnHeaders.setEnabled(tabNav.getSelectedIndex() != 0);
         btnSend.setEnabled(cmdEndpoint.getSelectedItem() != null);
         if (btnSend.isEnabled()) {
             String basePath = "/";
             if (cmdInterface.getSelectedItem() != null) {
-                basePath = ((Wizard.ComboItem) cmdInterface.getSelectedItem()).json.getString("basePath");
+                basePath = ((Wizard.ComboItem) cmdInterface.getSelectedItem()).basePath;
             }
             lblURI.setText(((EndPoint) cmdEndpoint.getSelectedItem()).endPointValue + Properties.getURL(basePath, txtPath.getText()));
         } else {
             lblURI.setText("http://");
+        }
+        if (openedNode == null) {
+            txtReqHeaders.setText("");
+            Wizard.ComboItem item = (Wizard.ComboItem) cmdInterface.getSelectedItem();
+            if (item != null) {
+                JSONObject headers = (JSONObject) item.headers;
+                if (!headers.isEmpty()) {
+                    try {
+                        if (MainPanel.selectedNode != null) {
+                            TreeCollection collection = MainPanel.selectedNode.getCollection();
+                            Properties properties = collection.getProjectProperties();
+                            txtReqHeaders.setText(IO.prettyJson(properties.replace(headers.toString())));
+                        } else {
+                            txtReqHeaders.setText(IO.prettyJson(headers.toString()));
+                        }
+                    } catch (Exception ex) {
+                        addError(ex, bundle.getString("error_open_json"));
+                    }
+                }
+            }
         }
     }
 
@@ -363,18 +382,20 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         cmdInterface.setModel(model);
         model.addElement(wizard.createDefaultItem());
         if (openedNode != null) {
-            Object interfaceId = openedNode.info.resource.getOrDefault("interfaceId", null);
-            if (interfaceId != null && !interfaceId.toString().isEmpty()) {
-                JSONArray interfaces = openedNode.getCollection().interfaces.jsonArray();
-                for (int i = 0; i < interfaces.size(); i++) {
-                    JSONObject interf = interfaces.getJSONObject(i);
-                    if (interf.getString("id").equals(interfaceId)) {
-                        model.removeAllElements();
-                        model.addElement(new Wizard.ComboItem(interf, false));
+            JSONObject resourceItem = openedNode.info.resource;
+            JSONObject projectItem = null;
+            if (resourceItem.containsKey("interfaceId")) {
+                JSONArray interfaces = openedNode.getCollection().project.jsonObject().getJSONArray("interfaces");
+                for (Object item : interfaces) {
+                    JSONObject intf =  (JSONObject) item;
+                    if (intf.getString("id").equals(resourceItem.getString("interfaceId"))) {
+                        projectItem = intf;
                         break;
                     }
                 }
             }
+            model.removeAllElements();
+            model.addElement(new Wizard.ComboItem(resourceItem, projectItem));
         } else {
             DefaultComboBoxModel interfaceModel = wizard.getInterfaceNameModel();
             for (int i = 0; i < interfaceModel.getSize(); i++) {
@@ -924,7 +945,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
     private void updateHeaders() {
         Wizard.ComboItem item = (Wizard.ComboItem) cmdInterface.getSelectedItem();
         if (item != null) {
-            JSONObject headers = (JSONObject) item.json.getOrDefault("headers", new JSONObject());
+            JSONObject headers = (JSONObject) item.headers;
             Object[][] sharedHeaders = new Object[headers.size()][2];
             int row = 0;
             for (Object key : headers.keySet()) {

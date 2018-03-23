@@ -10,6 +10,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 
 import javax.swing.*;
+import org.junit.Ignore;
 
 public class AmphibiaTest extends BaseTest {
 
@@ -17,6 +18,7 @@ public class AmphibiaTest extends BaseTest {
         super(name);
     }
 
+    @Ignore
     public void testCreateNewProject() throws Exception {
         JMenu mnuFile = $(instance, "mnuFile");
         JMenuItem mnuNewProject = $(instance, "mnuNewProject");

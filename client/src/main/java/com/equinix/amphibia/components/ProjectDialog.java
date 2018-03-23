@@ -555,6 +555,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
     }//GEN-LAST:event_btnSwaggerUrlActionPerformed
 
     private void btnSwaggerFileActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnSwaggerFileActionPerformed
+        lblSwaggerFileError.setText("");
         JFileChooser jf = Amphibia.setFileChooserDir(new JFileChooser());
         jf.setFileFilter(new FileNameExtensionFilter("Swagger JSON File", "json", "text"));
         jf.showOpenDialog(null);
@@ -594,8 +595,10 @@ public final class ProjectDialog extends javax.swing.JPanel {
     }//GEN-LAST:event_btnSwaggerFileActionPerformed
 
     private void btnRulesFileActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnRulesFileActionPerformed
+        lblRulesError.setText("");
         JFileChooser jf = Amphibia.setFileChooserDir(new JFileChooser());
-        jf.setFileFilter(new FileNameExtensionFilter("Properties JSON File", "json", "text"));
+        jf.addChoosableFileFilter(new FileNameExtensionFilter("Properties ZIP File", "zip"));
+        jf.setFileFilter(new FileNameExtensionFilter("Properties JSON File", "json"));
         jf.showOpenDialog(null);
         if (jf.getSelectedFile() != null) {
             Amphibia.saveFileChooserDir(jf);
@@ -604,11 +607,13 @@ public final class ProjectDialog extends javax.swing.JPanel {
                 @Override
                 public void run() {
                     try {
-                        JSONObject json = (JSONObject) IO.getJSON(jf.getSelectedFile());
-                        for (Object[] prop : TreeCollection.RULES_PROPERTIES) {
-                            String name = prop[0].toString();
-                            if (!json.containsKey(name)) {
-                                throw new Exception(String.format(bundle.getString("error_rules_format"), name));
+                        if (jf.getSelectedFile().getName().endsWith(".json")) {
+                            JSONObject json = (JSONObject) IO.getJSON(jf.getSelectedFile());
+                            for (Object[] prop : TreeCollection.RULES_PROPERTIES) {
+                                String name = prop[0].toString();
+                                if (!json.containsKey(name)) {
+                                    throw new Exception(String.format(bundle.getString("error_rules_format"), name));
+                                }
                             }
                         }
                         txtRulesFile.setText(jf.getSelectedFile().getAbsolutePath());
@@ -789,6 +794,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
     }//GEN-LAST:event_btnFinishActionPerformed
 
     private void btnLocationActionPerformed(ActionEvent evt) {//GEN-FIRST:event_btnLocationActionPerformed
+        lblLocationError.setText("");
         JFileChooser jf = Amphibia.setFileChooserDir(new JFileChooser());
         jf.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
         jf.showOpenDialog(null);

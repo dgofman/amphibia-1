@@ -241,6 +241,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
         public File file;
         public JSONObject resource; //resource item in projectResources array
+        public JSONObject interfaceJSON; // (profile.json) resources headers
         public JSONObject testSuite; //(profile.json) get and change testcases order
         public JSONObject testCase; //(profile.json) get and set testcase name and disabled status
         public JSONObject testStep; //(profile.json) get diff of parent test file
@@ -260,10 +261,15 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         public ResourceInfo(JSONArray states) {
             this.states = states;
         }
+        
+        public ResourceInfo(File file, JSONObject resource, JSONObject interfaceJSON) {
+            this(file, resource, interfaceJSON, null, null, null, null, null);
+        }
 
-        public ResourceInfo(File file, JSONObject resource, JSONObject testSuite, JSONObject testSuiteInfo, JSONObject testCaseInfo, JSONObject testCaseHeaders, JSONObject testStepInfo) {
+        public ResourceInfo(File file, JSONObject resource, JSONObject interfaceJSON, JSONObject testSuite, JSONObject testSuiteInfo, JSONObject testCaseInfo, JSONObject testCaseHeaders, JSONObject testStepInfo) {
             this.file = file;
             this.resource = resource;
+            this.interfaceJSON = interfaceJSON;
             this.testSuite = testSuite;
             this.testSuiteInfo = testSuiteInfo;
             this.testCaseInfo = testCaseInfo;
@@ -273,7 +279,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         }
 
         public ResourceInfo clone(JSONObject testCase) {
-            ResourceInfo clone = new ResourceInfo(file, resource, testSuite, testSuiteInfo, testCaseInfo, testCaseHeaders, testStepInfo);
+            ResourceInfo clone = new ResourceInfo(file, resource, interfaceJSON, testSuite, testSuiteInfo, testCaseInfo, testCaseHeaders, testStepInfo);
             clone.properties = properties.cloneProperties();
             clone.testCase = testCase;
             return clone;
@@ -287,7 +293,10 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         }
 
         public JSONObject getRequestHeader(TreeIconNode node) {
-            JSONObject headers = getRequestHeader(node, IO.toJSONObject(node.info.testCaseHeaders));
+            JSONObject mergeHeaders = new JSONObject();
+            mergeHeaders.putAll(interfaceJSON.getJSONObject("headers"));
+            mergeHeaders.putAll(node.info.testCaseHeaders);
+            JSONObject headers = getRequestHeader(node, mergeHeaders);
             JSONObject newHeaders = new JSONObject();
             headers.keySet().forEach((key) -> {
                 Object header = headers.get(key);
