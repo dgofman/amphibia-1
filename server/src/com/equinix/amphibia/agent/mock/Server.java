@@ -66,13 +66,12 @@ public final class Server {
             List<String> paths = new ArrayList<>();
             JSONArray json = JSONArray.fromObject(IOUtils.toString(new FileInputStream(new File(buildFile))));
             File projectDir = new File(Profile.PROJECT_DIR);
-            if (projectDir.list() == null) {
-                projectDir = new File(".");
-            }
-            for (String file : projectDir.list()) {
-                File dir = new File(projectDir, file);
-                if (dir.isDirectory()) {
-                    FileUtils.deleteDirectory(dir);
+            if (projectDir.list() != null) {
+                for (String file : projectDir.list()) {
+                    File dir = new File(projectDir, file);
+                    if (dir.isDirectory()) {
+                        FileUtils.deleteDirectory(dir);
+                    }
                 }
             }
             for (int i = 0; i < json.size(); i++) {

@@ -158,7 +158,7 @@ public final class TreePopupMenuBuilder implements ActionListener {
             case "ADD_COMMON":
                 JSONObject common = collection.profile.jsonObject().getJSONObject("common");
                 String[] exisitingName = (String[]) common.keySet().toArray(new String[common.keySet().size()]);
-                String commonName = amphibia.inputDialog("tip_new_nameTEST", null, exisitingName);
+                String commonName = amphibia.inputDialog("tip_new_name", null, exisitingName);
                     if (commonName != null && !commonName.isEmpty()) {
                     common.put(commonName, new LinkedHashMap<Object,Object>() {{
                         put("request", new LinkedHashMap<Object,Object>() {{

@@ -79,7 +79,10 @@ public class Project implements HttpHandler {
                         String path = fixPath(testcase.get("method") + "::" + (basePath.startsWith("/") ? "" : "/") + basePath
                                 + testcase.getString("path").split("\\?")[0]);
                         path = SPECIAL_REGEX_CHARS.matcher(path).replaceAll("\\\\$0");
-                        path = path.replaceAll("\\\\\\$\\\\\\{#.*\\\\\\}", ".*").replaceAll("\\\\\\{.*\\\\\\}", ".*");
+                        path = path.replaceAll("\\\\\\$\\\\\\{#(.*?)\\\\\\}", "(.*?)").replaceAll("\\\\\\{(.*?)\\\\\\}", "(.*?)");
+                        if (path.endsWith("(.*?)")) {
+                        	path = path.substring(0, path.length() - 5) + ".*";
+                        }
                         pathInfo.put(Pattern.compile(path), new PathInfo(file.getParentFile(), testcase));
                         System.out.println(path);
                     });
@@ -97,6 +100,7 @@ public class Project implements HttpHandler {
                     .stream()
                     .filter(pattern -> pattern.matcher(reqName).matches())
                     .collect(Collectors.toList());
+            byte[] bs = null;
             if (values != null && !values.isEmpty()) {
                 PathInfo info = pathInfo.get(values.get(0));
                 JSONObject testcase = info.testcase;
@@ -105,11 +109,12 @@ public class Project implements HttpHandler {
                 String testCaseName = testcase.getString("name");
                 response = Properties.getBody(info.projectDir, resourceId, testSuiteName, testCaseName, false);
                 if (response != null) {
+                    bs = response.getBytes("UTF-8");
                     JSONObject properties = testcase.getJSONObject("properties");
                     request.getResponseHeaders().set("Content-Type", "appication/json");
                     request.sendResponseHeaders(
                             properties.containsKey("HTTPStatusCode") ? 
-                            properties.getInt("HTTPStatusCode") : HttpURLConnection.HTTP_OK, response.length());
+                            properties.getInt("HTTPStatusCode") : HttpURLConnection.HTTP_OK, bs.length);
                 } else {
                     request.sendResponseHeaders(HttpURLConnection.HTTP_NO_CONTENT, -1);
                     request.close();
@@ -117,10 +122,11 @@ public class Project implements HttpHandler {
                 }
             } else {
                 response = "Unable to identify proxy for host: default and url: " + request.getRequestURI().getPath();
-                request.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, response.length());
+                bs = response.getBytes("UTF-8");
+                request.sendResponseHeaders(HttpURLConnection.HTTP_BAD_REQUEST, bs.length);
             }
             OutputStream os = request.getResponseBody();
-            os.write(response.getBytes());
+            os.write(bs);
             os.close();
         } catch (Exception e) {
             e.printStackTrace();

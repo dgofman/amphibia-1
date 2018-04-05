@@ -497,7 +497,7 @@ public class Profile {
                 } else {
                     JSONObject definition = definitions.getJSONObject(definitionName);
                     if (definition.containsKey("example")) {
-                        Object example = definition.getJSONObject("example");
+                        Object example = Validator.getExample(definition, "example");
                         Object value = Validator.getExample(example, key.toString());
                         if (value != null) {
                             addPropertyValue(info, definitionName, examples, properties, id, value);

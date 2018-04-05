@@ -97,20 +97,28 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             try {
                 String parent = entry.getParent().toString();
                 if ("request|response".contains(parent)) {
-                    File testFile = IO.getFile(collection, node.jsonObject().getString("file"));
-                    JSONObject testJSON = (JSONObject) IO.getJSON(testFile);
-                    JSONObject testReqOrRes = testJSON.getJSONObject(parent);
                     final int[] isModified = new int[]{0};
+                    JSONObject testReqOrRes = new JSONObject();
                     JSONObject sourceJSON;
                     if (isTestCase) {
+                        File testFile = IO.getFile(collection, node.jsonObject().getString("file"));
+                        JSONObject testJSON = (JSONObject) IO.getJSON(testFile);
+                        testReqOrRes = testJSON.getJSONObject(parent);
                         sourceJSON = testJSON;
+                        try {
+                            String[] contents = IO.write(IO.prettyJson(testJSON.toString()), testFile, true);
+                            mainPanel.history.addHistory(testFile.getAbsolutePath(), contents[0], contents[1]);
+                        } catch (Exception ex) {
+                            addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
+                            return;
+                        }
                     } else {
                         sourceJSON = node.jsonObject();
                     }
                     JSONObject reqOrRes = (JSONObject) sourceJSON.getOrDefault(parent, new JSONObject());
 
                     if (!newProperties.isEmpty()) {
-                        JSONObject testProperties = testReqOrRes.getJSONObject("properties");
+                        JSONObject testProperties = (JSONObject) testReqOrRes.getOrDefault("properties", new JSONObject());
                         JSONObject properties = (JSONObject) reqOrRes.getOrDefault("properties", new JSONObject());
                         newProperties.keySet().forEach((key) -> {
                             if (txtPreview.getText().contains("`${#" + key + "}`")) {
@@ -140,16 +148,6 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                             sourceJSON.remove(parent);
                         } else {
                             sourceJSON.put(parent, reqOrRes);
-                        }
-
-                        if (isTestCase) {
-                            try {
-                                String[] contents = IO.write(IO.prettyJson(testJSON.toString()), testFile, true);
-                                mainPanel.history.addHistory(testFile.getAbsolutePath(), contents[0], contents[1]);
-                            } catch (Exception ex) {
-                                addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
-                                return;
-                            }
                         }
                     }
                 }
@@ -205,7 +203,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         txtPreview.setEnabled(true);
         txtPreview.setBackground(UIManager.getColor("TextArea.background"));
 
-        if (entry.node.info == null) {
+        if (entry.node.info == null && entry.node.getType() != TreeCollection.TYPE.LINK) {
             mainPanel.resourceEditDialog.openEditDialog(entry, entry.value, true);
             return false;
         } else {
@@ -252,38 +250,40 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         referenceModel.addElement(new ComboItem(bundle.getString("browse")));
 
         int selectedIndex = 0;
-        String resourceId = node.info.resource.getString("resourceId");
-        String testSuiteName = node.info.testSuite.getString("name");
-        String resoursePath = String.format("data/%s/requests/%s/", resourceId, testSuiteName);
-        if ("response".equals(entry.getParent().toString())) {
-            resoursePath = String.format("data/%s/responses/%s/", resourceId, testSuiteName);
-            String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourceId);
-            File dir = IO.getFile(node.getCollection(), assertsPath);
-            if (dir.exists()) {
-                for (String fileName : dir.list()) {
-                    String path = assertsPath + "/" + fileName;
-                    referenceModel.addElement(new ComboItem(path, IO.getFile(node.getCollection(), path)));
+        String resoursePath = null;
+        if (node.info != null) {
+            String resourceId = node.info.resource.getString("resourceId");
+            String testSuiteName = node.info.testSuite.getString("name");
+            resoursePath = String.format("data/%s/requests/%s/", resourceId, testSuiteName);
+            if ("response".equals(entry.getParent().toString())) {
+                resoursePath = String.format("data/%s/responses/%s/", resourceId, testSuiteName);
+                String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourceId);
+                File dir = IO.getFile(node.getCollection(), assertsPath);
+                if (dir.exists()) {
+                    for (String fileName : dir.list()) {
+                        String path = assertsPath + "/" + fileName;
+                        referenceModel.addElement(new ComboItem(path, IO.getFile(node.getCollection(), path)));
+                    }
                 }
             }
         }
         
-        String filePath = null;
-        if (!IO.isNULL(entry.value)) {
-            filePath = (String) entry.value;
-            if (!filePath.contains(resoursePath)) {
+        String filePath = (String) entry.value;
+        if (!IO.isNULL(filePath)) {
+            if (resoursePath == null || !filePath.contains(resoursePath)) {
                 selectedIndex = referenceModel.getSize();
                 referenceModel.addElement(new ComboItem(filePath, IO.getFile(filePath)));
             }
-        }
-        
-        File resourseDir = IO.getFile(collection, resoursePath);
-        if (resourseDir.exists()) {
-            for (String fileName : resourseDir.list()) {
-                String path = resoursePath + fileName;
-                if (path.equals(filePath)) {
-                    selectedIndex = referenceModel.getSize();
+        } else {
+            File resourseDir;
+            if (resoursePath != null && (resourseDir = IO.getFile(resoursePath)).exists()) {
+                for (String fileName : resourseDir.list()) {
+                    String path = resoursePath + fileName;
+                    if (path.equals(filePath)) {
+                        selectedIndex = referenceModel.getSize();
+                    }
+                    referenceModel.addElement(new ComboItem(path, IO.newFile(resourseDir, fileName)));
                 }
-                referenceModel.addElement(new ComboItem(path, IO.newFile(resourseDir, fileName)));
             }
         }
 
@@ -438,8 +438,11 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         isPreviewEnabled();
         java.awt.EventQueue.invokeLater(() -> {
             if (cmbPath.getSelectedIndex() == 1) {
-                String resourceId = entry.node.info.resource.getString("resourceId");
-                String dir = !IO.isNULL(entry.value) ? (String) entry.value :  String.format("data/%s/", resourceId);
+                String dir = entry.node.getCollection().getProjectDir().getAbsolutePath();
+                if (entry.node.info != null) {
+                    String resourceId = entry.node.info.resource.getString("resourceId");
+                    dir = !IO.isNULL(entry.value) ? (String) entry.value :  String.format("data/%s/", resourceId);
+                }
                 JFileChooser jc = new JFileChooser();
                 jc.setFileFilter(new FileNameExtensionFilter("JSON File", "json", "text"));
                 jc.setCurrentDirectory(IO.getFile(dir));

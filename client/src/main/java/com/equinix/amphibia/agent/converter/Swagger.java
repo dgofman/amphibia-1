@@ -381,7 +381,7 @@ public final class Swagger {
         final String replacePath = path + definition.getQueries();
         config.put("method", info.methodName);
         config.put("path", replacePath);
-        config.put("operationId", api.getString("operationId"));
+        config.put("operationId", api.getOrDefault("operationId", null));
         if (definition.ref != null) {
             config.put("definition", definition.ref.split("#/definitions/")[1]);
         }

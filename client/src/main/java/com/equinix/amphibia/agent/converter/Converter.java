@@ -144,7 +144,7 @@ public class Converter {
             if (projectDir == null) {
                 projectDir = Profile.PROJECT_DIR;
             }
-            projectDir = new File(projectDir, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date())).getAbsolutePath();
+            projectDir = new File(projectDir, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date())).getAbsolutePath();
         }
 
         File outputDir = new File(new File(projectDir).getAbsolutePath());

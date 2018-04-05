@@ -28,29 +28,32 @@ public class Validator {
         }
     }
 
-    public static void validateDefinitionParam(String property, JSONObject doc, JSONObject param, String definitionName, JSONObject defintion, List<String> paths) {
+    public static boolean validateDefinitionParam(String property, JSONObject doc, JSONObject param, String definitionName, JSONObject defintion, List<String> paths) {
         if (isWarning(property, doc, param, defintion, paths, definitionName)) {
             JSONObject definitions = doc.getJSONObject("definitions");
             if (definitions.containsKey(definitionName)) {
                 if (!isWarning(property, doc, param, definitions.getJSONObject(definitionName), paths, definitionName)) {
-                    return;
+                    return true;
                 }
             }
             if (param.containsKey("properties")) {
                 JSONObject properties = param.getJSONObject("properties");
                 paths.add(property);
+                List<Boolean> validResults = new ArrayList<>();
                 properties.keySet().forEach((name) -> {
                     JSONObject props = properties.getJSONObject(name.toString());
-                    validateDefinitionParam(name.toString(), doc, props, definitionName, new JSONObject(), paths);
+                    validResults.add(validateDefinitionParam(name.toString(), doc, props, definitionName, new JSONObject(), paths));
                 });
-                return;
+                return !validResults.contains(false);
             }
             if (!uniqWarningKeys.containsKey(definitionName + ':' + property)) {
                 uniqWarningKeys.put(definitionName + ':' + property, true);
                 String[] path = Stream.concat(Arrays.stream(paths.toArray()), Arrays.stream(new String[]{property})).toArray(String[]::new);
                 Converter.addResult(RESOURCE_TYPE.warnings, "Field [" + String.join(".", path) + "] missing default value.' Definition: " + definitionName);
+                return false;
             }
         }
+        return true;
     }
 
     private static boolean isWarning(String property, JSONObject doc, JSONObject param, JSONObject defintion, List<String> paths, String definitionName) {
@@ -70,24 +73,12 @@ public class Validator {
                 if (refDefinitionName.equals(definitionName)) {
                     return false;
                 }
-                definitionName = refDefinitionName;
-                JSONObject definitions = doc.getJSONObject("definitions");
-                if (!definitions.containsKey(definitionName)) {
-                    Converter.addResult(RESOURCE_TYPE.errors, "Definition '" + definitionName + "' is undefined");
-                } else {
-                    JSONObject def = definitions.getJSONObject(definitionName);
-                    if (def.containsKey("properties")) {
-                        JSONObject properties = def.getJSONObject("properties");
-                        for (Object name : properties.keySet()) {
-                            JSONObject props = properties.getJSONObject(name.toString());
-                            validateDefinitionParam(name.toString(), doc, props, definitionName, def, new ArrayList<>());
-                        }
-                        return false;
-                    }
+                if (validateDefinitionProperties(refDefinitionName, doc)) {
+                    return false;
                 }
             }
         }
-        if (!param.containsKey("default") && !param.containsKey("example") && !param.containsKey("enum")) {
+        if (!param.containsKey("default") && !param.containsKey("example") && !param.containsKey("enum") && !param.containsKey("$ref")) {
             if ("true".equals(Converter.cmd.getOptionValue(Converter.DEFAULT))) {
                 if (defintion != null && defintion.containsKey("example")) {
                     Object example = defintion.optJSONObject("example");
@@ -102,13 +93,63 @@ public class Validator {
                         return false;
                     }
                 } else if (param.containsKey("type") && param.containsKey("items") && "array".equals(param.getString("type"))) {
-                    paths.add(property);
                     return isWarning(property, doc, param.getJSONObject("items"), defintion, paths, definitionName);
                 }
                 return true;
             }
         }
         return false;
+    }
+
+    public static boolean validateDefinitionRef(String ref, JSONObject definitions) {
+        String definitionName = Swagger.getDefinitionName(ref);
+        if (!definitions.containsKey(definitionName)) {
+            Converter.addResult(RESOURCE_TYPE.errors, "Definition '" + definitionName + "' is undefined");
+            return false;
+        }
+        return true;
+    }
+    
+    public static boolean validateDefinitionProperties(String definitionName, JSONObject doc) {
+        List<Boolean> validResults = new ArrayList<>();
+        JSONObject definitions = doc.getJSONObject("definitions");
+        JSONObject def = definitions.getJSONObject(definitionName);
+        if (def.containsKey("properties")) {
+            JSONObject properties = def.getJSONObject("properties");
+            for (Object name : properties.keySet()) {
+                JSONObject props = properties.getJSONObject(name.toString());
+                if (props.containsKey("$ref")) {
+                    validResults.add(validateDefinitionRef(props.getString("$ref"), definitions));
+                } else {
+                    validResults.add(validateDefinitionParam(name.toString(), doc, props, definitionName, def, new ArrayList<>()));
+                }
+            }
+            validResults.add(true);
+        } else if (def.containsKey("oneOf") || def.containsKey("anyOf") || def.containsKey("allOf")) {
+            Object options  = def.getOrDefault("oneOf", def.getOrDefault("anyOf", def.getOrDefault("allOf", null)));
+            if (options != null) {
+                ((JSONArray) options).forEach((Object option) -> {
+                    JSONObject opt = (JSONObject) option;
+                    if (opt.containsKey("$ref")) {
+                        validResults.add(validateDefinitionRef(opt.getString("$ref"), definitions));
+                    } else if (opt.containsKey("properties")) {
+                        JSONObject properties = opt.getJSONObject("properties");
+                        for (Object name : properties.keySet()) {
+                            JSONObject props = properties.getJSONObject(name.toString());
+                            if (props.containsKey("$ref")) {
+                                validResults.add(validateDefinitionRef(props.getString("$ref"), definitions));
+                            } else {
+                                validResults.add(validateDefinitionParam(name.toString(), doc, props, definitionName, def, new ArrayList<>()));
+                            }
+                        }
+                        validResults.add(true);
+                    }
+                });
+            }
+        } else {
+            validResults.add(false);
+        }
+        return !validResults.contains(false);
     }
 
     public static Object getExample(Object example, String key) {

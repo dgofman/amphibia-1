@@ -223,7 +223,7 @@ public class Properties {
         if (testFile.exists()) {
             JSONObject testJSON = JSONObject.fromObject(IOUtils.toString(new FileInputStream(testFile)));
             String resonseBodyPath = testJSON.getJSONObject(name).getString("body");
-            LOGGER.info(resonseBodyPath);
+            LOGGER.info("\n" + path + "\n" + resonseBodyPath);
             File responseFile = new File(projectDir, resonseBodyPath);
             if (resonseBodyPath != null && responseFile.exists()) {
             	body = IOUtils.toString(new FileInputStream(responseFile));
