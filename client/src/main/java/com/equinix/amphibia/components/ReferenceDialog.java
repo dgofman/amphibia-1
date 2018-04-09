@@ -437,7 +437,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         isPreviewEnabled();
         java.awt.EventQueue.invokeLater(() -> {
             if (cmbPath.getSelectedIndex() == 1) {
-                String dir = entry.node.getCollection().getProjectDir().getAbsolutePath();
+                File projectDir = entry.node.getCollection().getProjectDir();
+                String dir = projectDir.getAbsolutePath();
                 if (entry.node.info != null) {
                     String resourceId = entry.node.info.resource.getString("resourceId");
                     dir = !IO.isNULL(entry.value) ? IO.getFile((String) entry.value).getParent() :  String.format("data/%s/", resourceId);
@@ -446,6 +447,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 File file = IO.getFile(dir);
                 if (file.exists() && file.isDirectory()) {
                     jc.setCurrentDirectory(file);
+                } else if (!jc.getCurrentDirectory().getAbsolutePath().contains(projectDir.getAbsolutePath())) {
+                    jc.setCurrentDirectory(projectDir);
                 }
                 jc.setFileFilter(new FileNameExtensionFilter("JSON File", "json", "text"));
                 int rVal = jc.showSaveDialog(null);
@@ -457,6 +460,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                         if (!jc.getSelectedFile().exists()) {
                             jc.getSelectedFile().createNewFile();
                         }
+                        Amphibia.saveFileChooserDir(jc);
                         reviewPath(jc.getSelectedFile());
 
                         for (int i = 0; i < referenceModel.getSize(); i++) {

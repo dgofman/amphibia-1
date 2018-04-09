@@ -339,16 +339,19 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             String json = null;
             if (request.get("body") instanceof String) {
                 json = request.getString("body");
-                json = IO.readFile(json);
-                json = IO.prettyJson(json);
-                Properties props = properties.cloneProperties();
-                if (testStep != null && testStep.containsKey("request")) {
-                    props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
+                File jsonFile = IO.getFile(json);
+                if (jsonFile.exists()) {
+                    json = IO.readFile(jsonFile);
+                    json = IO.prettyJson(json);
+                    Properties props = properties.cloneProperties();
+                    if (testStep != null && testStep.containsKey("request")) {
+                        props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
+                    }
+                    if (common != null) {
+                        props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
+                    }
+                    json = props.replace(json);
                 }
-                if (common != null) {
-                    props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
-                }
-                json = props.replace(json);
             }
             return json;
         }
@@ -358,14 +361,18 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             String json = null;
             if (response.get("body") instanceof String) {
                 json = response.getString("body");
-                json = IO.readFile(json);
-                json = IO.prettyJson(json);
-                if (testStep != null && testStep.containsKey("response")) {
-                    json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
-                } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
-                    json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
-                } else {
-                    json = properties.replace(json);
+                File jsonFile = IO.getFile(json);
+                if (jsonFile.exists()) {
+                    json = IO.readFile(jsonFile);
+                    json = IO.readFile(json);
+                    json = IO.prettyJson(json);
+                    if (testStep != null && testStep.containsKey("response")) {
+                        json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
+                    } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
+                        json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
+                    } else {
+                        json = properties.replace(json);
+                    }
                 }
             }
             return json;
