@@ -156,7 +156,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 return;
             }
 
-            if (chbEdit.isSelected() && item.file != null && item.file.exists()) {
+            if (chbEdit.isSelected() && item.file != null && item.file.getParentFile() != null) {
                 try {
                     String[] contents = IO.write(txtPreview.getText(), item.file, true);
                     mainPanel.history.addHistory(item.file.getAbsolutePath(), contents[0], contents[1]);
@@ -254,9 +254,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         if (node.info != null) {
             String resourceId = node.info.resource.getString("resourceId");
             String testSuiteName = node.info.testSuite.getString("name");
-            resoursePath = String.format("data/%s/requests/%s/", resourceId, testSuiteName);
+            resoursePath = String.format("data/%s/" + entry.rootName + "/%s/", resourceId, testSuiteName);
             if ("response".equals(entry.getParent().toString())) {
-                resoursePath = String.format("data/%s/responses/%s/", resourceId, testSuiteName);
                 String assertsPath = String.format(ASSERTS_DIR_FORMAT, resourceId);
                 File dir = IO.getFile(node.getCollection(), assertsPath);
                 if (dir.exists()) {
@@ -272,7 +271,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
         if (!IO.isNULL(filePath)) {
             if (resoursePath == null || !filePath.contains(resoursePath)) {
                 selectedIndex = referenceModel.getSize();
-                referenceModel.addElement(new ComboItem(filePath, IO.getFile(filePath)));
+                referenceModel.addElement(new ComboItem(filePath, IO.getFile(node.getCollection(), filePath)));
             }
         } else {
             File resourseDir;
@@ -441,11 +440,14 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 String dir = entry.node.getCollection().getProjectDir().getAbsolutePath();
                 if (entry.node.info != null) {
                     String resourceId = entry.node.info.resource.getString("resourceId");
-                    dir = !IO.isNULL(entry.value) ? (String) entry.value :  String.format("data/%s/", resourceId);
+                    dir = !IO.isNULL(entry.value) ? IO.getFile((String) entry.value).getParent() :  String.format("data/%s/", resourceId);
                 }
-                JFileChooser jc = new JFileChooser();
+                JFileChooser jc = Amphibia.setFileChooserDir(new JFileChooser());
+                File file = IO.getFile(dir);
+                if (file.exists() && file.isDirectory()) {
+                    jc.setCurrentDirectory(file);
+                }
                 jc.setFileFilter(new FileNameExtensionFilter("JSON File", "json", "text"));
-                jc.setCurrentDirectory(IO.getFile(dir));
                 int rVal = jc.showSaveDialog(null);
                 if (rVal == JFileChooser.CANCEL_OPTION) {
                     cmbPath.setSelectedIndex(0);

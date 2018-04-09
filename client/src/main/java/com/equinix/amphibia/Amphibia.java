@@ -1361,10 +1361,12 @@ public final class Amphibia extends JFrame {
             mnuSaveActionPerformed(evt);
             mainPanel.reset(collection);
             try {
-                IO.copy(file, jc.getSelectedFile());
-                IO.copyDir(IO.newFile(file.getParentFile(), "data"), IO.newFile(jc.getSelectedFile().getParentFile(), "data"));
-                collection.setProjectFile(jc.getSelectedFile());
-                mainPanel.loadProject(collection);
+                if (!file.getAbsolutePath().equals(jc.getSelectedFile().getAbsolutePath())) {
+                    IO.copy(file, jc.getSelectedFile());
+                    IO.copyDir(IO.newFile(file.getParentFile(), "data"), IO.newFile(jc.getSelectedFile().getParentFile(), "data"));
+                    collection.setProjectFile(jc.getSelectedFile());
+                    mainPanel.loadProject(collection);
+                }
             } catch (IOException ex) {
                 mainPanel.addError(ex);
             }

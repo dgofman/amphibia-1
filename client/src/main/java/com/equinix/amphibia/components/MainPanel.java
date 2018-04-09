@@ -762,8 +762,9 @@ public final class MainPanel extends javax.swing.JPanel {
             if (!IO.isNULL(props)) {
                 TreeIconNode propNode = collection.addTreeNode(resourceNode, props.toString(), RULES, true)
                         .addProperties(RULES_PROPERTIES);
-                if (props.toString().endsWith(".json")) {
-                    propNode.addJSON(IO.getJSON(IO.newFile(props.toString()), editor));
+                File file = IO.newFile(props.toString());
+                if (file.exists() && file.getName().endsWith(".json")) {
+                    propNode.addJSON(IO.getJSON(file, editor));
                 }
             }
         }
