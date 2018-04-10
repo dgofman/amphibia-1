@@ -68,13 +68,13 @@ public class Mocha extends ProjectAbstract {
 
     @Override
     protected void saveResources() throws Exception {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile));
-        addToZip(outputFile, zout, outputDirPath);
-        addToZip(packageFile, zout, outputDirPath);
-        if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
-            addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            addToZip(outputFile, zout, outputDirPath);
+            addToZip(packageFile, zout, outputDirPath);
+            if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
+                addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+            }
         }
-        zout.close();
         Builder.addResult(Builder.ADD_RESOURCE, zipFile);
     }
 
@@ -177,7 +177,7 @@ public class Mocha extends ProjectAbstract {
                 testcase = replace(testcase, "<% SUMMARY %>", testCaseItem.getString("summary"));
                 testcase = replace(testcase, "<% TESTCASE_NAME %>", testCaseItem.getString("name"));
 
-                if (testCaseItem != null) {
+                if (!isNULL(testCaseItem)) {
                     testcase = replace(testcase, "<% ENDPOINT %>", testCaseItem.containsKey("endpoint") ? "headers['" + testCaseItem.get("endpoint") + "']" : "${endpoint}");
                     testcase = replace(testcase, "<% METHOD %>", testCaseItem.getString("method"));
                     testcase = replace(testcase, "<% METHOD_NAME %>", testCaseItem.getString("method").toLowerCase());

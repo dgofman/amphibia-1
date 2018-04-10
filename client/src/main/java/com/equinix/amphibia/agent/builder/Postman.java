@@ -57,9 +57,9 @@ public class Postman extends ProjectAbstract {
     protected void saveFile() throws Exception {
         super.saveFile();
         LOGGER.log(Level.INFO, "Output file: {0}", outputFile);
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(jsonContent);
-        writer.close();
+        try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false))) {
+            writer.println(jsonContent);
+        }
         Builder.addResult(Builder.ADD_PROJECT, outputFile);
     }
 

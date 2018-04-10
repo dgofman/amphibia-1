@@ -108,6 +108,7 @@ public final class MainPanel extends javax.swing.JPanel {
     /**
      * Creates new form MainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public MainPanel() {
         bundle = Amphibia.getBundle();
         treeNode = new TreeIconNode();

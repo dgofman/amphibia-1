@@ -41,14 +41,15 @@ import net.sf.json.JSONArray;
 public class SaveDialog extends javax.swing.JPanel {
     
     private JDialog dialog;
-    private MainPanel mainPanel;
     private DefaultListModel model;
     private boolean isSame;
+    private final MainPanel mainPanel;
 
     private static final Logger logger = Amphibia.getLogger(SaveDialog.class.getName());
     
     /**
      * Creates new form SaveDialog
+     * @param mainPanel
      */
     public SaveDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;

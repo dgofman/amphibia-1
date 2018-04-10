@@ -489,7 +489,7 @@ public final class Swagger {
         return null;
     }
 
-    final class ApiInfo {
+    public final class ApiInfo {
 
         String interfaceName;
         String interfaceBasePath;

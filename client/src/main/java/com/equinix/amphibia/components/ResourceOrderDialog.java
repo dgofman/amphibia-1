@@ -60,6 +60,7 @@ public final class ResourceOrderDialog extends javax.swing.JPanel {
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public ResourceOrderDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
         resourceModel = new DefaultListModel();

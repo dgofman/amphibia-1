@@ -98,23 +98,22 @@ public class SoapUI extends ProjectAbstract {
     @Override
     protected void saveFile() throws Exception {
         super.saveFile();
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(xmlContent);
-        writer.close();
+        try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false))) {
+            writer.println(xmlContent);
+        }
     }
 
     @Override
     protected void saveResources() throws Exception {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile));
-        if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
-            addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
+                addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+            }
+            addToZip(outputFile, zout, outputDirPath);
+            addToZip(pomFile, zout, outputDirPath);
+            addToZip(projectFile, zout, outputDirPath);
+            addToZip(classpathFile, zout, outputDirPath);
         }
-        addToZip(outputFile, zout, outputDirPath);
-        addToZip(pomFile, zout, outputDirPath);
-        addToZip(projectFile, zout, outputDirPath);
-        addToZip(classpathFile, zout, outputDirPath);
-
-        zout.close();
         Builder.addResult(Builder.ADD_RESOURCE, zipFile);
     }
 

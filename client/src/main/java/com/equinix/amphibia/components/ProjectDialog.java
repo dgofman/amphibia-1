@@ -91,6 +91,7 @@ public final class ProjectDialog extends javax.swing.JPanel {
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public ProjectDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
 
@@ -572,9 +573,9 @@ public final class ProjectDialog extends javax.swing.JPanel {
                     @Override
                     public void run() {
                         try {
-                            FileInputStream fis = new FileInputStream(jf.getSelectedFile());
-                            loadProject(file, fis, false);
-                            fis.close();
+                            try (FileInputStream fis = new FileInputStream(jf.getSelectedFile())) {
+                                loadProject(file, fis, false);
+                            }
                             txtSwaggerFile.setText(file);
                             invalidateAll();
                         } catch (Exception e) {

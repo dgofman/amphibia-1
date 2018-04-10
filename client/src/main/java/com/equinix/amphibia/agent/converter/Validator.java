@@ -116,14 +116,14 @@ public class Validator {
         JSONObject def = definitions.getJSONObject(definitionName);
         if (def.containsKey("properties")) {
             JSONObject properties = def.getJSONObject("properties");
-            for (Object name : properties.keySet()) {
+            properties.keySet().stream().forEach((name) -> {
                 JSONObject props = properties.getJSONObject(name.toString());
                 if (props.containsKey("$ref")) {
                     validResults.add(validateDefinitionRef(props.getString("$ref"), definitions));
                 } else {
                     validResults.add(validateDefinitionParam(name.toString(), doc, props, definitionName, def, new ArrayList<>()));
                 }
-            }
+            });
             validResults.add(true);
         } else if (def.containsKey("oneOf") || def.containsKey("anyOf") || def.containsKey("allOf")) {
             Object options  = def.getOrDefault("oneOf", def.getOrDefault("anyOf", def.getOrDefault("allOf", null)));
@@ -134,14 +134,14 @@ public class Validator {
                         validResults.add(validateDefinitionRef(opt.getString("$ref"), definitions));
                     } else if (opt.containsKey("properties")) {
                         JSONObject properties = opt.getJSONObject("properties");
-                        for (Object name : properties.keySet()) {
+                        properties.keySet().stream().forEach((name) -> {
                             JSONObject props = properties.getJSONObject(name.toString());
                             if (props.containsKey("$ref")) {
                                 validResults.add(validateDefinitionRef(props.getString("$ref"), definitions));
                             } else {
                                 validResults.add(validateDefinitionParam(name.toString(), doc, props, definitionName, def, new ArrayList<>()));
                             }
-                        }
+                        });
                         validResults.add(true);
                     }
                 });

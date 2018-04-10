@@ -100,18 +100,10 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                     final int[] isModified = new int[]{0};
                     JSONObject testReqOrRes = new JSONObject();
                     JSONObject sourceJSON;
+                    File testFile = IO.getFile(collection, node.jsonObject().getString("file"));
                     if (isTestCase) {
-                        File testFile = IO.getFile(collection, node.jsonObject().getString("file"));
-                        JSONObject testJSON = (JSONObject) IO.getJSON(testFile);
-                        testReqOrRes = testJSON.getJSONObject(parent);
-                        sourceJSON = testJSON;
-                        try {
-                            String[] contents = IO.write(IO.prettyJson(testJSON.toString()), testFile, true);
-                            mainPanel.history.addHistory(testFile.getAbsolutePath(), contents[0], contents[1]);
-                        } catch (Exception ex) {
-                            addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
-                            return;
-                        }
+                        sourceJSON = (JSONObject) IO.getJSON(testFile);
+                        testReqOrRes = sourceJSON.getJSONObject(parent);
                     } else {
                         sourceJSON = node.jsonObject();
                     }
@@ -148,6 +140,16 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                             sourceJSON.remove(parent);
                         } else {
                             sourceJSON.put(parent, reqOrRes);
+                        }
+                        
+                        if (isTestCase) {
+                            try {
+                                String[] contents = IO.write(IO.prettyJson(sourceJSON.toString()), testFile, true);
+                                mainPanel.history.addHistory(testFile.getAbsolutePath(), contents[0], contents[1]);
+                            } catch (Exception ex) {
+                                addError(String.format(bundle.getString("error_convert"), "JSON"), ex);
+                                return;
+                            }
                         }
                     }
                 }

@@ -86,15 +86,15 @@ public class JUnit extends ProjectAbstract {
 
     @Override
     protected void saveResources() throws Exception {
-        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile));
-        addToZip(new File(outputDirPath, "AmphibiaBaseTest.java"), zout, outputDirPath);
-        addToZip(new File(outputDirPath, "Profile.java"), zout, outputDirPath);
-        addToZip(outputFile, zout, outputDirPath);
-        addToZip(pomFile, zout, outputDirPath);
-        if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
-            addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            addToZip(new File(outputDirPath, "AmphibiaBaseTest.java"), zout, outputDirPath);
+            addToZip(new File(outputDirPath, "Profile.java"), zout, outputDirPath);
+            addToZip(outputFile, zout, outputDirPath);
+            addToZip(pomFile, zout, outputDirPath);
+            if (!"false".equals(cmd.getOptionValue(Builder.RESOURCE))) {
+                addToZip(new File(projectDirPath, Profile.DATA_DIR), zout, outputDirPath);
+            }
         }
-        zout.close();
         Builder.addResult(Builder.ADD_RESOURCE, zipFile);
     }
 

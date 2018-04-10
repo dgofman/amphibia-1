@@ -47,8 +47,8 @@ public final class JTreeTable extends JTable {
     public static final int EDIT_ONLY = 2;
     public static final int READ_ONLY = 3;
     
-    private ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock.png"));
-    private ImageIcon unlock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/unlock.png"));
+    private final ImageIcon lock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/lock.png"));
+    private final ImageIcon unlock_icon = new ImageIcon(getClass().getResource("/com/equinix/amphibia/icons/unlock.png"));
 
 
     /**
@@ -159,7 +159,7 @@ public final class JTreeTable extends JTable {
                 value == EditValueRenderer.TYPE.TRANSFER);
     }
 
-    static interface RowEventListener {
+    public static interface RowEventListener {
 
         void fireEvent(JTreeTable table, int row, int column, Object value);
     }
@@ -178,15 +178,16 @@ public final class JTreeTable extends JTable {
             VIEW
         }
 
-        private JTreeTable table;
-        private RowEventListener listener;
-        private JButton editButton;
-        private JLabel label;
+        private final JTreeTable table;
+        private final RowEventListener listener;
+        private final JButton editButton;
+        private final JLabel label;
 
         private int columnIndex;
         private int rowIndex;
         private Object currentValue;
 
+        @SuppressWarnings("LeakingThisInConstructor")
         public EditValueRenderer(JTreeTable table, RowEventListener listener) {
             super();
             this.table = table;
@@ -342,7 +343,7 @@ public final class JTreeTable extends JTable {
         }
     }
 
-    static abstract class AbstractTreeTableModel extends DefaultTreeModel {
+    public static abstract class AbstractTreeTableModel extends DefaultTreeModel {
 
         public AbstractTreeTableModel(TreeNode root) {
             super(root);
@@ -381,12 +382,16 @@ public final class JTreeTable extends JTable {
                 public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean isLeaf, int row, boolean hasFocus) {
                     Component c = super.getTreeCellRendererComponent(tree, value, selected, expanded, isLeaf, row, hasFocus);
                     int editMode = ((Editor.Entry) value).editMode;
-                    if (editMode == READ_ONLY) {
-                        setIcon(lock_icon);
-                    } else if (editMode == EDIT_ONLY) {
-                        setIcon(unlock_icon);
-                    }else {
-                        setIcon(isLeaf ? dummy_icon : null);
+                    switch (editMode) {
+                        case READ_ONLY:
+                            setIcon(lock_icon);
+                            break;
+                        case EDIT_ONLY:
+                            setIcon(unlock_icon);
+                            break;
+                        default:
+                            setIcon(isLeaf ? dummy_icon : null);
+                            break;
                     }
                     return c;
                 }

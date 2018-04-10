@@ -17,7 +17,7 @@ import net.sf.json.JSON;
 public final class FileManager {
     
     private static final Map<String, Record> records = new HashMap<>();
-    
+
     @SuppressWarnings("NonPublicExported")
     public static Record getRecord(File file) {
         Record record = records.get(file.getAbsolutePath());
@@ -40,7 +40,7 @@ public final class FileManager {
         records.remove(file.getAbsolutePath());
     }
     
-    static class Record {
+    public static class Record {
         public File file;
         public String content;
         public JSON json;

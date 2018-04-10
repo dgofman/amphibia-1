@@ -58,7 +58,9 @@ public class PreferenceDialog extends javax.swing.JPanel {
     
     /**
      * Creates new form PreferenceDialog
+     * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public PreferenceDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
         

@@ -78,6 +78,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
 
     /**
      * Creates new form GlobalVaraibleDialog
+     * @param mainPanel
      */
     public GlobalVariableDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;

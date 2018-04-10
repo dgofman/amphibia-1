@@ -102,11 +102,8 @@ public class IO {
     }
     
     public static JSON getJSON(URI uri) throws Exception {
-        InputStream is = uri.toURL().openStream();
-        try {
+        try (InputStream is = uri.toURL().openStream()) {
             return getJSON(is);
-        } finally {
-            is.close();
         }
     }
     
@@ -169,11 +166,8 @@ public class IO {
     }
     
     public static String readFile(URI uri) throws IOException {
-        InputStream is = uri.toURL().openStream();
-        try {
+        try (InputStream is = uri.toURL().openStream()) {
             return readInputStream(is);
-        } finally {
-            is.close();
         }
     }
 
@@ -305,11 +299,8 @@ public class IO {
     
     public static void write(String content, File file) throws IOException {
         FileManager.deleteContent(file);
-        OutputStream os = new FileOutputStream(file);
-        try {
+        try (OutputStream os = new FileOutputStream(file)) {
             IOUtils.write(content, os);
-        } finally {
-            os.close(); 
         }
     }
 

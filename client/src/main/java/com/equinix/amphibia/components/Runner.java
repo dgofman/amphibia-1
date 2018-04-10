@@ -54,14 +54,15 @@ public final class Runner extends BaseTaskPane implements IHttpConnection {
     private boolean isRunning;
     private boolean includeSkippedTests;
     private boolean autoSwitchConsole;
-    private Editor editor;
     private Thread currentThread;
     private TreeIconNode selectedNode;
-    private DefaultTreeModel treeModel;
-    private HttpConnection connection;
-    private Map<Thread, Boolean> threads;
     private boolean continueOnError;
     private int lineIndex;
+    
+    private final Editor editor;
+    private final DefaultTreeModel treeModel;
+    private final HttpConnection connection;
+    private final Map<Thread, Boolean> threads;
 
     private final SimpleDateFormat reportDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -266,64 +267,64 @@ public final class Runner extends BaseTaskPane implements IHttpConnection {
             dir.mkdirs();
         }
 
-        PrintWriter pw = new PrintWriter(new FileOutputStream(IO.newFile(dir, "junit-noframes.xml"), false));
-        pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        pw.println("<testsuites>");
-
-        for (int i = 0; i < testsuites.size(); i++) {
-            final int index = i;
-            final double[] data = {
-                0, //0 - time
-                0, //1 - tests
-                0, //2 - skipped
-                0, //3 - errors
-                0 //4 - failures (asserts)
-            };
-            JSONObject testsuite = testsuites.getJSONObject(index);
-            JSONArray testcases = testsuite.getJSONArray("testcases");
-            StringBuilder sb = new StringBuilder();
-            String testSuiteName = testsuite.getString("name");
-            testcases.forEach((tc) -> {
-                JSONObject testcase = (JSONObject) tc;
-                String classname = testcase.getString("name");
-                if (testcase.containsKey("steps") && testcase.getJSONArray("steps").size() > 0) {
-                    JSONArray teststeps = testcase.getJSONArray("steps");
-                    teststeps.forEach((ts) -> {
-                        JSONObject step = (JSONObject) ts;
-                        sb.append(addTestCaseInfo(data, testSuiteName, classname, step.getString("name"), step));
-                    });
-                } else {
-                    sb.append(addTestCaseInfo(data, testSuiteName, classname, "", testcase));
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(IO.newFile(dir, "junit-noframes.xml"), false))) {
+            pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            pw.println("<testsuites>");
+            
+            for (int i = 0; i < testsuites.size(); i++) {
+                final int index = i;
+                final double[] data = {
+                    0, //0 - time
+                    0, //1 - tests
+                    0, //2 - skipped
+                    0, //3 - errors
+                    0 //4 - failures (asserts)
+                };
+                JSONObject testsuite = testsuites.getJSONObject(index);
+                JSONArray testcases = testsuite.getJSONArray("testcases");
+                StringBuilder sb = new StringBuilder();
+                String testSuiteName = testsuite.getString("name");
+                testcases.forEach((tc) -> {
+                    JSONObject testcase = (JSONObject) tc;
+                    String classname = testcase.getString("name");
+                    if (testcase.containsKey("steps") && testcase.getJSONArray("steps").size() > 0) {
+                        JSONArray teststeps = testcase.getJSONArray("steps");
+                        teststeps.forEach((ts) -> {
+                            JSONObject step = (JSONObject) ts;
+                            sb.append(addTestCaseInfo(data, testSuiteName, classname, step.getString("name"), step));
+                        });
+                    } else {
+                        sb.append(addTestCaseInfo(data, testSuiteName, classname, "", testcase));
+                    }
+                });
+                
+                StringBuilder sb2 = new StringBuilder();
+                sb2.append("\t<testsuite time=\"")
+                        .append(data[0]).append("\" tests=\"")
+                        .append(data[1]).append("\" skipped=\"")
+                        .append(data[2]).append("\" errors=\"")
+                        .append(data[3]).append("\" failures=\"")
+                        .append(data[4]).append("\" id=\"")
+                        .append(index).append("\" name=\"")
+                        .append(testSuiteName)
+                        .append("\" package=\"")
+                        .append(collection.getProjectName())
+                        .append("\" timestamp=\"")
+                        .append(testsuite.getOrDefault("timestamp", 0))
+                        .append("\">\n");
+                sb2.append(sb.toString());
+                sb2.append("\t</testsuite>");
+                
+                pw.println(sb2.toString());
+                
+                File xmlFile = IO.newFile(dir, "TEST-" + testsuite.get("name") + ".xml");
+                try (PrintWriter xmlPw = new PrintWriter(new FileOutputStream(xmlFile, false))) {
+                    xmlPw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                    xmlPw.println(sb2.toString());
                 }
-            });
-
-            StringBuilder sb2 = new StringBuilder();
-            sb2.append("\t<testsuite time=\"")
-                    .append(data[0]).append("\" tests=\"")
-                    .append(data[1]).append("\" skipped=\"")
-                    .append(data[2]).append("\" errors=\"")
-                    .append(data[3]).append("\" failures=\"")
-                    .append(data[4]).append("\" id=\"")
-                    .append(index).append("\" name=\"")
-                    .append(testSuiteName)
-                    .append("\" package=\"")
-                    .append(collection.getProjectName())
-                    .append("\" timestamp=\"")
-                    .append(testsuite.getOrDefault("timestamp", 0))
-                    .append("\">\n");
-            sb2.append(sb.toString());
-            sb2.append("\t</testsuite>");
-
-            pw.println(sb2.toString());
-
-            File xmlFile = IO.newFile(dir, "TEST-" + testsuite.get("name") + ".xml");
-            PrintWriter xmlPw = new PrintWriter(new FileOutputStream(xmlFile, false));
-            xmlPw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            xmlPw.println(sb2.toString());
-            xmlPw.close();
+            }
+            pw.println("</testsuites>");
         }
-        pw.println("</testsuites>");
-        pw.close();
 
         System.setProperty("PROJECT_NAME", collection.getProjectName());
 

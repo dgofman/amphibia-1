@@ -67,7 +67,9 @@ public final class HelpDialog extends javax.swing.JFrame {
     
     /**
      * Creates new form HelpDialog
+     * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public HelpDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
 

@@ -41,10 +41,10 @@ import net.sf.json.JSONObject;
 public final class AssertDialog extends javax.swing.JPanel {
 
     private JDialog dialog;
-    private JButton okButton;
-    private JButton cancelButton;
     private Editor.Entry entry;
-
+    private final JButton okButton;
+    private final JButton cancelButton;
+    
     public static enum ASSERTS {
         ORDERED,
         UNORDERED,
@@ -57,6 +57,7 @@ public final class AssertDialog extends javax.swing.JPanel {
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public AssertDialog(MainPanel mainPanel) {
 
         initComponents();

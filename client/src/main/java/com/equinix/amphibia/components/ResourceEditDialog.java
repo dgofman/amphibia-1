@@ -58,17 +58,17 @@ import net.sf.json.JSONObject;
 public final class ResourceEditDialog extends javax.swing.JPanel {
 
     private MainPanel mainPanel;
-    private JOptionPane optionPane;
     private JDialog dialog;
     private JButton applyButton;
-    private JButton deleteButton;
-    private JButton resetButton;
-    private JButton cancelButton;
-    private JButton okButton;
     private ResourceBundle bundle;
     private Editor.Entry entry;
     private Border defaultBorder;
     private boolean isTestProperties;
+    private final JOptionPane optionPane;
+    private final JButton deleteButton;
+    private final JButton resetButton;
+    private final JButton cancelButton;
+    private final JButton okButton;
 
     private final Border ERROR_BORDER = BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Color.RED),
@@ -288,7 +288,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         Object[] options = new Object[]{okButton};
         if (isEdit) {
             options = new Object[]{applyButton, cancelButton};
-            if (entry.isDynamic && entry != null) {
+            if (entry.isDynamic) {
                 if (entry.editMode == JTreeTable.EDIT_DELETE) {
                     options = new Object[]{applyButton, deleteButton, cancelButton};
                 } else if (entry.editMode == JTreeTable.EDIT_RESET) {

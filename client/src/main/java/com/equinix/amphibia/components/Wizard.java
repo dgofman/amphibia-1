@@ -66,7 +66,7 @@ import net.sf.json.JSONObject;
  *
  * @author dgofman
  */
-public class Wizard extends javax.swing.JPanel {
+public final class Wizard extends javax.swing.JPanel {
 
     private ResourceBundle bundle;
     private JDialog interfaceDialog;

@@ -22,8 +22,8 @@ import net.sf.json.JSONObject;
  */
 public class HistoryManager {
 
-    private MainPanel mainPanel;
-    private Editor editor;
+    private final MainPanel mainPanel;
+    private final Editor editor;
 
     public HistoryManager(MainPanel mainPanel, Editor editor) {
         this.mainPanel = mainPanel;

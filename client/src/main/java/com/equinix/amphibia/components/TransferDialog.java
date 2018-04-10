@@ -64,10 +64,7 @@ import net.sf.json.JSONObject;
 public class TransferDialog extends javax.swing.JPanel {
 
     private JDialog dialog;
-    private JOptionPane optionPane;
     private JButton applyButton;
-    private JButton deleteButton;
-    private JButton cancelButton;
     private ResourceBundle bundle;
     private Editor.Entry entry;
     private TreeIconNode node;
@@ -76,6 +73,9 @@ public class TransferDialog extends javax.swing.JPanel {
     private Object transferName;
     private Object transferValue;
     
+    private final JOptionPane optionPane;
+    private final JButton deleteButton;
+    private final JButton cancelButton;
     private final MainPanel mainPanel;
     private final DefaultComboBoxModel targetModel;
 
@@ -86,6 +86,7 @@ public class TransferDialog extends javax.swing.JPanel {
 
     /**
      * Creates new form TransferDialog
+     * @param mainPanel
      */
     public TransferDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;

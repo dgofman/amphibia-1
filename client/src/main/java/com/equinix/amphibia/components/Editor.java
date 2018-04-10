@@ -141,7 +141,7 @@ public final class Editor extends BaseTaskPane {
             Object value = table.getModel().getValueAt(row, 1);
             if (cellValue == ADD) {
                 mainPanel.resourceEditDialog.openCreateDialog(entry);
-            } else if (cellValue == VIEW) {
+            } else if (cellValue != null && cellValue == VIEW) {
                 mainPanel.resourceEditDialog.openEditDialog(entry, value, false);
             } else if (cellValue == EDIT || cellValue == EDIT_LIMIT) {
                 if (entry.parent != null && entry.parent.type == TRANSFER) {
@@ -281,9 +281,7 @@ public final class Editor extends BaseTaskPane {
     }
 
     public void deleteHistory(int row) throws IOException {
-        FileSystem zipfs = null;
-        try {
-            zipfs = getFileSystem();
+        try (FileSystem zipfs = getFileSystem()) {
             String timeDir = tblHistory.getValueAt(row, 3).toString();
             Iterator<String> lines = histories.iterator();
             while (lines.hasNext()) {
@@ -299,10 +297,6 @@ public final class Editor extends BaseTaskPane {
             historyModel.removeRow(row);
             historyIndex = 0;
             tblHistory.clearSelection();
-        } finally {
-            if (zipfs != null) {
-                zipfs.close();
-            }
         }
     }
 

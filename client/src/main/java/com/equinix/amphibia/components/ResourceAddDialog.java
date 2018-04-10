@@ -54,13 +54,13 @@ public final class ResourceAddDialog extends javax.swing.JPanel {
     private final TreeIconNode testCaseNode;
     private final DefaultTreeModel testStepModel;
     private final TreeIconNode testStepNode;
+    private final JButton cancelTestStepButton;
     private TreeIconNode treeSelectedNode;
     private JDialog testCaseDialog;
     private JDialog testStepDialog;
     private JButton okTestCaseButton;
     private JButton cancelTestCaseButton;
     private JButton okTestStepButton;
-    private JButton cancelTestStepButton;
 
     private ResourceBundle bundle;
 
@@ -69,6 +69,7 @@ public final class ResourceAddDialog extends javax.swing.JPanel {
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public ResourceAddDialog(MainPanel mainPanel) {
 
         bundle = Amphibia.getBundle();

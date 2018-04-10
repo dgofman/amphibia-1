@@ -26,7 +26,7 @@ public final class Schema {
     private JSONObject docDefinitions;
     private Map<Object, Object> fields;
     private Map<Object, Object> definitions;
-    private Map<Object, Object> schema;
+    private final Map<Object, Object> schema;
 
     public static final Map<String, String> schemas = new LinkedHashMap<String, String>();
 
@@ -146,9 +146,9 @@ public final class Schema {
         String filePath = ProjectAbstract.getRelativePath(projectDir, outputFile.toURI());
 
         if (!outputFile.exists()) {
-            PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-            writer.println(Swagger.getJson(json));
-            writer.close();
+            try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false))) {
+                writer.println(Swagger.getJson(json));
+            }
             LOGGER.log(Level.INFO, "The file saved successfully.\n{0}", outputFile);
             Converter.addResult(Converter.RESOURCE_TYPE.schemas, filePath);
         } else if (swagger.isDataGenerate()) {

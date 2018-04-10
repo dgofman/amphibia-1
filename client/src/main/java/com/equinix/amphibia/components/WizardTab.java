@@ -108,6 +108,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         this(wizard, null);
     }
 
+    @SuppressWarnings("LeakingThisInConstructor")
     public WizardTab(Wizard wizard, TreeIconNode node) {
         this.wizard = wizard;
         this.openedNode = node;

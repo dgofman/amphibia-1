@@ -101,7 +101,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         this(new TreeIconUserObject(collection, label, type, truncate, properties));
     }
 
-    @SuppressWarnings("OverridableMethodCallInConstructor")
+    @SuppressWarnings({"OverridableMethodCallInConstructor", "LeakingThisInConstructor"})
     public TreeIconNode(TreeIconNode source, TreeCollection.TYPE type) {
         this(source.getCollection(), source.getLabel(), type, false);
         this.nodeType = 1;
@@ -338,8 +338,8 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             JSONObject request = testStepInfo.getJSONObject("request");
             String json = null;
             if (request.get("body") instanceof String) {
-                json = request.getString("body");
-                File jsonFile = IO.getFile(json);
+                String path = request.getString("body");
+                File jsonFile = IO.getFile(path);
                 if (jsonFile.exists()) {
                     json = IO.readFile(jsonFile);
                     json = IO.prettyJson(json);
@@ -360,11 +360,10 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             JSONObject response = testStepInfo.getJSONObject("response");
             String json = null;
             if (response.get("body") instanceof String) {
-                json = response.getString("body");
-                File jsonFile = IO.getFile(json);
+                String path = response.getString("body");
+                File jsonFile = IO.getFile(path);
                 if (jsonFile.exists()) {
                     json = IO.readFile(jsonFile);
-                    json = IO.readFile(json);
                     json = IO.prettyJson(json);
                     if (testStep != null && testStep.containsKey("response")) {
                         json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);

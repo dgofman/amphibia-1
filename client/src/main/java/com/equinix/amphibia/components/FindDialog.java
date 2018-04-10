@@ -31,14 +31,15 @@ import javax.swing.tree.TreePath;
 public final class FindDialog extends javax.swing.JPanel {
 
     private JDialog dialog;
-    private MainPanel mainPanel;
     private Enumeration findEnum;
+    private final MainPanel mainPanel;
 
     /**
      * Creates new form FindDialog
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public FindDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
         initComponents();

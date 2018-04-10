@@ -34,7 +34,9 @@ public class TipDialog extends javax.swing.JPanel {
     
     /**
      * Creates new form TipDialog
+     * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public TipDialog(MainPanel mainPanel) {
         initComponents();
         dialog = Amphibia.createDialog(this, new Object[]{}, true);

@@ -221,22 +221,23 @@ public class Converter {
         if (file.getName().endsWith(".json")) {
             return ProjectAbstract.getJSON(file);
         } else if (file.getName().endsWith(".zip")) {
-            ZipFile zipFile = new ZipFile(file);
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            JSONObject json = null;
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (entry.getName().equals("rules-properties.json")) {
-                    json = ProjectAbstract.getJSON(zipFile.getInputStream(entry));
-                } else {
-                    InputStream stream = zipFile.getInputStream(entry);
-                    file = new File(projectDir, entry.getName());
-                    file.getParentFile().mkdirs();
-                    Files.copy(stream, file.toPath());
-                    stream.close();
+            JSONObject json;
+            try (ZipFile zipFile = new ZipFile(file)) {
+                Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                json = null;
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    if (entry.getName().equals("rules-properties.json")) {
+                        json = ProjectAbstract.getJSON(zipFile.getInputStream(entry));
+                    } else {
+                        try (InputStream stream = zipFile.getInputStream(entry)) {
+                            file = new File(projectDir, entry.getName());
+                            file.getParentFile().mkdirs();
+                            Files.copy(stream, file.toPath());
+                        }
+                    }
                 }
             }
-            zipFile.close();
             return json;
         } else {
             return null;

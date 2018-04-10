@@ -94,7 +94,7 @@ public class Properties {
         return String.valueOf(replace(replace, null));
     }
 
-    public Object replace(Object replace, Object propKey) {
+    public final Object replace(Object replace, Object propKey) {
         if (replace == null || replace == JSONNull.getInstance()) {
             return JSONNull.getInstance();
         }
@@ -223,7 +223,7 @@ public class Properties {
         if (testFile.exists()) {
             JSONObject testJSON = JSONObject.fromObject(IOUtils.toString(new FileInputStream(testFile)));
             String resonseBodyPath = testJSON.getJSONObject(name).getString("body");
-            LOGGER.info("\n" + path + "\n" + resonseBodyPath);
+            LOGGER.log(Level.INFO, "\n{0}\n{1}", new Object[]{path, resonseBodyPath});
             File responseFile = new File(projectDir, resonseBodyPath);
             if (resonseBodyPath != null && responseFile.exists()) {
             	body = IOUtils.toString(new FileInputStream(responseFile));

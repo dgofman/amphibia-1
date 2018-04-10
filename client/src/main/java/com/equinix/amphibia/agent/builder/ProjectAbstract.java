@@ -23,7 +23,6 @@ import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
-import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
@@ -90,11 +89,8 @@ public abstract class ProjectAbstract {
                         return "";
                     }
                     StringWriter sw = new StringWriter();
-                    PrintWriter printWriter = new PrintWriter(sw);
-                    try {
+                    try (PrintWriter printWriter = new PrintWriter(sw)) {
                         thrown.printStackTrace(printWriter);
-                    } finally {
-                        printWriter.close();
                     }
                     return sw.toString();
                 }
@@ -178,9 +174,9 @@ public abstract class ProjectAbstract {
     }
 
     public static void saveFile(File outputFile, String content) throws Exception {
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        writer.println(content);
-        writer.close();
+        try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false))) {
+            writer.println(content);
+        }
     }
 
     protected String tabs(String source, String tabs) {

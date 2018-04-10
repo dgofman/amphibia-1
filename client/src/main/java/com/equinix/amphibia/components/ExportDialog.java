@@ -67,15 +67,16 @@ public final class ExportDialog extends javax.swing.JPanel {
     private final DefaultTreeModel treeModel;
     private final DefaultMutableTreeNode rootNode;
     private JDialog dialog;
-    private JButton okButton;
-    private JButton cancelButton;
-    private MainPanel mainPanel;
+    private final JButton okButton;
+    private final JButton cancelButton;
+    private final MainPanel mainPanel;
 
     /**
      * Creates new form JDialogTest
      *
      * @param mainPanel
      */
+    @SuppressWarnings("LeakingThisInConstructor")
     public ExportDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
 
@@ -113,35 +114,34 @@ public final class ExportDialog extends javax.swing.JPanel {
                     JSONObject json = (JSONObject) IO.getJSON(IO.getResources("rules_properties_template.json"));
                     JSONArray resources = buildProperties(json);
                     if (chbOtherFiles.isSelected()) {
-                        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(jc.getSelectedFile()));
-                        ZipEntry zipEntry = new ZipEntry("rules-properties.json");
-                        zout.putNextEntry(zipEntry);
-                        zout.write(IO.prettyJson(json.toString()).getBytes());
-                        zout.closeEntry();
-
-                        File projectDir = MainPanel.selectedNode.getCollection().getProjectDir();
-                        File dataDir = new File(projectDir, "data");
-                        resources.forEach((item) -> {
-                            try {
-                                Files.walk(Paths.get(new File(dataDir, ((JSONObject) item).getString("id")).toURI()))
-                                        .filter(path -> !Files.isDirectory(path))
-                                        .forEach((Path path) -> {
-                                            String relative = ProjectAbstract.getRelativePath(projectDir.toURI(), path.toUri());
-                                            ZipEntry entry = new ZipEntry(relative);
-                                            try {
-                                                zout.putNextEntry(entry);
-                                                zout.write(Files.readAllBytes(path));
-                                                zout.closeEntry();
-                                            } catch (IOException ex) {
-                                                mainPanel.addError(ex);
-                                            }
-                                        });
-                            } catch (IOException ex) {
-                                mainPanel.addError(ex);
-                            }
-                        });
-
-                        zout.close();
+                        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(jc.getSelectedFile()))) {
+                            ZipEntry zipEntry = new ZipEntry("rules-properties.json");
+                            zout.putNextEntry(zipEntry);
+                            zout.write(IO.prettyJson(json.toString()).getBytes());
+                            zout.closeEntry();
+                            
+                            File projectDir = MainPanel.selectedNode.getCollection().getProjectDir();
+                            File dataDir = new File(projectDir, "data");
+                            resources.forEach((item) -> {
+                                try {
+                                    Files.walk(Paths.get(new File(dataDir, ((JSONObject) item).getString("id")).toURI()))
+                                            .filter(path -> !Files.isDirectory(path))
+                                            .forEach((Path path) -> {
+                                                String relative = ProjectAbstract.getRelativePath(projectDir.toURI(), path.toUri());
+                                                ZipEntry entry = new ZipEntry(relative);
+                                                try {
+                                                    zout.putNextEntry(entry);
+                                                    zout.write(Files.readAllBytes(path));
+                                                    zout.closeEntry();
+                                                } catch (IOException ex) {
+                                                    mainPanel.addError(ex);
+                                                }
+                                            });
+                                } catch (IOException ex) {
+                                    mainPanel.addError(ex);
+                                }
+                            });
+                        }
                         Desktop.getDesktop().open(jc.getSelectedFile().getParentFile());
                     } else {
                         IO.write(IO.prettyJson(json.toString()), jc.getSelectedFile());
@@ -585,7 +585,7 @@ final class CheckBoxRenderer extends JTreeTable.AbstractCellEditor implements Tr
 
 final class CheckBoxNode extends DefaultMutableTreeNode {
 
-    private TreeIconNode source;
+    private final TreeIconNode source;
     private int actionIndex;
 
     public static final int UNSELECT = 1;
@@ -635,12 +635,13 @@ final class CheckBoxNode extends DefaultMutableTreeNode {
 
 final class CheckBox extends JCheckBox implements Icon, ActionListener {
 
-    private JTree tree;
-    private CheckBoxNode node;
-    private CheckBoxRenderer renderer;
     private boolean allowPartial;
+    private CheckBoxNode node;
+    private final JTree tree;
+    private final CheckBoxRenderer renderer;
     private final static Icon icon = UIManager.getIcon("CheckBox.icon");
 
+    @SuppressWarnings("LeakingThisInConstructor")
     public CheckBox(JTree tree, CheckBoxRenderer renderer) {
         super();
         this.tree = tree;

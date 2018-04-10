@@ -48,10 +48,10 @@ public class Swagger extends ProjectAbstract {
         List<String> paths = new ArrayList<>();
         swaggerJSON = replace(swaggerJSON, "<% PATHS %>", String.join(",\n", paths));
 
-        PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false));
-        Builder.addResult(Builder.ADD_PROJECT, outputFile);
-        writer.println(swaggerJSON);
-        writer.close();
+        try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile, false))) {
+            Builder.addResult(Builder.ADD_PROJECT, outputFile);
+            writer.println(swaggerJSON);
+        }
     }
 
     @Override

@@ -9,11 +9,11 @@ import net.sf.json.JSONObject;
 
 public final class Definition {
 
-    private JSONObject doc;
     private JSONObject example;
-    private StringBuilder queries;
-    private Map<String, String> parameters;
-    private Swagger swagger;
+    private final JSONObject doc;
+    private final StringBuilder queries;
+    private final Map<String, String> parameters;
+    private final Swagger swagger;
 
     public String ref;
 

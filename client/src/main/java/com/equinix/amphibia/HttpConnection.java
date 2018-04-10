@@ -30,8 +30,8 @@ import net.sf.json.JSONObject;
  */
 public final class HttpConnection {
 
-    private IHttpConnection out;
-    private HttpConnectionImpl impl;
+    private final IHttpConnection out;
+    private final HttpConnectionImpl impl;
 
     public HttpConnection(IHttpConnection out) {
         this.out = out;
