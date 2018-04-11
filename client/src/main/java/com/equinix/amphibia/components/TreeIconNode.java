@@ -335,21 +335,25 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         }
 
         public String getRequestBody() throws Exception {
-            JSONObject request = testStepInfo.getJSONObject("request");
+            JSONObject step = !IO.isNULL(testStep) ? testStep : new JSONObject();
+            JSONObject request = (JSONObject) step.getOrDefault("request", testStepInfo.getJSONObject("request"));
             String json = null;
             if (request.get("body") instanceof String) {
                 String path = request.getString("body");
                 File jsonFile = IO.getFile(path);
                 if (jsonFile.exists()) {
-                    json = IO.readFile(jsonFile);
-                    json = IO.prettyJson(json);
                     Properties props = properties.cloneProperties();
-                    if (testStep != null && testStep.containsKey("request")) {
-                        props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
+                    if (testStepInfo.containsKey("request")) {
+                        props.setTestStep(testStepInfo.getJSONObject("request").getJSONObject("properties"));
+                    }
+                    if (step.containsKey("request")) {
+                        props.setTestStep(step.getJSONObject("request").getJSONObject("properties"));
                     }
                     if (common != null) {
                         props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
                     }
+                    json = IO.readFile(jsonFile);
+                    json = IO.prettyJson(json);
                     json = props.replace(json);
                 }
             }
@@ -357,21 +361,23 @@ public class TreeIconNode extends DefaultMutableTreeNode {
         }
 
         public String getResponseBody() throws Exception{
-            JSONObject response = testStepInfo.getJSONObject("response");
+            JSONObject step = !IO.isNULL(testStep) ? testStep : new JSONObject();
+            JSONObject response = (JSONObject) step.getOrDefault("response", testStepInfo.getJSONObject("response"));
             String json = null;
             if (response.get("body") instanceof String) {
                 String path = response.getString("body");
                 File jsonFile = IO.getFile(path);
                 if (jsonFile.exists()) {
+                    Properties props = properties.cloneProperties();
+                    if (testStepInfo.containsKey("response")) {
+                        props.setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties"));
+                    }
+                    if (step.containsKey("response")) {
+                        props.setTestStep(step.getJSONObject("response").getJSONObject("properties"));
+                    }
                     json = IO.readFile(jsonFile);
                     json = IO.prettyJson(json);
-                    if (testStep != null && testStep.containsKey("response")) {
-                        json = properties.cloneProperties().setTestStep(testStep.getJSONObject("response").getJSONObject("properties")).replace(json);
-                    } else if (testStepInfo != null && testStepInfo.containsKey("response")) {
-                        json = properties.cloneProperties().setTestStep(testStepInfo.getJSONObject("response").getJSONObject("properties")).replace(json);
-                    } else {
-                        json = properties.replace(json);
-                    }
+                    json = props.replace(json);
                 }
             }
             return json;

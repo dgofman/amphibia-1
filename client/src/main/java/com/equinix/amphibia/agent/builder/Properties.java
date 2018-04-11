@@ -1,8 +1,11 @@
 package com.equinix.amphibia.agent.builder;
 
+import com.equinix.amphibia.Amphibia;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -41,11 +44,11 @@ public class Properties {
 
     private static final Logger LOGGER = ProjectAbstract.getLogger(Properties.class.getName());
 
+    private static final Set<String> warnings = new HashSet<>();
     private static Object NULL = new Object();
     
     public Properties(JSONArray globals, JSONObject project) {
-        this.globals = new JSONObject();
-        this.project = new JSONObject();
+        this(new JSONObject(), new JSONObject());
         globals.forEach((item) -> {
             JSONObject props = (JSONObject) item;
             this.globals.put(props.getString("name"), props.get("value"));
@@ -59,33 +62,49 @@ public class Properties {
         this.globals = globals;
         this.project = project;
     }
-
+    
+    public static void clearLogs() {
+        warnings.clear();
+    }
+    
     public Properties setTestSuite(JSONObject testsuite) {
+        return setTestSuite(null, testsuite);
+    }
+
+    public Properties setTestSuite(File file, JSONObject testsuite) {
         if (this.testsuite == null) {
             this.testsuite = new JSONObject();
         }
         JSONObject.fromObject(testsuite).keySet().forEach((key) -> {
-            this.testsuite.put(key, replace(testsuite.get(key), key));
+            this.testsuite.put(key, replace(file, testsuite.get(key), key));
         });
         return this;
     }
     
     public Properties setTestCase(JSONObject testcase) {
+        return setTestCase(null, testcase);
+    }
+    
+    public Properties setTestCase(File file, JSONObject testcase) {
         if (this.testcase == null) {
             this.testcase = new JSONObject();
         }
         JSONObject.fromObject(testcase).keySet().forEach((key) -> {
-            this.testcase.put(key, replace(testcase.get(key), key));
+            this.testcase.put(key, replace(file, testcase.get(key), key));
         });
         return this;
     }
-
+    
     public Properties setTestStep(JSONObject teststep) {
+        return setTestStep(null, teststep);
+    }
+
+    public Properties setTestStep(File file, JSONObject teststep) {
         if (this.teststep == null) {
             this.teststep = new JSONObject();
         }
         JSONObject.fromObject(teststep).keySet().forEach((key) -> {
-            this.teststep.put(key, replace(teststep.get(key), key));
+            this.teststep.put(key, replace(file, teststep.get(key), key));
         });
         return this;
     }
@@ -95,6 +114,10 @@ public class Properties {
     }
 
     public final Object replace(Object replace, Object propKey) {
+        return replace(null, replace, propKey);
+    }
+    
+    public final Object replace(File file, Object replace, Object propKey) {
         if (replace == null || replace == JSONNull.getInstance()) {
             return JSONNull.getInstance();
         }
@@ -110,7 +133,11 @@ public class Properties {
                     int offset = value.length() - sb.length();
                     if (!source.containsKey(key)) {
                         sb.replace(m.start(0) - offset, m.end(2) - offset + 1, "`${#" + m.group(2) + "}`");
-                        LOGGER.log(Level.WARNING, "Value is undefined: {0}", m.group());
+                        String msg = m.group() + " is undefined. " + (file != null ? "(" + file.getAbsolutePath() + ")" : "");
+                        if (!warnings.contains(msg)) {
+                            warnings.add(msg);
+                            Amphibia.addWarning(msg);
+                        }
                     } else if (propKey != null) {
                         return source.get(key);
                     } else {

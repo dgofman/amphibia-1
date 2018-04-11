@@ -214,7 +214,7 @@ public final class Amphibia extends JFrame {
             try {
                 instance.init();
             } catch (Exception ex) {
-                instance.mainPanel.addError(ex);
+                addError(ex);
             }
             instance.setAlwaysOnTop(true);
             instance.toFront();
@@ -473,13 +473,21 @@ public final class Amphibia extends JFrame {
                     });
                     menuRecentProject.add(menu);
                 } catch (Exception e) {
-                    mainPanel.addError(e);
+                    addError(e);
                 }
             } else {
                 recentProjects.remove(i);
             }
         }
         userPreferences.put(Amphibia.P_RECENT_PROJECTS, recentProjects.toString());
+    }
+    
+    public static void addError(Exception ex) {
+        instance.mainPanel.addError(ex);
+    }
+    
+    public static void addWarning(String warning) {
+        instance.mainPanel.addWarning(warning);
     }
 
     public static Preferences getUserPreferences() {
@@ -1368,7 +1376,7 @@ public final class Amphibia extends JFrame {
                     mainPanel.loadProject(collection);
                 }
             } catch (IOException ex) {
-                mainPanel.addError(ex);
+                addError(ex);
             }
         }
     }//GEN-LAST:event_mnuSaveAsActionPerformed
@@ -1396,7 +1404,7 @@ public final class Amphibia extends JFrame {
                 Desktop desktop = Desktop.getDesktop();
                 desktop.open(jc.getSelectedFile());
             } catch (IOException ex) {
-                mainPanel.addError(ex);
+                addError(ex);
             }
         }
     }//GEN-LAST:event_mnuRulesFileActionPerformed
@@ -1445,7 +1453,7 @@ public final class Amphibia extends JFrame {
                 JSONObject json = (JSONObject) IO.getJSON(jf.getSelectedFile());
                 name = json.getString("name");
             } catch (Exception e) {
-                mainPanel.addError(e);
+                addError(e);
                 return;
             }
             children = mainPanel.treeNode.children();
@@ -1553,7 +1561,7 @@ public final class Amphibia extends JFrame {
         try {
             mainPanel.runner.generateJUnitReport();
         } catch (IOException e) {
-            mainPanel.addError(e);
+            addError(e);
         }
     }//GEN-LAST:event_btnReportActionPerformed
 
@@ -1591,7 +1599,7 @@ public final class Amphibia extends JFrame {
                     }
                     mainPanel.selectNode(selectedProject.project);
                 } catch (IOException ex) {
-                    mainPanel.addError(ex);
+                    addError(ex);
                 }
             }
         }
@@ -1661,7 +1669,7 @@ public final class Amphibia extends JFrame {
                     File projectFile = IO.newFile(results.get("project").toString());
                     desktop.open(projectFile.getParentFile());
                 } catch (Exception e) {
-                    mainPanel.addError(e);
+                    addError(e);
                 }
                 Amphibia.setWaitOverlay(false);
             }

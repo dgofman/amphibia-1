@@ -89,7 +89,6 @@ public final class MainPanel extends javax.swing.JPanel {
     public final Runner runner;
 
     private Amphibia amphibia;
-    private ResourceBundle bundle;
     private TreePopupMenuBuilder menuBuilder;
 
     public ResourceEditDialog resourceEditDialog;
@@ -110,7 +109,6 @@ public final class MainPanel extends javax.swing.JPanel {
      */
     @SuppressWarnings("LeakingThisInConstructor")
     public MainPanel() {
-        bundle = Amphibia.getBundle();
         treeNode = new TreeIconNode();
         treeModel = new DefaultTreeModel(treeNode);
         debugTreeNode = new TreeIconNode();
@@ -553,6 +551,10 @@ public final class MainPanel extends javax.swing.JPanel {
     public void addError(Exception ex) {
         editor.addError(ex);
     }
+    
+    public void addWarning(String warning) {
+        editor.addWarning(warning);
+    }
 
     public void setParent(Amphibia amphibia) {
         this.amphibia = amphibia;
@@ -593,6 +595,8 @@ public final class MainPanel extends javax.swing.JPanel {
 
     private boolean reloadProject(TreeCollection collection) {
         reset(collection);
+        
+        Properties.clearLogs();
 
         TreeIconNode debugProjectNode = new TreeIconNode(collection.project);
         JSONObject projectJson = collection.project.jsonObject();
@@ -625,7 +629,7 @@ public final class MainPanel extends javax.swing.JPanel {
         
         Properties projectProperties = new Properties(globals, projectProps);
 
-        projectProperties.setTestCase(json.getJSONObject("properties"));
+        projectProperties.setTestCase(collection.getProfile(), json.getJSONObject("properties"));
         collection.setProjectProperties(projectProperties);
 
         collection.profile.addJSON(json)
@@ -693,7 +697,7 @@ public final class MainPanel extends javax.swing.JPanel {
             File dir = IO.getFile(collection, dirPath);
             TreeIconNode.ResourceInfo info = new TreeIconNode.ResourceInfo(dir, resource, interfaceJSON, testsuite, testSuiteInfo, null, null, null);
             Properties properties = projectProperties.cloneProperties();
-            properties.setTestSuite(testSuiteInfo.getJSONObject("properties"));
+            properties.setTestSuite(dir, testSuiteInfo.getJSONObject("properties"));
             info.properties = properties;
             resourceInfoMap.put(dir.getAbsolutePath(), info);
             for (String name : dir.list()) {
@@ -713,11 +717,11 @@ public final class MainPanel extends javax.swing.JPanel {
                         if (!resourceInfoMap.containsKey(path) && path.equals(String.format(ExpertNodes.pathFormat, resourceId, testsuite.getString("name"), testCaseInfo.getString("name")))) {
                             info = new TreeIconNode.ResourceInfo(file, resource, interfaceJSON, testsuite, testSuiteInfo, testCaseInfo, testCaseHeaders, (JSONObject) IO.getJSON(file, editor));
                             properties = projectProperties.cloneProperties();
-                            properties.setTestSuite(testSuiteInfo.getJSONObject("properties"));
+                            properties.setTestSuite(dir, testSuiteInfo.getJSONObject("properties"));
                             if (testsuite.containsKey("properties")) {
-                                properties.setTestSuite(testsuite.getJSONObject("properties"));
+                                properties.setTestSuite(dir, testsuite.getJSONObject("properties"));
                             }
-                            properties.setTestCase(IO.toJSONObject(testCaseInfo.getJSONObject("properties")));
+                            properties.setTestCase(file, IO.toJSONObject(testCaseInfo.getJSONObject("properties")));
                             info.properties = properties;
                             resourceInfoMap.put(path, info);
                             break;
@@ -882,9 +886,9 @@ public final class MainPanel extends javax.swing.JPanel {
                         }
 
                         TreeIconNode.ResourceInfo testCaseInfo = info.clone(testcase);
-                        testCaseInfo.properties.setTestCase(IO.toJSONObject(testcase.getOrDefault("properties", new JSONObject())));
-                        testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
-                        testCaseInfo.properties.setTestStep(IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
+                        testCaseInfo.properties.setTestCase(testCaseInfo.file, IO.toJSONObject(testcase.getOrDefault("properties", new JSONObject())));
+                        testCaseInfo.properties.setTestStep(testCaseInfo.file, IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
+                        testCaseInfo.properties.setTestStep(testCaseInfo.file, IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
 
                         String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
 
@@ -974,8 +978,8 @@ public final class MainPanel extends javax.swing.JPanel {
                                 });
                             }
 
-                            stepInfo.properties.setTestStep(responseProp);
-                            stepInfo.properties.setTestStep(requestProp);
+                            stepInfo.properties.setTestStep(stepInfo.file, responseProp);
+                            stepInfo.properties.setTestStep(stepInfo.file, requestProp);
 
                             JSONObject testStepHeader = IO.toJSONObject(testCaseHeaders);
                             if (step.containsKey("headers")) {
@@ -1004,7 +1008,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                         stepAvailableProperties.put(key, "${#TestStep#" + key + "}");
                                     }
                                 });
-                                properties.setTestCase(testStepProperties);
+                                properties.setTestCase(stepInfo.file, testStepProperties);
                             }
                             testStepJSON.element("properties", testStepProperties);
                             

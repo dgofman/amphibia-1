@@ -56,7 +56,7 @@ public abstract class ProjectAbstract {
     private final ClassLoader classLoader = getClass().getClassLoader();
 
     public static int LOG_LIMIT = 1000000; // 1 Mb
-    public static int NUM_LOGS = 5;
+    public static int NUM_LOGS = 1;
     public static int AUTO_FLUSH = 10000; //10 seconds
 
     public static Color GREEN = new Color(40, 130, 10);
