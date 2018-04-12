@@ -212,6 +212,14 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             dialog.setLocationRelativeTo(mainPanel);
         });
     }
+    
+    public JDialog getDialog() {
+        return dialog;
+    }
+    
+    public void setDataTypes(String[] types) {
+        cmbDataType.setModel(new DefaultComboBoxModel<>(types));
+    }
 
     private void deleteOrReset() {
         entry.isDelete = true;
@@ -285,6 +293,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(Editor.Entry entry, String name, Object value, boolean isEdit) {
+        setDataTypes(new String[] { "NULL", "String", "Boolean", "Number", "Properties", "JSON" });
         Object[] options = new Object[]{okButton};
         if (isEdit) {
             options = new Object[]{applyButton, cancelButton};
@@ -296,10 +305,17 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
             }
         }
-        optionPane.setOptions(options);
+        openEditDialog(name, value, isEdit, options);
         isTestProperties = ("request".equals(entry.rootName) || "response".equals(entry.rootName));
         chbOnlyForTeststep.setVisible(isTestProperties && MainPanel.selectedNode.getType() == TreeCollection.TYPE.TEST_STEP_ITEM);
         chbOnlyForTeststep.setSelected(chbOnlyForTeststep.isVisible());
+        cmbDataType.setEnabled(isEdit && entry.getType() != EDIT_LIMIT);
+    }
+    
+    @SuppressWarnings("NonPublicExported")
+    public void openEditDialog(String name, Object value, boolean isEdit, Object[] options) {
+        optionPane.setOptions(options);
+        chbOnlyForTeststep.setVisible(false);
         ckbPropertyCreate.setSelected(false);
         ckbPropertyCopy.setSelected(false);
         ckbPropertyCopy.setEnabled(false);
@@ -312,7 +328,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblDataType.setVisible(true);
         cmbDataType.setVisible(true);
         cmbDataType.setSelectedItem(getType(value));
-        cmbDataType.setEnabled(isEdit && entry.getType() != EDIT_LIMIT);
+        cmbDataType.setEnabled(isEdit);
         cmbDataTypeItemStateChanged(null);
         if (value instanceof JSON) {
             try {
@@ -453,12 +469,11 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         chbOnlyForTeststep.setText(bundle.getString("onlyForTeststep")); // NOI18N
         pnlFooter.add(chbOnlyForTeststep);
 
-        pnlDataType.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        pnlDataType.setLayout(new FlowLayout(1, 5, 0));
 
         lblDataType.setText(bundle.getString("dataType")); // NOI18N
         pnlDataType.add(lblDataType);
 
-        cmbDataType.setModel(new DefaultComboBoxModel<>(new String[] { "NULL", "String", "Boolean", "Number", "Properties", "JSON" }));
         cmbDataType.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent evt) {
                 cmbDataTypeItemStateChanged(evt);
@@ -520,10 +535,10 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     private JCheckBox chbOnlyForTeststep;
     private JCheckBox ckbPropertyCopy;
     private JCheckBox ckbPropertyCreate;
-    private JComboBox<String> cmbDataType;
+    JComboBox<String> cmbDataType;
     private JComboBox<String> cmbPropertyTypes;
     private JLabel lblDataType;
-    private JLabel lblError;
+    JLabel lblError;
     private JLabel lblName;
     private JLabel lblTitle;
     private JPanel pnlDataType;
@@ -531,7 +546,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     private JPanel pnlHeader;
     private JPanel pnlNewProperty;
     private JScrollPane splEditor;
-    private JTextArea txtEditor;
+    JTextArea txtEditor;
     private JTextField txtName;
     // End of variables declaration//GEN-END:variables
 

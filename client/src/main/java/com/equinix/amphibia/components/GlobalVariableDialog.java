@@ -9,9 +9,12 @@ import com.equinix.amphibia.agent.converter.Converter;
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
+import static com.equinix.amphibia.components.ResourceEditDialog.getValue;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Rectangle;
@@ -78,6 +81,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
 
     /**
      * Creates new form GlobalVaraibleDialog
+     *
      * @param mainPanel
      */
     public GlobalVariableDialog(MainPanel mainPanel) {
@@ -105,7 +109,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
         globalVarsModel = new TableModel(globalVarsSource.data, globalVarsSource.columns) {
             @Override
             public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return columnIndex > 0;
+                return columnIndex == 1;
             }
         };
 
@@ -126,8 +130,65 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
         tblVars.setColumnSelectionAllowed(true);
         tblVars.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
 
+        Cursor handCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+        Cursor defaultCursor = Cursor.getDefaultCursor();
+        JPanel cell = new JPanel();
+        cell.setLayout(new BorderLayout(0, 0));
+        JButton button = new JButton("...");
+        button.setPreferredSize(new Dimension(20, 20));
+        cell.add(button, BorderLayout.EAST);
         Border border = BorderFactory.createEmptyBorder(4, 5, 2, 5);
         TableCellRenderer renderer = tblVars.getDefaultRenderer(Object.class);
+        tblVars.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int column = tblVars.columnAtPoint(e.getPoint());
+                if (column > 1) {
+                    int row = tblVars.columnAtPoint(e.getPoint());
+                    Rectangle bounds = tblVars.getCellRect(row, column, true);
+                    if (e.getX() - bounds.x > bounds.width - button.getWidth()) {
+                        tblVars.setCursor(handCursor);
+                        return;
+                    }
+                }
+                tblVars.setCursor(defaultCursor);
+            }
+        });
+        
+        int[] cellInfo = new int[2];
+        ResourceEditDialog reDialog = mainPanel.resourceEditDialog;
+        JButton cancelButton = new JButton(bundle.getString("cancel"));
+        cancelButton.addActionListener((ActionEvent evt) -> {
+            reDialog.getDialog().setVisible(false);
+        });
+        JButton applyButton = new JButton(bundle.getString("apply"));
+        applyButton.addActionListener((ActionEvent evt) -> {
+            String dataType = reDialog.cmbDataType.getSelectedItem().toString();
+            try {
+                Object value = getValue(dataType, reDialog.txtEditor.getText().trim());
+                tblVars.setValueAt(value, cellInfo[0], cellInfo[1]);
+                reDialog.getDialog().setVisible(false);
+            } catch (Exception ex) {
+                reDialog.lblError.setText(String.format(bundle.getString("error_convert"), dataType));
+                reDialog.lblError.setVisible(true);
+                logger.log(Level.SEVERE, ex.toString(), ex);
+            }
+        });
+            
+        tblVars.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.getClickCount() == 2 || tblVars.getCursor() == handCursor) {
+                    cellInfo[0] = tblVars.rowAtPoint(e.getPoint());
+                    cellInfo[1] = tblVars.columnAtPoint(e.getPoint());
+                    Object cellValue = tblVars.getValueAt(cellInfo[0], cellInfo[1]);
+                    reDialog.setDataTypes(new String[] { "NULL", "String", "Boolean", "Number", "JSON" });
+                    reDialog.openEditDialog(tblVars.getValueAt(cellInfo[0], 1).toString(), cellValue, true,
+                            new Object[] {applyButton, cancelButton});
+                    
+                }
+            }
+        });
         tblVars.setDefaultRenderer(Object.class, (JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) -> {
             JLabel label = (JLabel) renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             if (value != null) {
@@ -141,6 +202,8 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                 label.setIcon(Converter.ENDPOINT.equals(val) ? btnAddEndPoint.getIcon() : btnAddVar.getIcon());
             } else {
                 label.setIcon(null);
+                cell.add(label, 1);
+                return cell;
             }
             label.setBorder(border);
             return label;
