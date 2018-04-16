@@ -499,20 +499,6 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
             Object[] colData = new Object[row.size()];
             for (int c = 0; c < row.size(); c++) {
                 colData[c] = row.get(c);
-                if (colData[c] instanceof String) {
-                    if ("true".equals(colData[c]) || "false".equals(colData[c])) {
-                        colData[c] = Boolean.getBoolean(colData[c].toString());
-                    } else {
-                        try {
-                            colData[c] = numberFormat.parse(String.valueOf(row.get(c)));
-                        } catch (ParseException e) {
-                            try {
-                                colData[c] = IO.prettyJson(colData[c].toString());
-                            } catch (Exception ex) {
-                            }
-                        }
-                    }
-                }
             }
             data[r] = colData;
         }

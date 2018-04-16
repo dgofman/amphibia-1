@@ -991,7 +991,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                         properties = MainPanel.selectedNode.getCollection().getProjectProperties();
                     }
                     String name = openedNode != null ? openedNode.jsonObject().getString("name") : bundle.getString("wizard");
-                    result = con.request(properties, name, cmdMethod.getSelectedItem().toString(), lblURI.getText(), IO.toJSONObject(txtReqHeaders.getText()), txtReqBody.getText());
+                    result = con.request(openedNode, properties, name, cmdMethod.getSelectedItem().toString(), lblURI.getText(), IO.toJSONObject(txtReqHeaders.getText()), txtReqBody.getText());
                     Amphibia.setText(txtResBody, spnResBody, result.content);
                     tabNav.setSelectedIndex(2);
                 } catch (Exception ex) {

@@ -6,6 +6,7 @@
 package com.equinix.amphibia;
 
 import com.equinix.amphibia.agent.builder.ProjectAbstract;
+import com.equinix.amphibia.agent.builder.Properties;
 import com.equinix.amphibia.components.ExportDialog;
 import com.equinix.amphibia.components.FindDialog;
 import com.equinix.amphibia.components.GlobalVariableDialog;
@@ -38,6 +39,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -264,6 +266,10 @@ public final class Amphibia extends JFrame {
      * Creates new form NewJFrame
      */
     public void init() {
+        Properties.eventListeners.add((PropertyChangeListener) (PropertyChangeEvent evt) -> {
+            addWarning(evt.getNewValue().toString());
+        });
+       
         logger.info("Init Begin");
         String[] arr = userPreferences.get(P_LOCALE, "").split("_");
         if (arr.length == 2) {

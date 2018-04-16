@@ -44,13 +44,22 @@ public final class HttpConnection {
     @SuppressWarnings("NonPublicExported")
     public Result request(String name, String method, TreeIconNode node) throws Exception {
         final TreeCollection collection = node.getCollection();
-        TreeIconNode.ResourceInfo info = node.info;
-        Result result = request(collection.getProjectProperties(), name, method, node.getTreeIconUserObject().getTooltip(), info.getRequestHeader(node), info.getRequestBody());
-        if (node.jsonObject().containsKey("response")) {
+        Result result = request(node, collection.getProjectProperties(), name, method, 
+                node.getTreeIconUserObject().getTooltip(), node.info.getRequestHeader(node), node.info.getRequestBody());
+        assertionValidation(node, result);
+        return result;
+    }
+
+    public Result request(TreeIconNode node, Properties properties, String name, String method, String url, JSONObject headers, String reqBody) throws Exception {
+        return impl.request(properties, name, method, url, headers, reqBody);
+    }
+    
+    public void assertionValidation(TreeIconNode node, Result result) throws Exception {
+        if (node != null && node.jsonObject().containsKey("response")) {
             JSONObject response = node.jsonObject().getJSONObject("response");
             if (response.containsKey("asserts")) {
                 try {
-                    Object statusCode = info.properties.getValue(HTTP_STATUS_CODE, -1);
+                    Object statusCode = node.info.properties.getValue(HTTP_STATUS_CODE, -1);
                     assertionValidation(result, response.getJSONArray("asserts"), statusCode, response.getString("body"));
                 } catch (Exception ex) {
                     addError(result, "ASSERT", ex);
@@ -59,11 +68,6 @@ public final class HttpConnection {
                 }
             }
         }
-        return result;
-    }
-
-    public Result request(Properties properties, String name, String method, String url, JSONObject headers, String reqBody) throws Exception {
-        return impl.request(properties, name, method, url, headers, reqBody);
     }
 
     public void assertionValidation(Result result, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {

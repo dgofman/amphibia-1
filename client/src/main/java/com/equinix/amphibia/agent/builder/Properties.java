@@ -1,10 +1,13 @@
 package com.equinix.amphibia.agent.builder;
 
-import com.equinix.amphibia.Amphibia;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,7 +32,7 @@ public class Properties {
     private JSONObject testsuite;
     private JSONObject testcase;
     private JSONObject teststep;
-    
+
     public static final String GLOBAL = "Global";
     public static final String PROJECT = "Project";
     public static final String TESTSUITE = "TestSuite";
@@ -40,13 +43,16 @@ public class Properties {
     public static final Pattern PATTERN_1 = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
     public static final Pattern PATTERN_2 = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
 
-    public static final String[] PROPERTY_NAMES = new String[] {GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
+    public static final String[] PROPERTY_NAMES = new String[]{GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
     private static final Logger LOGGER = ProjectAbstract.getLogger(Properties.class.getName());
 
+    public static final String PROPERTY_WARNING = "propertyWarning";
+    public static final List<PropertyChangeListener> eventListeners = new ArrayList<>();
+
     private static final Set<String> warnings = new HashSet<>();
     private static Object NULL = new Object();
-    
+
     public Properties(JSONArray globals, JSONObject project) {
         this(new JSONObject(), new JSONObject());
         globals.forEach((item) -> {
@@ -62,11 +68,11 @@ public class Properties {
         this.globals = globals;
         this.project = project;
     }
-    
+
     public static void clearLogs() {
         warnings.clear();
     }
-    
+
     public Properties setTestSuite(JSONObject testsuite) {
         return setTestSuite(null, testsuite);
     }
@@ -80,11 +86,11 @@ public class Properties {
         });
         return this;
     }
-    
+
     public Properties setTestCase(JSONObject testcase) {
         return setTestCase(null, testcase);
     }
-    
+
     public Properties setTestCase(File file, JSONObject testcase) {
         if (this.testcase == null) {
             this.testcase = new JSONObject();
@@ -94,7 +100,7 @@ public class Properties {
         });
         return this;
     }
-    
+
     public Properties setTestStep(JSONObject teststep) {
         return setTestStep(null, teststep);
     }
@@ -116,7 +122,7 @@ public class Properties {
     public final Object replace(Object replace, Object propKey) {
         return replace(null, replace, propKey);
     }
-    
+
     public final Object replace(File file, Object replace, Object propKey) {
         if (replace == null || replace == JSONNull.getInstance()) {
             return JSONNull.getInstance();
@@ -136,7 +142,9 @@ public class Properties {
                         String msg = m.group() + " is undefined. " + (file != null ? "(" + file.getAbsolutePath() + ")" : "");
                         if (!warnings.contains(msg)) {
                             warnings.add(msg);
-                            Amphibia.addWarning(msg);
+                            eventListeners.forEach((listener) -> {
+                                listener.propertyChange(new PropertyChangeEvent(this, PROPERTY_WARNING, warnings, msg));
+                            });
                         }
                     } else if (propKey != null) {
                         return source.get(key);
@@ -166,7 +174,7 @@ public class Properties {
         }
         return replace;
     }
-    
+
     public Object getValue(String key, Object defaulValue) {
         if (teststep != null && teststep.containsKey(key)) {
             return teststep.get(key);
@@ -182,7 +190,7 @@ public class Properties {
             return defaulValue;
         }
     }
-    
+
     public static void replace(StringBuilder sb, int begin, int end, Object val) {
         if (begin > 0 && end < sb.length()) {
             char[] dst = new char[2];
@@ -195,13 +203,13 @@ public class Properties {
                     if (begin > 0) {
                         sb.getChars(begin - 1, begin, dst, 0);
                         if (dst[0] == '"') {
-                             begin--;
+                            begin--;
                         }
                     }
                     if (end < sb.length()) {
                         sb.getChars(end, end + 1, dst, 1);
                         if (dst[1] == '"') {
-                             end++;
+                            end++;
                         }
                     }
                 }
@@ -228,7 +236,7 @@ public class Properties {
         }
         return null;
     }
-    
+
     public boolean isInheritKey(String propName, String key) {
         for (String name : PROPERTY_NAMES) {
             if (name.equals(propName)) {
@@ -253,7 +261,7 @@ public class Properties {
             LOGGER.log(Level.INFO, "\n{0}\n{1}", new Object[]{path, resonseBodyPath});
             File responseFile = new File(projectDir, resonseBodyPath);
             if (resonseBodyPath != null && responseFile.exists()) {
-            	body = IOUtils.toString(new FileInputStream(responseFile));
+                body = IOUtils.toString(new FileInputStream(responseFile));
                 JSONObject properties = testJSON.getJSONObject(name).getJSONObject("properties");
                 StringBuilder sb = new StringBuilder(body);
                 Matcher m = PATTERN_2.matcher(body);
@@ -279,7 +287,7 @@ public class Properties {
         clone.teststep = cloneJSON(teststep);
         return clone;
     }
-    
+
     public static String getURL(String basePath, String path) {
         int len = basePath.length();
         path = (path.startsWith("/") ? "" : "/") + path;
@@ -289,7 +297,7 @@ public class Properties {
             return basePath + path;
         }
     }
-    
+
     public JSONObject cloneJSON(JSONObject json) {
         return json == null ? null : JSONObject.fromObject(json);
     }
