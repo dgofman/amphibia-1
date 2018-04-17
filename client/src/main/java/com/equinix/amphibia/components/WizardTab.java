@@ -126,6 +126,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
 
         add(pnlWaitOverlay, 0, 0);
         pnlWaitOverlay.setVisible(false);
+        lblAssertValue.setVisible(false);
 
         DEFAULT_BORDER = txtTestCase.getBorder();
 
@@ -556,6 +557,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         lblCode = new JLabel();
         lblTime = new JLabel();
         lblTimeValue = new JLabel();
+        lblAssertValue = new JLabel();
         chbAutoReload = new JCheckBox();
         btnReload = new JButton();
         btnSend = new JButton();
@@ -897,6 +899,14 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
         gridBagConstraints.weightx = 1.0;
         pnlFooter.add(lblTimeValue, gridBagConstraints);
 
+        lblAssertValue.setForeground(Color.red);
+        lblAssertValue.setText(bundle.getString("assertFailed")); // NOI18N
+        lblAssertValue.setBorder(BorderFactory.createEmptyBorder(1, 5, 1, 5));
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 1.0;
+        pnlFooter.add(lblAssertValue, gridBagConstraints);
+
         chbAutoReload.setText(bundle.getString("autoReload")); // NOI18N
         pnlFooter.add(chbAutoReload, new GridBagConstraints());
 
@@ -983,6 +993,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                 txtResBody.setText("");
                 lblCode.setText("");
                 lblTimeValue.setText("");
+                lblAssertValue.setVisible(false);
 
                 try {
                     HttpConnection con = new HttpConnection(WizardTab.this);
@@ -994,7 +1005,11 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                     result = con.request(openedNode, properties, name, cmdMethod.getSelectedItem().toString(), lblURI.getText(), IO.toJSONObject(txtReqHeaders.getText()), txtReqBody.getText());
                     Amphibia.setText(txtResBody, spnResBody, result.content);
                     if (openedNode != null) {
-                        con.assertionValidation(openedNode, openedNode.info.properties, result);
+                        Properties props = openedNode.info.properties.cloneProperties();
+                        con.propertyTransfer(openedNode, props, result);
+                        if(!con.assertionValidation(openedNode, props, result)) {
+                            lblAssertValue.setVisible(true);
+                        }
                     }
                     tabNav.setSelectedIndex(2);
                 } catch (Exception ex) {
@@ -1108,6 +1123,7 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
     JComboBox<String> cmdInterface;
     JComboBox<String> cmdMethod;
     JLabel lblAnimation;
+    JLabel lblAssertValue;
     JLabel lblCode;
     JLabel lblEndpoint;
     JLabel lblHeaderBottomHint;

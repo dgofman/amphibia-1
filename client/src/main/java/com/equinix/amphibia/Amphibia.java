@@ -216,7 +216,12 @@ public final class Amphibia extends JFrame {
             try {
                 instance.init();
             } catch (Exception ex) {
-                addError(ex);
+                if (instance.mainPanel != null) {
+                    addError(ex);
+                } else {
+                    logger.log(Level.SEVERE, ex.toString(), ex);
+                    System.exit(1);
+                }
             }
             instance.setAlwaysOnTop(true);
             instance.toFront();

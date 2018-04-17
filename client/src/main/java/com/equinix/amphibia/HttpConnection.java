@@ -18,10 +18,13 @@ import com.equinix.amphibia.components.TreeIconNode;
 
 import java.net.HttpURLConnection;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 
 /**
  *
@@ -31,6 +34,8 @@ public final class HttpConnection {
 
     private final IHttpConnection out;
     private final HttpConnectionImpl impl;
+    
+    private static final Logger logger = Amphibia.getLogger(HttpConnection.class.getName());
 
     public HttpConnection(IHttpConnection out) {
         this.out = out;
@@ -53,7 +58,46 @@ public final class HttpConnection {
         return impl.request(properties, name, method, url, headers, reqBody);
     }
     
-    public void assertionValidation(TreeIconNode node, Properties properties, Result result) throws Exception {
+    public void propertyTransfer(TreeIconNode node, Properties properties, Result result) throws Exception {
+        if (node != null && node.jsonObject().containsKey("transfer")) {
+            JSON content = IO.toJSON(result.content);
+            JSONObject testStep = properties.getProperty(Properties.TESTSTEP);
+            JSONObject transfer = node.jsonObject().getJSONObject("transfer");
+            transfer.keySet().forEach((name) -> {
+                Object prop = transfer.get(name);
+                if (prop instanceof String && prop.toString().startsWith("/")) {
+                    Object value = content;
+                    String[] keys = prop.toString().split("/");
+                    for (int i = 1; i < keys.length; i++) {
+                        String key = keys[i];
+                        if (value instanceof JSONObject) {
+                            if (((JSONObject) value).containsKey(key)) {
+                                value = ((JSONObject) value).get(key);
+                            } else {
+                                value = null;
+                                break;
+                            }
+                        } else if (value instanceof JSONArray) {
+                            if (NumberUtils.isNumber(key) && ((JSONArray) value).size() > Integer.parseInt(key)) {
+                                value = ((JSONArray) value).get(Integer.parseInt(key));
+                            } else {
+                                value = null;
+                                break;
+                            }
+                        }
+                    }
+                    if (value instanceof String) {
+                        value = value.toString().replaceAll("\\\\", "\\\\\\\\").replace("\"", "\\\"");
+                    }
+                    testStep.put(name, value);
+                } else {
+                    testStep.put(name, prop);
+                }
+            });
+        }
+    }
+    
+    public boolean assertionValidation(TreeIconNode node, Properties properties, Result result) throws Exception {
         if (node != null && node.jsonObject().containsKey("response")) {
             JSONObject response = node.jsonObject().getJSONObject("response");
             if (response.containsKey("asserts")) {
@@ -64,9 +108,11 @@ public final class HttpConnection {
                     addError(result, "ASSERT", ex);
                     out.info("\nASSERT:\n", true);
                     out.info(ex.getMessage() + "\n", RED);
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     public void assertionValidation(Result result, Properties properties, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
@@ -88,8 +134,10 @@ public final class HttpConnection {
                             JSON json = IO.getJSON(bodyFile);
                             String jsonStr = IO.prettyJson(json.toString());
                             jsonStr = properties.replace(jsonStr);
-                            if (!jsonStr.equals(result.content)) {
-                                throw new Exception(bundle.getString("error_response_body_match"));
+                            String content = IO.prettyJson(result.content);
+                            if (!jsonStr.equals(content)) {
+                                logger.info(StringUtils.difference(content, jsonStr));
+                                throw new Exception(String.format(bundle.getString("error_response_body_match"), content, jsonStr));
                             }
                         } else {
                             JSON expected = IO.getJSON(bodyFile);
