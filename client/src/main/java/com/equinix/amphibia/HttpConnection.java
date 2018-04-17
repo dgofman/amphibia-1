@@ -6,7 +6,6 @@
 package com.equinix.amphibia;
 
 import static com.equinix.amphibia.agent.builder.ProjectAbstract.RED;
-import static com.equinix.amphibia.agent.converter.Profile.HTTP_STATUS_CODE;
 import static com.equinix.amphibia.agent.runner.HttpConnectionImpl.DEFAULT_TIMEOUT;
 import static com.equinix.amphibia.agent.runner.HttpConnectionImpl.Result;
 
@@ -46,7 +45,7 @@ public final class HttpConnection {
         final TreeCollection collection = node.getCollection();
         Result result = request(node, collection.getProjectProperties(), name, method, 
                 node.getTreeIconUserObject().getTooltip(), node.info.getRequestHeader(node), node.info.getRequestBody());
-        assertionValidation(node, result);
+        assertionValidation(node, node.info.properties, result);
         return result;
     }
 
@@ -54,13 +53,13 @@ public final class HttpConnection {
         return impl.request(properties, name, method, url, headers, reqBody);
     }
     
-    public void assertionValidation(TreeIconNode node, Result result) throws Exception {
+    public void assertionValidation(TreeIconNode node, Properties properties, Result result) throws Exception {
         if (node != null && node.jsonObject().containsKey("response")) {
             JSONObject response = node.jsonObject().getJSONObject("response");
             if (response.containsKey("asserts")) {
                 try {
-                    Object statusCode = node.info.properties.getValue(HTTP_STATUS_CODE, -1);
-                    assertionValidation(result, response.getJSONArray("asserts"), statusCode, response.getString("body"));
+                    Object statusCode = node.info.getResultStatus();
+                    assertionValidation(result, properties, response.getJSONArray("asserts"), statusCode, response.getString("body"));
                 } catch (Exception ex) {
                     addError(result, "ASSERT", ex);
                     out.info("\nASSERT:\n", true);
@@ -70,14 +69,13 @@ public final class HttpConnection {
         }
     }
 
-    public void assertionValidation(Result result, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
+    public void assertionValidation(Result result, Properties properties, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
         ResourceBundle bundle = Amphibia.getBundle();
         if (asserts != null) {
-            if (asserts.isEmpty()) {
-                if (result.statusCode != statusCode) {
-                    throw new Exception(String.format(bundle.getString("error_http_code_equals"), statusCode));
-                }
-            } else {
+            if (!String.valueOf(statusCode).equals(String.valueOf(result.statusCode))) {
+                throw new Exception(String.format(bundle.getString("error_http_code_equals"), statusCode));
+            }
+            if (!asserts.isEmpty()) {
                 for (Object assertType : asserts) {
                     if (AssertDialog.ASSERTS.NOTEQUALS.toString().equals(assertType)) {
                         if (result.statusCode == statusCode) {
@@ -88,11 +86,16 @@ public final class HttpConnection {
                             throw new Exception(bundle.getString("error_response_body_null"));
                         } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
                             JSON json = IO.getJSON(bodyFile);
-                            if (result.content.equals(IO.prettyJson(json.toString()))) {
+                            String jsonStr = IO.prettyJson(json.toString());
+                            jsonStr = properties.replace(jsonStr);
+                            if (!jsonStr.equals(result.content)) {
                                 throw new Exception(bundle.getString("error_response_body_match"));
                             }
                         } else {
                             JSON expected = IO.getJSON(bodyFile);
+                            String jsonStr = properties.replace(expected.toString());
+                            expected = IO.toJSON(jsonStr);
+                            
                             JSON actual = IO.toJSON(result.content);
                             assertionValidation(assertType, actual, expected);
                         }

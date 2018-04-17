@@ -325,8 +325,16 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
         public Object getResultStatus() {
             Properties props = properties.cloneProperties();
-            if (testStep != null && testStep.containsKey("response")) {
-                props.setTestStep(testStep.getJSONObject("response").getJSONObject("properties"));
+            if (testStep != null) {
+                if (testStep.containsKey("request")) {
+                    props.setTestStep(testStep.getJSONObject("request").getJSONObject("properties"));
+                }
+                if (testStep.containsKey("response")) {
+                    props.setTestStep(testStep.getJSONObject("response").getJSONObject("properties"));
+                }
+                if (testStep.containsKey("properties")) {
+                    props.setTestStep(testStep.getJSONObject("properties"));
+                }
             }
             if (common != null) {
                 props.setTestStep(common.getJSONObject("response").getJSONObject("properties"));
@@ -336,7 +344,9 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
         public String getRequestBody() throws Exception {
             JSONObject step = !IO.isNULL(testStep) ? testStep : new JSONObject();
-            JSONObject request = (JSONObject) step.getOrDefault("request", testStepInfo.getJSONObject("request"));
+            JSONObject request1 = (JSONObject) step.getOrDefault("request", new JSONObject());
+            JSONObject request2 = testStepInfo.getJSONObject("request");
+            JSONObject request = request1.containsKey("body") ? request1 : request2;
             String json = null;
             if (request.get("body") instanceof String) {
                 String path = request.getString("body");
@@ -362,7 +372,9 @@ public class TreeIconNode extends DefaultMutableTreeNode {
 
         public String getResponseBody() throws Exception{
             JSONObject step = !IO.isNULL(testStep) ? testStep : new JSONObject();
-            JSONObject response = (JSONObject) step.getOrDefault("response", testStepInfo.getJSONObject("response"));
+            JSONObject response1 = (JSONObject) step.getOrDefault("response", new JSONObject());
+            JSONObject response2 = testStepInfo.getJSONObject("response");
+            JSONObject response = response1.containsKey("body") ? response1 : response2;
             String json = null;
             if (response.get("body") instanceof String) {
                 String path = response.getString("body");

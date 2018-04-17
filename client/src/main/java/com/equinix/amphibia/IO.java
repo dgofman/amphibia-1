@@ -51,11 +51,15 @@ public class IO {
     }
     
     public static JSONArray toJSONArray(Object obj) {
-        return JSONArray.fromObject(obj);
+        return isEmpty(obj) ? null : JSONArray.fromObject(obj);
     }
     
     public static JSONObject toJSONObject(Object obj) {
-        return JSONObject.fromObject(obj);
+        return isEmpty(obj) ? null : JSONObject.fromObject(obj);
+    }
+    
+    public static boolean isEmpty(Object value) {
+        return (isNULL(value) || value.toString().trim().isEmpty());
     }
 
     public static boolean isNULL(Object value) {
