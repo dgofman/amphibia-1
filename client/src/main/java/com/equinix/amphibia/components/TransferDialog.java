@@ -115,9 +115,18 @@ public class TransferDialog extends javax.swing.JPanel {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeSchema.getLastSelectedPathComponent();
                 if (node != null) {
                     StringBuilder sb = new StringBuilder();
-                    for (Object name : node.getPath()) {
-                        if (!name.toString().isEmpty()) {
-                            sb.append("/").append(name);
+                    for (TreeNode treeNode : node.getPath()) {
+                        TreeItem treeItem = (TreeItem)((DefaultMutableTreeNode)treeNode).getUserObject();
+                        if (treeItem != null) {
+                            sb.append("/");
+                            if (treeItem.itemIndex != -1) {
+                                sb.append(treeItem.itemIndex);
+                                if (treeNode.getChildCount() > 0) {
+                                    sb.append("/").append(treeItem.label);
+                                }
+                            } else {
+                                sb.append(treeItem.label);
+                            }
                         }
                     }
                     txtPath.setText(sb.toString());
@@ -295,7 +304,7 @@ public class TransferDialog extends javax.swing.JPanel {
                 if (bodyJSON != null) {
                     if (bodyJSON != null) {
                         rbSelectPropertyPath.setSelected(true);
-                        buildTreeNode(treeNode, bodyJSON, treePath);
+                        buildTreeNode(treeNode, bodyJSON, treePath, -1);
                         java.awt.EventQueue.invokeLater(() -> {
                             for (int i = 0; i < treeSchema.getRowCount(); i++) {
                                 treeSchema.expandRow(i);
@@ -314,30 +323,32 @@ public class TransferDialog extends javax.swing.JPanel {
         rbAssignValueActionPerformed(null);
     }
     
-    private void buildTreeNode(DefaultMutableTreeNode node, JSON json, String treePath) {
+    private void buildTreeNode(DefaultMutableTreeNode node, JSON json, String treePath, int itemIndex) {
         if (json instanceof JSONArray) {
-            ((JSONArray) json).forEach((item) -> {
+            JSONArray array = (JSONArray) json;
+            for (int i = 0; i < array.size(); i++) {
+                Object item = array.get(i);
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTreeNode(node, (JSON) item, treePath);
+                    buildTreeNode(node, (JSON) item, treePath, i);
                 } else {
-                    DefaultMutableTreeNode child = new DefaultMutableTreeNode(item);
+                    DefaultMutableTreeNode child = new DefaultMutableTreeNode(new TreeItem(json, item, i));
                     node.add(child);
                     if(Arrays.toString(child.getPath()).equals(treePath)) {
                         selectedTreeNode = child.getPath();
                     }
                 }
-            });
+            }
         } else {
             JSONObject parent = (JSONObject) json;
             parent.keySet().forEach((key) -> {
-                DefaultMutableTreeNode child = new DefaultMutableTreeNode(key);
+                DefaultMutableTreeNode child = new DefaultMutableTreeNode(new TreeItem(parent, key, itemIndex));
                 node.add(child);
                 if(Arrays.toString(child.getPath()).equals(treePath)) {
                     selectedTreeNode = child.getPath();
                 }
                 Object item = parent.get(key);
                 if (item instanceof JSONArray || item instanceof JSONObject) {
-                    buildTreeNode(child, (JSON) item, treePath);
+                    buildTreeNode(child, (JSON) item, treePath, -1);
                 }
             });
         }
@@ -635,4 +646,21 @@ public class TransferDialog extends javax.swing.JPanel {
     JTextArea txtEditor;
     JTextField txtPath;
     // End of variables declaration//GEN-END:variables
+}
+
+class TreeItem {
+    public JSON json;
+    public String label;
+    public int itemIndex;
+
+    public TreeItem(JSON json, Object label, int itemIndex) {
+        this.json = json;
+        this.label = String.valueOf(label);
+        this.itemIndex = itemIndex;
+    }
+    
+    @Override
+    public String toString() {
+        return label;
+    }
 }
