@@ -523,8 +523,11 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                                 if (value instanceof JSON) {
                                     walk((JSON) value, ids);
                                 } else {
-                                    newProperties.put(ids.toString(), value);
-                                    array.set(i, "`${#" + ids.toString() + "}`");
+                                    Matcher m = Properties.PATTERN_2.matcher(String.valueOf(value));
+                                    if (!m.find()) {
+                                        newProperties.put(ids.toString(), value);
+                                        array.set(i, "`${#" + ids.toString() + "}`");
+                                    }
                                 }
                             }
                         } else {
@@ -538,8 +541,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                                     Matcher m = Properties.PATTERN_2.matcher(String.valueOf(value));
                                     if (!m.find()) {
                                         newProperties.put(ids.toString(), value);
-                                    }
-                                    obj.put(key, "`${#" + ids.toString() + "}`");
+                                        obj.put(key, "`${#" + ids.toString() + "}`");
+                                    }                                  
                                 }
                             });
                         }

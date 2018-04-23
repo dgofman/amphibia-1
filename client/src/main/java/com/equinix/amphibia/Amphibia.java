@@ -1649,6 +1649,7 @@ public final class Amphibia extends JFrame {
             cmbEnvironment.setSelectedIndex(getSelectedEnvDataIndex() - GlobalVariableDialog.defaultColumnIndex);
         } else {
             userPreferences.put(P_SELECTED_ENVIRONMENT, item.name);
+            Amphibia.instance.resetEnvironmentModel();
             if (MainPanel.selectedNode != null) {
                 mainPanel.reloadCollection(MainPanel.selectedNode.getCollection());
             }
