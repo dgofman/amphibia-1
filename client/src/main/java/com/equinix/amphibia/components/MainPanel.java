@@ -890,6 +890,27 @@ public final class MainPanel extends javax.swing.JPanel {
                         testCaseInfo.properties.setTestStep(testCaseInfo.file, IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("response").getJSONObject("properties")));
                         testCaseInfo.properties.setTestStep(testCaseInfo.file, IO.toJSONObject(testCaseInfo.testStepInfo.getJSONObject("request").getJSONObject("properties")));
 
+                        if (testCaseInfo.testCase.containsKey("response")) {
+                            JSONObject resProps = IO.toJSONObject(testCaseInfo.testCase.getJSONObject("response").getJSONObject("properties"));
+                            if (resProps != null) {
+                                testCaseInfo.properties.setTestStep(testCaseInfo.file, resProps);
+                                testcaseJSON.getJSONObject("response").getJSONObject("properties").putAll(resProps);
+                                resProps.keySet().forEach((key) -> {
+                                    testCaseAvailableProperties.put(key, "${#TestCase#" + key + "}");
+                                });
+                            }
+                        }
+                        if (testCaseInfo.testCase.containsKey("request")) {
+                            JSONObject reqProps = IO.toJSONObject(testCaseInfo.testCase.getJSONObject("request").getJSONObject("properties"));
+                            if (reqProps != null) {
+                                testCaseInfo.properties.setTestStep(testCaseInfo.file, reqProps);
+                                testcaseJSON.getJSONObject("request").getJSONObject("properties").putAll(reqProps);
+                                reqProps.keySet().forEach((key) -> {
+                                    testCaseAvailableProperties.put(key, "${#TestCase#" + key + "}");
+                                });
+                            }
+                        }
+                        
                         String url = "${#Global#" + resource.getString("endpoint") + "}" + Properties.getURL(interfaceJSON.getString("basePath"), info.testCaseInfo.getString("path"));
 
                         testcaseJSON.element("name", testcase.getString("name"));
@@ -961,6 +982,19 @@ public final class MainPanel extends javax.swing.JPanel {
                                     stepAvailableProperties.put(key, "${#Common#" + key + "}");
                                 });
                             }
+                            
+                            if (testCaseInfo.testCase.containsKey("request")) {
+                                JSONObject reqProps = IO.toJSONObject(testCaseInfo.testCase.getJSONObject("request").getJSONObject("properties"));
+                                if (reqProps != null) {
+                                    requestProp.putAll(reqProps);
+                                }
+                            }
+                            if (testCaseInfo.testCase.containsKey("response")) {
+                                JSONObject resProps = IO.toJSONObject(testCaseInfo.testCase.getJSONObject("response").getJSONObject("properties"));
+                                if (resProps != null) {
+                                    responseProp.putAll(resProps);
+                                }
+                            }
 
                             if (step.containsKey("request")) {
                                 JSONObject customStepProps = step.getJSONObject("request").getJSONObject("properties");
@@ -1014,6 +1048,8 @@ public final class MainPanel extends javax.swing.JPanel {
                             
                             testStepJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
 
+                            testStepJSON.getJSONObject("response").element("transfer", IO.toJSONObject(testCaseTransfer));
+                            
                             if (step.containsKey("transfer")) {
                                 JSONObject transferProps = step.getJSONObject("transfer");
                                 transferProps.keySet().forEach((key) -> {
@@ -1037,7 +1073,7 @@ public final class MainPanel extends javax.swing.JPanel {
                                     
                                     testCaseTransfer.put("${#TestStep#" + step.getString("name") + ":" + key + "}" , transferProps.get(key));
                                 });
-                                testStepJSON.getJSONObject("response").element("transfer", transferProps);
+                                testStepJSON.getJSONObject("response").getJSONObject("transfer").putAll(transferProps);
                             }
 
                             testStepJSON.element("available-properties", stepAvailableProperties);

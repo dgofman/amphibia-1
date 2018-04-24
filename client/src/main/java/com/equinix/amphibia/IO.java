@@ -242,11 +242,11 @@ public class IO {
     
     public static File getFile(String path) {
         File file = newFile(System.getProperty("user.dir"), path);
-        if (file.exists()) {
+        if (file != null && file.exists()) {
             return file;
         } else if (MainPanel.selectedNode != null) {
             file = getFile(MainPanel.selectedNode.getCollection(), path);
-            if (file.exists()) {
+            if (file != null && file.exists()) {
                 return file;
             }
         }
@@ -254,15 +254,15 @@ public class IO {
     }
     
     public static File newFile(String path) {
-        return newFile(new File(path));
+        return path == null ? null : newFile(new File(path));
     }
     
     public static File newFile(String parent, String child) {
-        return newFile(new File(parent, child));
+        return (parent == null || child == null) ? null : newFile(new File(parent, child));
     }
     
     public static File newFile(File parent, String child) {
-        return newFile(new File(parent, child));
+        return (parent == null || child == null) ? null : newFile(new File(parent, child));
     }
     
     public static File newFile(File file) {

@@ -11,6 +11,7 @@ import com.equinix.amphibia.components.Editor;
 import com.equinix.amphibia.components.MainPanel;
 import com.equinix.amphibia.components.TreeCollection;
 import com.equinix.amphibia.components.TreeIconNode;
+import java.io.File;
 import java.util.Enumeration;
 
 import net.sf.json.JSONArray;
@@ -105,7 +106,11 @@ public class HistoryManager {
                 profile = collection.project;
             }
         } else if (type == TESTCASE) {
-            if ("summary".equals(entry.name)) {
+            if ("request".equals(entry.rootName) || "response".equals(entry.rootName)) {
+                info.testCase.remove("request");
+                info.testCase.remove("response");
+                updateProperties(entry, info.testCase);
+            } else if ("summary".equals(entry.name)) {
                 info.testCaseInfo.element(entry.name, entry.value);
             } else if ("operationId".equals(entry.name)) {
                 info.testCaseInfo.element(entry.name, entry.value);
@@ -150,6 +155,33 @@ public class HistoryManager {
         }
         saveNode(profile);
     }
+    
+    private void updateProperties(Editor.Entry entry, JSONObject target) {
+        TreeIconNode node = entry.node;
+        try {
+            File file = IO.getFile(node.getCollection(), node.jsonObject().getString("file"));
+            if (file != null && file.exists()) {
+                JSONObject testJSON = (JSONObject) IO.getJSON(file);
+                JSONObject json = node.jsonObject();
+                JSONObject request = compare(testJSON.getJSONObject("request"), json.getJSONObject("request"), "request");
+                if (!request.isEmpty()) {
+                    target.element("request", request);
+                }
+                JSONObject response = compare(testJSON.getJSONObject("response"), json.getJSONObject("response"), "response");
+                if (!response.isEmpty()) {
+                    target.element("response", response);
+                }
+                return;
+            }
+        } catch (Exception ex) {
+            mainPanel.addError(ex);
+        }
+        if (entry.json.isEmpty()) {
+            target.remove(entry.rootName);
+        } else {
+            target.element(entry.rootName, entry.json);
+        }
+    }
 
     public static JSONObject compare(JSONObject source, JSONObject target, String rootName) {
         source.keySet().forEach((key) -> {
@@ -171,7 +203,9 @@ public class HistoryManager {
                     }
                 });
             }
-            compare(source.getJSONObject("properties"), properties, null);
+            if (source.containsKey("properties")) {
+                compare(source.getJSONObject("properties"), properties, null);
+            }
             if (properties.isEmpty()) {
                 target.remove("properties");
             }

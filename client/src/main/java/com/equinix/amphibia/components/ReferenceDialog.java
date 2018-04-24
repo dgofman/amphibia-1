@@ -92,7 +92,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             ComboItem item = (ComboItem) cmbPath.getSelectedItem();
             TreeIconNode node = entry.node;
             boolean isTestCase = node.getType() == TreeCollection.TYPE.TESTCASE;
-            ((JSONObject) entry.json).element(entry.name, item.file != null ? item.label : JSONNull.getInstance());
+            String value = "NULL".equals(item.label) ? null : item.label;
+            ((JSONObject) entry.json).element(entry.name, item.file != null ? value : JSONNull.getInstance());
 
             try {
                 String parent = entry.getParent().toString();
@@ -132,7 +133,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                     if (!item.label.equals(testReqOrRes.getOrDefault("body", null)) &&
                         !item.label.equals(reqOrRes.getOrDefault("body", null))) {
                         isModified[0] = 1;
-                        reqOrRes.put("body", item.label);
+                        reqOrRes.put("body", value);
                     }
 
                     if (isModified[0] == 1) {
@@ -269,8 +270,8 @@ public final class ReferenceDialog extends javax.swing.JPanel {
             }
         }
         
-        String filePath = (String) entry.value;
-        if (!IO.isNULL(filePath)) {
+        String filePath = IO.isNULL(entry.value) ? null : (String) entry.value;
+        if (filePath != null && !filePath.isEmpty() && !"NULL".equals(filePath)) {
             if (resoursePath == null || !filePath.contains(resoursePath)) {
                 selectedIndex = referenceModel.getSize();
                 referenceModel.addElement(new ComboItem(filePath, IO.getFile(node.getCollection(), filePath)));
@@ -447,7 +448,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                 }
                 JFileChooser jc = Amphibia.setFileChooserDir(new JFileChooser());
                 File file = IO.getFile(dir);
-                if (file.exists() && file.isDirectory()) {
+                if (file != null && file.exists() && file.isDirectory()) {
                     jc.setCurrentDirectory(file);
                 } else if (!jc.getCurrentDirectory().getAbsolutePath().contains(projectDir.getAbsolutePath())) {
                     jc.setCurrentDirectory(projectDir);
@@ -520,7 +521,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                                     ids = new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(i);
                                 }
                                 Object value = array.get(i);
-                                if (value instanceof JSON) {
+                                if (value instanceof JSON && value != IO.NULL) {
                                     walk((JSON) value, ids);
                                 } else {
                                     Matcher m = Properties.PATTERN_2.matcher(String.valueOf(value));
@@ -535,7 +536,7 @@ public final class ReferenceDialog extends javax.swing.JPanel {
                             obj.keySet().forEach((key) -> {
                                 StringBuilder ids = new StringBuilder(sb).append(sb.length() > 0 ? "." : "").append(key);
                                 Object value = obj.get(key);
-                                if (value instanceof JSON) {
+                                if (value instanceof JSON && value != IO.NULL) {
                                     walk((JSON) value, ids);
                                 } else {
                                     Matcher m = Properties.PATTERN_2.matcher(String.valueOf(value));

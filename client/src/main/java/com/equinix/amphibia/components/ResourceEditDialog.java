@@ -152,15 +152,20 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                         }
                     }
                 }
-                if (isTestProperties && !chbOnlyForTeststep.isSelected() && node.jsonObject().containsKey("file")) {
-                    File file = IO.getFile(collection, node.jsonObject().getString("file"));
-                    if (file.exists()) {
-                        JSONObject json = (JSONObject) IO.getJSON(file);
-                        json.getJSONObject(entry.rootName).getJSONObject("properties").element(txtName.getText(), value);
-                        String[] contents = IO.write(json.toString(), file, true);
-                        mainPanel.history.addHistory(file.getAbsolutePath(), contents[0], contents[1]);
-                        mainPanel.reloadCollection(collection);
+                if (isTestProperties) {
+                    JSONObject reqRes = node.jsonObject().getJSONObject(entry.rootName);
+                    if (reqRes.isNullObject()) {
+                        reqRes = new JSONObject();
                     }
+                    JSONObject json = reqRes.getJSONObject("properties");
+                    if (json.isNullObject()) {
+                        json = new JSONObject();
+                    }
+                    json.element(txtName.getText(), value);
+                    reqRes.element("properties", json);
+                    Editor.Entry child = entry.add(node, reqRes, txtName.getText(), value, EDIT, null, entry.rootName);
+                    child.isDynamic = true;
+                    saveSelectedNode(child);
                 } else if (entry.getType() == JTreeTable.EditValueRenderer.TYPE.ADD) {
                     JSONObject json = ((JSONObject) entry.json).getJSONObject(entry.name);
                     if (json.isNullObject()) {
@@ -225,26 +230,12 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         entry.isDelete = true;
         TreeIconNode node = MainPanel.selectedNode;
         TreeCollection collection = node.getCollection();
-        if (isTestProperties && !chbOnlyForTeststep.isSelected()) {
-            try {
-                File file = IO.getFile(collection, node.jsonObject().getString("file"));
-                if (file.exists()) {
-                    JSONObject json = (JSONObject) IO.getJSON(file);
-                    json.getJSONObject(entry.rootName).getJSONObject("properties").remove(entry.name);
-                    IO.write(IO.prettyJson(json.toString()), file);
-                    mainPanel.reloadCollection(collection);
-                }
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, ex.toString(), ex);
-            }
+        if (entry.json instanceof JSONObject) {
+            ((JSONObject) entry.json).remove(entry.name);
         } else {
-            if (entry.json instanceof JSONObject) {
-                ((JSONObject) entry.json).remove(entry.name);
-            } else {
-                ((JSONArray) entry.json).remove(Integer.parseInt(entry.name));
-            }
-            saveSelectedNode(entry);
+            ((JSONArray) entry.json).remove(Integer.parseInt(entry.name));
         }
+        saveSelectedNode(entry);
         dialog.setVisible(false);
     }
 
@@ -278,7 +269,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         optionPane.setOptions(new Object[]{applyButton, delButton, cancelButton});
         txtName.setText(fileName);
         txtName.setEditable(false);
-        chbOnlyForTeststep.setVisible(false);
         lblError.setVisible(false);
         lblDataType.setVisible(false);
         cmbDataType.setVisible(false);
@@ -307,15 +297,13 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         }
         openEditDialog(name, value, isEdit, options);
         isTestProperties = ("request".equals(entry.rootName) || "response".equals(entry.rootName));
-        chbOnlyForTeststep.setVisible(isTestProperties && MainPanel.selectedNode.getType() == TreeCollection.TYPE.TEST_STEP_ITEM);
-        chbOnlyForTeststep.setSelected(chbOnlyForTeststep.isVisible());
         cmbDataType.setEnabled(isEdit && entry.getType() != EDIT_LIMIT);
+        dialog.setVisible(true);
     }
     
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(String name, Object value, boolean isEdit, Object[] options) {
         optionPane.setOptions(options);
-        chbOnlyForTeststep.setVisible(false);
         ckbPropertyCreate.setSelected(false);
         ckbPropertyCopy.setSelected(false);
         ckbPropertyCopy.setEnabled(false);
@@ -343,7 +331,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         Amphibia.setText(txtEditor, splEditor, null);
         Amphibia.resetUndoManager(txtEditor);
         lblError.setVisible(false);
-        dialog.setVisible(true);
     }
 
     public static Object getValue(String dataType, String value) throws Exception {
@@ -410,7 +397,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         splEditor = new JScrollPane();
         txtEditor = new JTextArea();
         pnlFooter = new JPanel();
-        chbOnlyForTeststep = new JCheckBox();
         pnlDataType = new JPanel();
         lblDataType = new JLabel();
         cmbDataType = new JComboBox<>();
@@ -466,10 +452,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         pnlFooter.setPreferredSize(new Dimension(603, 60));
         pnlFooter.setLayout(new GridLayout(3, 0));
 
-        chbOnlyForTeststep.setText(bundle.getString("onlyForTeststep")); // NOI18N
-        pnlFooter.add(chbOnlyForTeststep);
-
-        pnlDataType.setLayout(new FlowLayout(1, 5, 0));
+        pnlDataType.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
 
         lblDataType.setText(bundle.getString("dataType")); // NOI18N
         pnlDataType.add(lblDataType);
@@ -532,7 +515,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private JCheckBox chbOnlyForTeststep;
     private JCheckBox ckbPropertyCopy;
     private JCheckBox ckbPropertyCreate;
     JComboBox<String> cmbDataType;

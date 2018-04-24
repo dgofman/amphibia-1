@@ -163,13 +163,6 @@
         <Property name="rows" type="int" value="3"/>
       </Layout>
       <SubComponents>
-        <Component class="javax.swing.JCheckBox" name="chbOnlyForTeststep">
-          <Properties>
-            <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-              <ResourceString bundle="com/equinix/amphibia/messages.properties" key="onlyForTeststep" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-            </Property>
-          </Properties>
-        </Component>
         <Container class="javax.swing.JPanel" name="pnlDataType">
 
           <Layout class="org.netbeans.modules.form.compat2.layouts.DesignFlowLayout">
