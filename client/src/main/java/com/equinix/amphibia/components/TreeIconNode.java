@@ -354,7 +354,10 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                 if (jsonFile.exists()) {
                     Properties props = properties.cloneProperties();
                     if (testStepInfo.containsKey("request")) {
-                        props.setTestStep(testStepInfo.getJSONObject("request").getJSONObject("properties"));
+                        props.setTestStep((JSONObject) testStepInfo.getJSONObject("request").getOrDefault("properties", null));
+                    }
+                    if (testCase.containsKey("request")) {
+                        props.setTestStep((JSONObject) testCase.getJSONObject("request").getOrDefault("properties", null));
                     }
                     if (step.containsKey("request")) {
                         props.setTestStep(step.getJSONObject("request").getJSONObject("properties"));

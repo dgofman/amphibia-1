@@ -11,6 +11,7 @@ import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.HttpConnection;
 import com.equinix.amphibia.agent.runner.IHttpConnection;
 import com.equinix.amphibia.IO;
+import com.equinix.amphibia.agent.builder.ProjectAbstract;
 
 import com.equinix.amphibia.agent.builder.Properties;
 import com.equinix.amphibia.agent.converter.Profile;
@@ -1008,9 +1009,17 @@ public final class WizardTab extends javax.swing.JPanel implements IHttpConnecti
                     if (openedNode != null) {
                         Properties props = openedNode.info.properties.cloneProperties();
                         con.propertyTransfer(openedNode, props, result);
-                        if(!con.assertionValidation(openedNode, props, result)) {
+                        int state = con.assertionValidation(openedNode, props, result);
+                        if (state != -1) {
+                            if(state == 0) {
+                                lblAssertValue.setForeground(ProjectAbstract.RED);
+                                lblAssertValue.setText(bundle.getString("assertFailed"));
+                                tabNav.setSelectedIndex(4);
+                            } else {
+                                lblAssertValue.setForeground(ProjectAbstract.GREEN);
+                                lblAssertValue.setText(bundle.getString("assertSuccess"));
+                            }
                             lblAssertValue.setVisible(true);
-                            tabNav.setSelectedIndex(4);
                         }
                     }
                 } catch (Exception ex) {

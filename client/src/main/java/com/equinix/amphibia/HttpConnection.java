@@ -59,10 +59,18 @@ public final class HttpConnection {
     }
     
     public void propertyTransfer(TreeIconNode node, Properties properties, Result result) throws Exception {
-        if (node != null && node.jsonObject().containsKey("transfer")) {
+        JSONObject transfer = new JSONObject();
+        if (node != null && node.info != null) {
+            if (node.info.testCase.containsKey("transfer")) {
+                transfer.putAll(node.info.testCase.getJSONObject("transfer"));
+            }
+            if (node.jsonObject().containsKey("transfer")) {
+                transfer.putAll(node.jsonObject().getJSONObject("transfer"));
+            }
+        }
+        if (!transfer.isEmpty()) {
             JSON content = IO.toJSON(result.content);
             JSONObject testStep = properties.getProperty(Properties.TESTSTEP);
-            JSONObject transfer = node.jsonObject().getJSONObject("transfer");
             transfer.keySet().forEach((name) -> {
                 Object prop = transfer.get(name);
                 if (prop instanceof String && prop.toString().startsWith("/")) {
@@ -97,22 +105,23 @@ public final class HttpConnection {
         }
     }
     
-    public boolean assertionValidation(TreeIconNode node, Properties properties, Result result) throws Exception {
+    public int assertionValidation(TreeIconNode node, Properties properties, Result result) throws Exception {
         if (node != null && node.jsonObject().containsKey("response")) {
             JSONObject response = node.jsonObject().getJSONObject("response");
             if (response.containsKey("asserts")) {
                 try {
                     Object statusCode = node.info.getResultStatus();
                     assertionValidation(result, properties, response.getJSONArray("asserts"), statusCode, response.getString("body"));
+                    return 1;
                 } catch (Exception ex) {
                     addError(result, "ASSERT", ex);
                     out.info("\nASSERT:\n", true);
                     out.info(ex.getMessage() + "\n", RED);
-                    return false;
+                    return 0;
                 }
             }
         }
-        return true;
+        return -1;
     }
 
     public void assertionValidation(Result result, Properties properties, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
