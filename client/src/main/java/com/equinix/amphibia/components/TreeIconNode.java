@@ -339,7 +339,7 @@ public class TreeIconNode extends DefaultMutableTreeNode {
             if (common != null) {
                 props.setTestStep(common.getJSONObject("response").getJSONObject("properties"));
             }
-            return props.replace("${#" + Profile.HTTP_STATUS_CODE + "}", null);
+            return props.replace("${#" + Profile.HTTP_STATUS_CODE + "}", null, false);
         }
 
         public String getRequestBody() throws Exception {

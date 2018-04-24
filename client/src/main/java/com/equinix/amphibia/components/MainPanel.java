@@ -1048,8 +1048,17 @@ public final class MainPanel extends javax.swing.JPanel {
                             
                             testStepJSON.element("reqPath", properties.replace(info.testCaseInfo.getString("path")).replaceAll("&amp;", "&"));
 
-                            testStepJSON.getJSONObject("response").element("transfer", IO.toJSONObject(testCaseTransfer));
-                            
+                            if (testcase.containsKey("transfer")){
+                                JSONObject transferProps = testcase.getJSONObject("transfer");
+                                JSONObject transfer = (JSONObject) testStepJSON.getOrDefault("transfer", new JSONObject());
+                                transferProps.keySet().forEach(key -> {
+                                    if (!transfer.containsKey(key)) {
+                                        transfer.put("${#TestCase#" + key + "}", transferProps.get(key));
+                                    }
+                                });
+                                testStepJSON.element("transfer", transfer);
+                            }
+
                             if (step.containsKey("transfer")) {
                                 JSONObject transferProps = step.getJSONObject("transfer");
                                 transferProps.keySet().forEach((key) -> {

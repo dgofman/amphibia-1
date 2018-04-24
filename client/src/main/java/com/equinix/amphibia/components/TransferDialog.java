@@ -23,11 +23,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
@@ -47,6 +52,7 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.OverlayLayout;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -77,7 +83,7 @@ public class TransferDialog extends javax.swing.JPanel {
     private final JButton deleteButton;
     private final JButton cancelButton;
     private final MainPanel mainPanel;
-    private final DefaultComboBoxModel targetModel;
+    private final TreeSet<String> targetModel;
 
     public final DefaultMutableTreeNode treeNode;
     public final DefaultTreeModel treeModel;
@@ -91,12 +97,47 @@ public class TransferDialog extends javax.swing.JPanel {
     public TransferDialog(MainPanel mainPanel) {
         this.mainPanel = mainPanel;
 
-        targetModel = new DefaultComboBoxModel();
-
+        targetModel = new TreeSet<>();
         treeNode = new DefaultMutableTreeNode();
         treeModel = new DefaultTreeModel(treeNode);
 
         initComponents();
+       
+        cmbTarget.setEditable(true);
+        final JTextField textfield = (JTextField) cmbTarget.getEditor().getEditorComponent();
+        textfield.addKeyListener(new KeyAdapter() {
+            int currentCaretPosition = 0;
+            
+            void comboFilter(String enteredText) {
+                List<String> filterArray = new ArrayList<>();
+                targetModel.forEach(key -> {
+                    if (key.toLowerCase().contains(enteredText.toLowerCase())) {
+                        filterArray.add(key);
+                    }
+                });
+                if (filterArray.size() > 0) {
+                    cmbTarget.setModel(new DefaultComboBoxModel(filterArray.toArray()));
+                    cmbTarget.setSelectedItem(enteredText);
+                    cmbTarget.showPopup();
+                }
+                else {
+                    cmbTarget.hidePopup();
+                }
+            }
+            
+            @Override
+            public void keyPressed(KeyEvent ke) {
+                SwingUtilities.invokeLater(() -> {
+                    currentCaretPosition = textfield.getCaretPosition();
+                    if(textfield.getSelectedText() == null)
+                    {
+                        textfield.setCaretPosition(0);
+                        comboFilter(textfield.getText());
+                        textfield.setCaretPosition(currentCaretPosition);
+                    }
+                });
+            }
+        });
         
         Amphibia.addUndoManager(txtEditor);
 
@@ -271,27 +312,28 @@ public class TransferDialog extends javax.swing.JPanel {
     }
     
     private void buildTargetModel() {
-        targetModel.removeAllElements();
+        targetModel.clear();
         JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
         ivailableProperties.keySet().forEach((key) -> {
-            targetModel.addElement(key);
+            targetModel.add(key.toString());
             if (entry.getType() == EDIT && key.toString().equals(transferName)) {
-                cmbTarget.setSelectedIndex(targetModel.getSize() - 1);
+                cmbTarget.setSelectedIndex(targetModel.size() - 1);
             }
         });
         
         if (chbReqProperties.isSelected()) {
             JSONObject properties = (JSONObject) node.jsonObject().getJSONObject("request").getOrDefault("properties", new JSONObject());
             properties.keySet().forEach((key) -> {
-                targetModel.addElement(key);
+                targetModel.add(key.toString());
             });
         }
         if (chbResProperties.isSelected()) {
             JSONObject properties = (JSONObject) node.jsonObject().getJSONObject("response").getOrDefault("properties", new JSONObject());
             properties.keySet().forEach((key) -> {
-                targetModel.addElement(key);
+                targetModel.add(key.toString());
             });
         }
+        cmbTarget.setModel(new DefaultComboBoxModel(targetModel.toArray()));
     }
     
     private void buildTree(Object path, String treePath) {
@@ -431,8 +473,6 @@ public class TransferDialog extends javax.swing.JPanel {
         gridBagConstraints.anchor = GridBagConstraints.WEST;
         gridBagConstraints.insets = new Insets(5, 0, 5, 0);
         pnlGrid.add(lblTarget, gridBagConstraints);
-
-        cmbTarget.setModel(this.targetModel);
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 4;

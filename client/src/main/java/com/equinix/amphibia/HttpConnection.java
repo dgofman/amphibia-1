@@ -64,8 +64,8 @@ public final class HttpConnection {
             if (node.info.testCase.containsKey("transfer")) {
                 transfer.putAll(node.info.testCase.getJSONObject("transfer"));
             }
-            if (node.jsonObject().containsKey("transfer")) {
-                transfer.putAll(node.jsonObject().getJSONObject("transfer"));
+            if (node.info.testStep != null && node.info.testStep.containsKey("transfer")) {
+                transfer.putAll(node.info.testStep.getJSONObject("transfer"));
             }
         }
         if (!transfer.isEmpty()) {
@@ -93,9 +93,6 @@ public final class HttpConnection {
                                 break;
                             }
                         }
-                    }
-                    if (value instanceof String) {
-                        value = value.toString().replaceAll("\\\\", "\\\\\\\\").replace("\"", "\\\"");
                     }
                     testStep.put(name, value);
                 } else {
@@ -141,18 +138,18 @@ public final class HttpConnection {
                             throw new Exception(bundle.getString("error_response_body_null"));
                         } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
                             JSON json = IO.getJSON(bodyFile);
-                            String jsonStr = IO.prettyJson(json.toString());
-                            jsonStr = properties.replace(jsonStr);
-                            String content = IO.prettyJson(result.content);
-                            if (!jsonStr.equals(content)) {
-                                logger.info(StringUtils.difference(content, jsonStr));
-                                throw new Exception(String.format(bundle.getString("error_response_body_match"), content, jsonStr));
+                            String expected = IO.prettyJson(json.toString());
+                            expected = properties.replace(expected, true);
+                            String actual = IO.prettyJson(result.content);
+                            if (!expected.equals(actual)) {
+                                logger.info(StringUtils.difference(actual, expected));
+                                throw new Exception(String.format(bundle.getString("error_response_body_match"), actual, expected));
                             }
                         } else {
                             JSON expected = IO.getJSON(bodyFile);
-                            String jsonStr = properties.replace(expected.toString());
+                            String jsonStr = properties.replace(expected.toString(), true);
                             expected = IO.toJSON(jsonStr);
-                            
+
                             JSON actual = IO.toJSON(result.content);
                             assertionValidation(assertType, actual, expected);
                         }
@@ -171,9 +168,9 @@ public final class HttpConnection {
         try {
             HttpConnectionImpl.assertionValidation(sb, node1, node2);
         } catch (IllegalArgumentException e) {
-            throw new Exception(String.format(bundle.getString("error_response_body_missing_field"), e.getMessage()));
+            throw new Exception(String.format(bundle.getString("error_response_body_missing_field"), e.getMessage(), actual.toString(), expected.toString()));
         } catch (IllegalStateException e) {
-            throw new Exception(String.format(bundle.getString("error_response_unexpected_value"), e.getMessage()));
+            throw new Exception(String.format(bundle.getString("error_response_unexpected_value"), e.getMessage(), actual.toString(), expected.toString()));
         }
     }
 

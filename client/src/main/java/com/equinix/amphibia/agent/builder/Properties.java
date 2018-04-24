@@ -19,6 +19,7 @@ import org.apache.commons.io.IOUtils;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringEscapeUtils;
 
 /**
  *
@@ -60,7 +61,7 @@ public class Properties {
             this.globals.put(props.getString("name"), props.get("value"));
         });
         project.keySet().forEach((key) -> {
-            this.project.put(key, replace(project.get(key), key));
+            this.project.put(key, replace(project.get(key), key, false));
         });
     }
 
@@ -82,7 +83,7 @@ public class Properties {
             this.testsuite = new JSONObject();
         }
         JSONObject.fromObject(testsuite).keySet().forEach((key) -> {
-            this.testsuite.put(key, replace(file, testsuite.get(key), key));
+            this.testsuite.put(key, replace(file, testsuite.get(key), key, false));
         });
         return this;
     }
@@ -96,7 +97,7 @@ public class Properties {
             this.testcase = new JSONObject();
         }
         JSONObject.fromObject(testcase).keySet().forEach((key) -> {
-            this.testcase.put(key, replace(file, testcase.get(key), key));
+            this.testcase.put(key, replace(file, testcase.get(key), key, false));
         });
         return this;
     }
@@ -110,20 +111,24 @@ public class Properties {
             this.teststep = new JSONObject();
         }
         JSONObject.fromObject(teststep).keySet().forEach((key) -> {
-            this.teststep.put(key, replace(file, teststep.get(key), key));
+            this.teststep.put(key, replace(file, teststep.get(key), key, false));
         });
         return this;
     }
 
     public String replace(Object replace) {
-        return String.valueOf(replace(replace, null));
+        return replace(replace, false);
+    }
+    
+    public String replace(Object replace, boolean isEscape) {
+        return String.valueOf(replace(replace, null, isEscape));
     }
 
-    public final Object replace(Object replace, Object propKey) {
-        return replace(null, replace, propKey);
+    public final Object replace(Object replace, Object propKey, boolean isEscape) {
+        return replace(null, replace, propKey, isEscape);
     }
 
-    public final Object replace(File file, Object replace, Object propKey) {
+    public final Object replace(File file, Object replace, Object propKey, boolean isEscape) {
         if (replace == null || replace == JSONNull.getInstance()) {
             return JSONNull.getInstance();
         }
@@ -149,7 +154,7 @@ public class Properties {
                     } else if (propKey != null) {
                         return source.get(key);
                     } else {
-                        replace(sb, m.start(0) - offset, m.end(2) - offset + 1, source.get(key));
+                        replace(sb, m.start(0) - offset, m.end(2) - offset + 1, source.get(key), isEscape);
                     }
                 }
             }
@@ -168,7 +173,7 @@ public class Properties {
                     propValue = null;
                 }
                 int offset = value.length() - sb.length();
-                replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue);
+                replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue, isEscape);
             }
             return sb.toString();
         }
@@ -191,7 +196,7 @@ public class Properties {
         }
     }
 
-    public static void replace(StringBuilder sb, int begin, int end, Object val) {
+    public static void replace(StringBuilder sb, int begin, int end, Object val, boolean isEscape) {
         if (begin > 0 && end < sb.length()) {
             char[] dst = new char[2];
             sb.getChars(begin - 1, begin, dst, 0);
@@ -215,7 +220,7 @@ public class Properties {
                 }
             }
         }
-        sb.replace(begin, end, String.valueOf(val));
+        sb.replace(begin, end, isEscape ? escape(String.valueOf(val)) : String.valueOf(val));
     }
 
     public JSONObject getProperty(String name) {
@@ -249,6 +254,11 @@ public class Properties {
         }
         return false;
     }
+    
+    public static String escape(String value) {
+        //return value.replaceAll("\\\\", "\\\\\\\\").replace("\"", "\\\"");
+        return StringEscapeUtils.escapeJavaScript(value);
+    }
 
     public static String getBody(File projectDir, String resourceId, String testSuiteName, String testCaseName, boolean isRequestBody) throws IOException {
         String path = String.format(Properties.TESTS_FILE_FORMAT, resourceId, testSuiteName, testCaseName);
@@ -272,7 +282,7 @@ public class Properties {
                     }
                     Object propValue = properties.getOrDefault(key, null);
                     int offset = body.length() - sb.length();
-                    Properties.replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue);
+                    Properties.replace(sb, m.start(0) - offset, m.end(1) - offset + 1, propValue, false);
                 }
                 body = sb.toString();
             }
