@@ -10,6 +10,7 @@ import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
+import com.equinix.amphibia.agent.builder.Properties;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -250,19 +251,24 @@ public class TransferDialog extends javax.swing.JPanel {
         this.entry = entry;
         this.node = node;
         transferValue = null;
-        
+
         buildTargetModel();
         cmbTarget.setEnabled(true);
         
         if (entry.getType() == EDIT) {
-            cmbTarget.setEnabled(false);
-            cmbTarget.setSelectedItem(entry.name);
-            
             optionPane.setOptions(new Object[]{applyButton, deleteButton, cancelButton});
             Matcher m = PATTERN_1.matcher(entry.name);
+            Object transferName = entry.name;
             if (m.find()) {
-                optionPane.setOptions(null);
+                transferName = m.group(3);
+            } else {
+                m = Properties.PATTERN_1.matcher(entry.name);
+                if (m.find()) {
+                    transferName = m.group(2);
+                }
             }
+            cmbTarget.setEnabled(false);
+            cmbTarget.setSelectedItem(transferName);
             transferValue = ((JSONObject)entry.json).getOrDefault(entry.name, null);
         } else {
             optionPane.setOptions(new Object[]{applyButton, cancelButton});
