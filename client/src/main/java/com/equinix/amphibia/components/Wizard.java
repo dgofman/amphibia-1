@@ -57,8 +57,10 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
 import javax.swing.plaf.TabbedPaneUI;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.tree.TreePath;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -106,6 +108,13 @@ public final class Wizard extends javax.swing.JPanel {
 
         initComponents();
         tabNav.setComponentAt(0, wizardTab);
+        tabNav.addChangeListener((ChangeEvent e) -> {
+            int index = tabNav.getSelectedIndex();
+            final WizardTab tab = (WizardTab) tabNav.getComponentAt(index);
+            if (tab.getNode() != null) {
+                mainPanel.selectNode(tab.getNode());
+            }
+        });
         tabNav.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {

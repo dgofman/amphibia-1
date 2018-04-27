@@ -76,7 +76,6 @@ public class TransferDialog extends javax.swing.JPanel {
     private TreeIconNode node;
     private JSONObject bodyJSON;
     private TreeNode[] selectedTreeNode;
-    private Object transferName;
     private Object transferValue;
     
     private final JOptionPane optionPane;
@@ -164,6 +163,8 @@ public class TransferDialog extends javax.swing.JPanel {
                                 sb.append(treeItem.itemIndex);
                                 if (treeNode.getChildCount() > 0) {
                                     sb.append("/").append(treeItem.label);
+                                } else if (treeItem.json instanceof JSONObject) {
+                                    sb.append("/").append(treeItem.label);
                                 }
                             } else {
                                 sb.append(treeItem.label);
@@ -248,13 +249,18 @@ public class TransferDialog extends javax.swing.JPanel {
     public void openDialog(TreeIconNode node, Editor.Entry entry) {
         this.entry = entry;
         this.node = node;
-        transferName = entry.name;
         transferValue = null;
+        
+        buildTargetModel();
+        cmbTarget.setEnabled(true);
+        
         if (entry.getType() == EDIT) {
+            cmbTarget.setEnabled(false);
+            cmbTarget.setSelectedItem(entry.name);
+            
             optionPane.setOptions(new Object[]{applyButton, deleteButton, cancelButton});
             Matcher m = PATTERN_1.matcher(entry.name);
             if (m.find()) {
-                transferName = m.group(3);
                 optionPane.setOptions(null);
             }
             transferValue = ((JSONObject)entry.json).getOrDefault(entry.name, null);
@@ -264,9 +270,7 @@ public class TransferDialog extends javax.swing.JPanel {
         lblError.setText("");
         txtPath.setText("");
         txtEditor.setText("");
-        
-        buildTargetModel();
-        
+
         Object path = node.jsonObject().getJSONObject("response").getOrDefault("body", null);      
         txtBody.setText(String.valueOf(path));
         String[] treePath = new String[0];
@@ -316,9 +320,6 @@ public class TransferDialog extends javax.swing.JPanel {
         JSONObject ivailableProperties = node.jsonObject().getJSONObject("available-properties");
         ivailableProperties.keySet().forEach((key) -> {
             targetModel.add(key.toString());
-            if (entry.getType() == EDIT && key.toString().equals(transferName)) {
-                cmbTarget.setSelectedIndex(targetModel.size() - 1);
-            }
         });
         
         if (chbReqProperties.isSelected()) {
@@ -334,6 +335,7 @@ public class TransferDialog extends javax.swing.JPanel {
             });
         }
         cmbTarget.setModel(new DefaultComboBoxModel(targetModel.toArray()));
+        cmbTarget.setSelectedIndex(-1);
     }
     
     private void buildTree(Object path, String treePath) {

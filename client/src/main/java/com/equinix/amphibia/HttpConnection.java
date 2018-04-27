@@ -124,35 +124,38 @@ public final class HttpConnection {
     public void assertionValidation(Result result, Properties properties, JSONArray asserts, Object statusCode, String bodyFile) throws Exception {
         ResourceBundle bundle = Amphibia.getBundle();
         if (asserts != null) {
-            if (!String.valueOf(statusCode).equals(String.valueOf(result.statusCode))) {
+            if (!asserts.contains(AssertDialog.ASSERTS.NOTEQUALS.toString()) && !String.valueOf(statusCode).equals(String.valueOf(result.statusCode))) {
                 throw new Exception(String.format(bundle.getString("error_http_code_equals"), statusCode));
             }
-            if (!asserts.isEmpty()) {
-                for (Object assertType : asserts) {
-                    if (AssertDialog.ASSERTS.NOTEQUALS.toString().equals(assertType)) {
-                        if (result.statusCode == statusCode) {
-                            throw new Exception(String.format(bundle.getString("error_http_code_not_equals"), statusCode));
+            for (Object assertType : asserts) {
+                if (AssertDialog.ASSERTS.NOTEQUALS.toString().equals(assertType)) {
+                    if (result.statusCode == statusCode) {
+                        throw new Exception(String.format(bundle.getString("error_http_code_not_equals"), statusCode));
+                    }
+                } else if (bodyFile != null) {
+                    if (result.content == null) {
+                        throw new Exception(bundle.getString("error_response_body_null"));
+                    } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
+                        JSON json = IO.getJSON(bodyFile);
+                        String expected = IO.prettyJson(json.toString());
+                        expected = properties.replace(expected);
+                        String actual = IO.prettyJson(result.content);
+                        if (!expected.equals(actual)) {
+                            logger.info(StringUtils.difference(actual, expected));
+                            throw new Exception(String.format(bundle.getString("error_response_body_match"), actual, expected));
                         }
-                    } else if (bodyFile != null) {
-                        if (result.content == null) {
-                            throw new Exception(bundle.getString("error_response_body_null"));
-                        } else if (AssertDialog.ASSERTS.ORDERED.toString().equals(assertType)) {
-                            JSON json = IO.getJSON(bodyFile);
-                            String expected = IO.prettyJson(json.toString());
-                            expected = properties.replace(expected, true);
-                            String actual = IO.prettyJson(result.content);
-                            if (!expected.equals(actual)) {
-                                logger.info(StringUtils.difference(actual, expected));
-                                throw new Exception(String.format(bundle.getString("error_response_body_match"), actual, expected));
-                            }
-                        } else {
-                            JSON expected = IO.getJSON(bodyFile);
-                            String jsonStr = properties.replace(expected.toString(), true);
+                    } else {
+                        JSON expected = IO.getJSON(bodyFile);
+                        String jsonStr = properties.replace(expected.toString());
+                        try {
                             expected = IO.toJSON(jsonStr);
-
-                            JSON actual = IO.toJSON(result.content);
-                            assertionValidation(assertType, actual, expected);
+                        } catch (Exception ex) {
+                            jsonStr = properties.replace(expected.toString(), true);
+                            expected = IO.toJSON(jsonStr);
                         }
+
+                        JSON actual = IO.toJSON(result.content);
+                        assertionValidation(assertType, actual, expected);
                     }
                 }
             }
