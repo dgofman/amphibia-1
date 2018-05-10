@@ -8,8 +8,8 @@ package com.equinix.amphibia.components;
 import com.equinix.amphibia.agent.converter.Converter;
 
 import com.equinix.amphibia.Amphibia;
-import com.equinix.amphibia.IO;
 import static com.equinix.amphibia.components.ResourceEditDialog.getValue;
+import static com.equinix.amphibia.components.ResourceEditDialog.Types;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -30,7 +30,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -165,7 +164,7 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
         applyButton.addActionListener((ActionEvent evt) -> {
             String dataType = reDialog.cmbDataType.getSelectedItem().toString();
             try {
-                Object value = getValue(dataType, reDialog.txtEditor.getText().trim());
+                Object value = reDialog.getValue();
                 tblVars.setValueAt(value, cellInfo[0], cellInfo[1]);
                 reDialog.getDialog().setVisible(false);
             } catch (Exception ex) {
@@ -182,9 +181,9 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
                     cellInfo[0] = tblVars.rowAtPoint(e.getPoint());
                     cellInfo[1] = tblVars.columnAtPoint(e.getPoint());
                     Object cellValue = tblVars.getValueAt(cellInfo[0], cellInfo[1]);
-                    reDialog.setDataTypes(new String[] { "NULL", "String", "Boolean", "Number", "JSON" });
+                    reDialog.setDataTypes(new Types[] { ResourceEditDialog.Types.NULL, Types.String, Types.Boolean, Types.Number, Types.Timestamp, Types.JSON });
                     reDialog.openEditDialog(tblVars.getValueAt(cellInfo[0], 1).toString(), cellValue, true,
-                            new Object[] {applyButton, cancelButton});
+                            new Object[] {applyButton, cancelButton}).setVisible(true);
                     
                 }
             }

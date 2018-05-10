@@ -14,15 +14,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.text.NumberFormat;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.ResourceBundle;
@@ -56,8 +55,10 @@ import net.sf.json.JSONObject;
  * @author dgofman
  */
 public final class ResourceEditDialog extends javax.swing.JPanel {
-
+    
     private MainPanel mainPanel;
+    private JScrollPane splEditor;
+    private JTextArea txtEditor;
     private JDialog dialog;
     private JButton applyButton;
     private ResourceBundle bundle;
@@ -74,8 +75,15 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             BorderFactory.createLineBorder(Color.RED),
             BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
+    private static final Pattern TIMESTAMP = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z(.*)");
+    
     private static final Logger logger = Amphibia.getLogger(ResourceEditDialog.class.getName());
     private static final NumberFormat NUMBER = NumberFormat.getInstance();
+    
+    public static enum Types {
+        NULL, String, Boolean, Number,
+        Timestamp, Properties, JSON 
+    };
 
     /**
      * Creates new form TableEditDialog
@@ -87,6 +95,13 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
         initComponents();
         
+        txtEditor = new JTextArea();
+        txtEditor.setColumns(20);
+        txtEditor.setRows(5);
+        splEditor = new JScrollPane();
+        splEditor.setViewportView(txtEditor);
+
+        add(splEditor, BorderLayout.CENTER, 0);
         Amphibia.addUndoManager(txtEditor);
 
         bundle = Amphibia.getBundle();
@@ -136,7 +151,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
             }
             try {
-                Object value = getValue(dataType, txtEditor.getText().trim());
+                Object value = getValue();
                 if (value == null) {
                     value = JSONNull.getInstance();
                 }
@@ -222,14 +237,21 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         return dialog;
     }
     
-    public void setDataTypes(String[] types) {
-        cmbDataType.setModel(new DefaultComboBoxModel<>(types));
+    public Object getValue() throws Exception {
+        String dataType = cmbDataType.getSelectedItem().toString();
+        return getValue(dataType, txtEditor.getText().trim());
+    }
+    
+    public void setDataTypes(Types[] types) {
+        String[] st = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            st[i] = types[i].name();
+        }
+        cmbDataType.setModel(new DefaultComboBoxModel<>(st));
     }
 
     private void deleteOrReset() {
         entry.isDelete = true;
-        TreeIconNode node = MainPanel.selectedNode;
-        TreeCollection collection = node.getCollection();
         if (entry.json instanceof JSONObject) {
             ((JSONObject) entry.json).remove(entry.name);
         } else {
@@ -283,7 +305,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(Editor.Entry entry, String name, Object value, boolean isEdit) {
-        setDataTypes(new String[] { "NULL", "String", "Boolean", "Number", "Properties", "JSON" });
+        setDataTypes(new Types[] { Types.NULL, Types.String, Types.Boolean, Types.Number, Types.Timestamp, Types.Properties, Types.JSON });
         Object[] options = new Object[]{okButton};
         if (isEdit) {
             options = new Object[]{applyButton, cancelButton};
@@ -302,7 +324,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     }
     
     @SuppressWarnings("NonPublicExported")
-    public void openEditDialog(String name, Object value, boolean isEdit, Object[] options) {
+    public JDialog openEditDialog(String name, Object value, boolean isEdit, Object[] options) {
         optionPane.setOptions(options);
         ckbPropertyCreate.setSelected(false);
         ckbPropertyCopy.setSelected(false);
@@ -331,6 +353,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         Amphibia.setText(txtEditor, splEditor, null);
         Amphibia.resetUndoManager(txtEditor);
         lblError.setVisible(false);
+        return dialog;
     }
 
     public static Object getValue(String dataType, String value) throws Exception {
@@ -341,11 +364,27 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 return NUMBER.parse(value);
             case "Boolean":
                 return "true".equals(value);
+            case "Timestamp":
+                Matcher m = TIMESTAMP.matcher(value);
+                if (m.find()) {
+                    Calendar cal = Calendar.getInstance();
+                    if (!m.group(1).startsWith("0")) {
+                        cal.set(Integer.parseInt(m.group(1)), //year
+                            Integer.parseInt(m.group(2)) - 1, //month
+                            Integer.parseInt(m.group(3)), //date
+                            Integer.parseInt(m.group(4)), //hrs
+                            Integer.parseInt(m.group(5)), //min
+                            Integer.parseInt(m.group(6))); //sec
+                    }
+                    if (!m.group(7).trim().isEmpty()) {
+                        cal.add(Calendar.MILLISECOND, Integer.parseInt(m.group(7)));
+                    }
+                    return cal.getTime();
+                }
             case "JSON":
-                return IO.prettyJson(value);
-            default:
-                return value;
+                return IO.prettyJson(value);  
         }
+        return value;
     }
 
     public static String getType(Object value) {
@@ -360,6 +399,9 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         }
         if (value instanceof JSON) {
             return "JSON";
+        }
+        if (value instanceof String && TIMESTAMP.matcher(value.toString()).matches()) {
+            return "Timestamp";
         }
         if (value instanceof String && ((String) value).startsWith("${#") && ((String) value).endsWith("}")) {
             return "Properties";
@@ -394,8 +436,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         pnlHeader = new JPanel();
         lblName = new JLabel();
         txtName = new JTextField();
-        splEditor = new JScrollPane();
-        txtEditor = new JTextArea();
         pnlFooter = new JPanel();
         pnlDataType = new JPanel();
         lblDataType = new JLabel();
@@ -443,16 +483,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
         add(pnlHeader, BorderLayout.PAGE_START);
 
-        txtEditor.setColumns(20);
-        txtEditor.setRows(5);
-        splEditor.setViewportView(txtEditor);
-
-        add(splEditor, BorderLayout.CENTER);
-
         pnlFooter.setPreferredSize(new Dimension(603, 60));
-        pnlFooter.setLayout(new GridLayout(3, 0));
-
-        pnlDataType.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        pnlFooter.setLayout(new GridLayout(2, 0, 0, 5));
 
         lblDataType.setText(bundle.getString("dataType")); // NOI18N
         pnlDataType.add(lblDataType);
@@ -527,8 +559,6 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     private JPanel pnlFooter;
     private JPanel pnlHeader;
     private JPanel pnlNewProperty;
-    private JScrollPane splEditor;
-    JTextArea txtEditor;
     private JTextField txtName;
     // End of variables declaration//GEN-END:variables
 

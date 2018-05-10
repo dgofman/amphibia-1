@@ -359,11 +359,14 @@ public class TreeIconNode extends DefaultMutableTreeNode {
                     if (testCase.containsKey("request")) {
                         props.setTestStep((JSONObject) testCase.getJSONObject("request").getOrDefault("properties", null));
                     }
-                    if (step.containsKey("request")) {
-                        props.setTestStep(step.getJSONObject("request").getJSONObject("properties"));
-                    }
                     if (common != null) {
                         props.setTestStep(common.getJSONObject("request").getJSONObject("properties"));
+                    }                    
+                    if (step.containsKey("properties")) {
+                        props.setTestStep(step.getJSONObject("properties"));
+                    }
+                    if (step.containsKey("request")) {
+                        props.setTestStep(step.getJSONObject("request").getJSONObject("properties"));
                     }
                     json = IO.readFile(jsonFile);
                     json = IO.prettyJson(json);
