@@ -6,7 +6,7 @@
 package com.equinix.amphibia.components;
 
 import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.*;
-
+import static com.equinix.amphibia.components.ResourceEditDialog.Types;
 
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
@@ -636,12 +636,12 @@ public class TransferDialog extends javax.swing.JPanel {
     }//GEN-LAST:event_rbAssignValueActionPerformed
 
     private void cmbDataTypeItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_cmbDataTypeItemStateChanged
-        txtEditor.setEnabled(!"NULL".equals(cmbDataType.getSelectedItem()));
+        txtEditor.setEnabled(!Types.NULL.name().equals(cmbDataType.getSelectedItem()));
         txtEditor.setBackground(UIManager.getColor(txtEditor.isEnabled() ? "TextArea.background" : "TextArea.disabledBackground"));
     }//GEN-LAST:event_cmbDataTypeItemStateChanged
 
     private void cmbDataTypeActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cmbDataTypeActionPerformed
-        if (dialog.isVisible() && "Properties".equals(cmbDataType.getSelectedItem())) {
+        if (dialog.isVisible() && Types.Properties.name().equals(cmbDataType.getSelectedItem())) {
             java.awt.EventQueue.invokeLater(() -> {
                 String s = (String)JOptionPane.showInputDialog(this,
                     bundle.getString("properties_msg"),

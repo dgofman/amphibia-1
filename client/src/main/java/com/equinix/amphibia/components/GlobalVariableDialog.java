@@ -8,7 +8,6 @@ package com.equinix.amphibia.components;
 import com.equinix.amphibia.agent.converter.Converter;
 
 import com.equinix.amphibia.Amphibia;
-import static com.equinix.amphibia.components.ResourceEditDialog.getValue;
 import static com.equinix.amphibia.components.ResourceEditDialog.Types;
 
 import java.awt.BorderLayout;
@@ -162,13 +161,12 @@ public final class GlobalVariableDialog extends javax.swing.JFrame {
         });
         JButton applyButton = new JButton(bundle.getString("apply"));
         applyButton.addActionListener((ActionEvent evt) -> {
-            String dataType = reDialog.cmbDataType.getSelectedItem().toString();
             try {
                 Object value = reDialog.getValue();
                 tblVars.setValueAt(value, cellInfo[0], cellInfo[1]);
                 reDialog.getDialog().setVisible(false);
             } catch (Exception ex) {
-                reDialog.lblError.setText(String.format(bundle.getString("error_convert"), dataType));
+                reDialog.lblError.setText(ex.getMessage());
                 reDialog.lblError.setVisible(true);
                 logger.log(Level.SEVERE, ex.toString(), ex);
             }

@@ -5,7 +5,10 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,9 +43,11 @@ public class Properties {
     public static final String TESTCASE = "TestCase";
     public static final String TESTSTEP = "TestStep";
 
+    public static final Long SECONDS_DAY = Duration.ofDays(1).getSeconds();
     public static final String TESTS_FILE_FORMAT = "data/%s/tests/%s/%s.json";
     public static final Pattern PATTERN_1 = Pattern.compile("\\$\\{#(.*?)#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
     public static final Pattern PATTERN_2 = Pattern.compile("\\$\\{#(.*?)\\}", Pattern.DOTALL | Pattern.MULTILINE);
+    public static final Pattern TIMESTAMP = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z([-+.0-9]+)-(.*)");
 
     public static final String[] PROPERTY_NAMES = new String[]{GLOBAL, PROJECT, TESTSUITE, TESTCASE, TESTSTEP};
 
@@ -181,19 +186,52 @@ public class Properties {
     }
 
     public Object getValue(String key, Object defaulValue) {
+        Object val = defaulValue;
         if (teststep != null && teststep.containsKey(key)) {
-            return teststep.get(key);
+            val = teststep.get(key);
         } else if (testcase != null && testcase.containsKey(key)) {
-            return testcase.get(key);
+            val = testcase.get(key);
         } else if (testsuite != null && testsuite.containsKey(key)) {
-            return testsuite.get(key);
+            val = testsuite.get(key);
         } else if (project != null && project.containsKey(key)) {
-            return project.get(key);
+            val = project.get(key);
         } else if (globals != null && globals.containsKey(key)) {
-            return globals.get(key);
-        } else {
-            return defaulValue;
+            val = globals.get(key);
         }
+        return getValue(val);
+    }
+    
+    public static Object getValue(Object val) {
+        if (val instanceof String) {
+            Matcher m = Properties.TIMESTAMP.matcher(val.toString());
+            if (m.find()) {
+                Calendar cal = Calendar.getInstance();
+                if (!m.group(1).startsWith("0")) {
+                    cal.set(Integer.parseInt(m.group(1)), //year
+                            Integer.parseInt(m.group(2)) - 1, //month
+                            Integer.parseInt(m.group(3)), //date
+                            Integer.parseInt(m.group(4)), //hrs
+                            Integer.parseInt(m.group(5)), //min
+                            Integer.parseInt(m.group(6))); //sec
+                } else {
+                    if (!"0".equals(m.group(7))) {
+                        String[] pair = m.group(7).split("\\.");
+                        int days = Integer.parseInt(pair[0]);
+                        int secs = Integer.parseInt(pair[1]);
+                        Long seconds = days * SECONDS_DAY;
+                        seconds += (days == 0 && m.group(7).startsWith("-") ? -secs : secs);
+                        cal.add(Calendar.SECOND, seconds.intValue());
+                    }
+                }
+                if (!m.group(8).trim().isEmpty()) {
+                    SimpleDateFormat sdf = new SimpleDateFormat(m.group(8));
+                    return sdf.format(cal.getTime());
+                } else {
+                    return cal.getTime().getTime();
+                }
+            }
+        }
+        return val;
     }
 
     public static void replace(StringBuilder sb, int begin, int end, Object val, boolean isEscape) {

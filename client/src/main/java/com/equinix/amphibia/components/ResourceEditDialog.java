@@ -7,21 +7,33 @@ package com.equinix.amphibia.components;
 
 import static com.equinix.amphibia.components.JTreeTable.EditValueRenderer.TYPE.*;
 
+import com.equinix.amphibia.agent.builder.Properties;
 import com.equinix.amphibia.Amphibia;
 import com.equinix.amphibia.IO;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Desktop;
 import java.text.NumberFormat;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.ResourceBundle;
@@ -31,17 +43,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.OverlayLayout;
+import javax.swing.SpinnerDateModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
@@ -55,10 +75,8 @@ import net.sf.json.JSONObject;
  * @author dgofman
  */
 public final class ResourceEditDialog extends javax.swing.JPanel {
-    
+
     private MainPanel mainPanel;
-    private JScrollPane splEditor;
-    private JTextArea txtEditor;
     private JDialog dialog;
     private JButton applyButton;
     private ResourceBundle bundle;
@@ -75,14 +93,12 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
             BorderFactory.createLineBorder(Color.RED),
             BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
-    private static final Pattern TIMESTAMP = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z(.*)");
-    
     private static final Logger logger = Amphibia.getLogger(ResourceEditDialog.class.getName());
     private static final NumberFormat NUMBER = NumberFormat.getInstance();
-    
+
     public static enum Types {
         NULL, String, Boolean, Number,
-        Timestamp, Properties, JSON 
+        Timestamp, Properties, JSON
     };
 
     /**
@@ -94,14 +110,16 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         this.mainPanel = mainPanel;
 
         initComponents();
-        
-        txtEditor = new JTextArea();
-        txtEditor.setColumns(20);
-        txtEditor.setRows(5);
-        splEditor = new JScrollPane();
-        splEditor.setViewportView(txtEditor);
 
-        add(splEditor, BorderLayout.CENTER, 0);
+        JSpinner.DateEditor de = (JSpinner.DateEditor) spnDate.getEditor();
+        de.getFormat().applyPattern("yyyy-MM-dd HH:mm:ss");
+        JFormattedTextField tf = de.getTextField();
+        tf.setEditable(false);
+        tf.setBackground(Color.white);
+        spnDate.setValue(new Date());
+        pnlTimestamp.setVisible(false);
+        pnlMiddle.add(pnlTimestamp);
+
         Amphibia.addUndoManager(txtEditor);
 
         bundle = Amphibia.getBundle();
@@ -202,7 +220,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 }
                 dialog.setVisible(false);
             } catch (Exception ex) {
-                lblError.setText(String.format(bundle.getString("error_convert"), dataType));
+                lblError.setText(ex.getMessage());
                 lblError.setVisible(true);
                 logger.log(Level.SEVERE, ex.toString(), ex);
             }
@@ -227,21 +245,52 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
         optionPane = new JOptionPane(this);
         dialog = Amphibia.createDialog(optionPane, true);
-        dialog.setSize(new Dimension(700, 400));
+        dialog.setSize(new Dimension(700, 500));
         java.awt.EventQueue.invokeLater(() -> {
             dialog.setLocationRelativeTo(mainPanel);
         });
     }
-    
+
     public JDialog getDialog() {
         return dialog;
     }
-    
+
     public Object getValue() throws Exception {
         String dataType = cmbDataType.getSelectedItem().toString();
-        return getValue(dataType, txtEditor.getText().trim());
+        try {
+            if (Types.Timestamp.name().equals(dataType)) {
+                StringBuilder out = new StringBuilder();
+                if (rbSetDate.isSelected()) {
+                    out.append(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(spnDate.getValue())).append("0");
+                } else {
+                    out.append("0000-00-00T00:00:00Z");
+                    if (ckbAddSub.isSelected()) {
+                        if ((int) spnDays.getValue() == 0 && (int) spnSeconds.getValue() < 0) {
+                            out.append("-");
+                        }
+                        out.append(spnDays.getValue()).append(".");
+                        out.append(Math.abs((int) spnSeconds.getValue()));
+                    } else {
+                        out.append("0");
+                    }
+                }
+                out.append("-");
+                if (rbCustom.isSelected()) {
+                    out.append(txtFormat.getText());
+                }
+                return out.toString();
+            } else {
+                return getValue(dataType, txtEditor.getText().trim());
+            }
+        } catch (Exception ex) {
+            throw new Exception(String.format(bundle.getString("error_convert"), dataType));
+        }
     }
     
+    public void setDataTypes() {
+        setDataTypes(new Types[]{Types.NULL, Types.String, Types.Boolean, Types.Number, Types.Timestamp, Types.Properties, Types.JSON});
+    }
+
     public void setDataTypes(Types[] types) {
         String[] st = new String[types.length];
         for (int i = 0; i < types.length; i++) {
@@ -294,6 +343,8 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         lblError.setVisible(false);
         lblDataType.setVisible(false);
         cmbDataType.setVisible(false);
+        pnlTimestamp.setVisible(false);
+        splEditor.setVisible(true);
         txtEditor.setEditable(false);
         txtEditor.setEnabled(true);
         txtEditor.setBackground(UIManager.getColor("TextArea.background"));
@@ -305,7 +356,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
     @SuppressWarnings("NonPublicExported")
     public void openEditDialog(Editor.Entry entry, String name, Object value, boolean isEdit) {
-        setDataTypes(new Types[] { Types.NULL, Types.String, Types.Boolean, Types.Number, Types.Timestamp, Types.Properties, Types.JSON });
+        setDataTypes();
         Object[] options = new Object[]{okButton};
         if (isEdit) {
             options = new Object[]{applyButton, cancelButton};
@@ -322,7 +373,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         cmbDataType.setEnabled(isEdit && entry.getType() != EDIT_LIMIT);
         dialog.setVisible(true);
     }
-    
+
     @SuppressWarnings("NonPublicExported")
     public JDialog openEditDialog(String name, Object value, boolean isEdit, Object[] options) {
         optionPane.setOptions(options);
@@ -337,8 +388,47 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         txtEditor.setText(value == null ? "" : String.valueOf(value));
         lblDataType.setVisible(true);
         cmbDataType.setVisible(true);
-        cmbDataType.setSelectedItem(getType(value));
         cmbDataType.setEnabled(isEdit);
+        cmbDataType.setSelectedItem(getType(value));
+        if (value != null && Types.Timestamp.name().equals(cmbDataType.getSelectedItem())) {
+            try {
+                Matcher m = Properties.TIMESTAMP.matcher(value.toString());
+                if (m.find()) {
+                    if (!m.group(1).startsWith("0")) {
+                        Calendar cal = Calendar.getInstance();
+                        cal.set(Integer.parseInt(m.group(1)), //year
+                                Integer.parseInt(m.group(2)) - 1, //month
+                                Integer.parseInt(m.group(3)), //date
+                                Integer.parseInt(m.group(4)), //hrs
+                                Integer.parseInt(m.group(5)), //min
+                                Integer.parseInt(m.group(6))); //sec
+                        spnDate.setValue(cal.getTime());
+                        rbSetDate.setSelected(true);
+                    } else {
+                        spnDate.setValue(new Date());
+                        rbCurrDate.setSelected(true);
+                    }
+                    ckbAddSub.setSelected(!"0".equals(m.group(7)));
+                    if (ckbAddSub.isSelected()) {
+                        String[] pair = m.group(7).split("\\.");
+                        int days = Integer.parseInt(pair[0]);
+                        int secs = Integer.parseInt(pair[1]);
+                        spnDays.setValue(days);
+                        spnSeconds.setValue(days == 0 && m.group(7).startsWith("-") ? -secs : secs);
+                    }
+                    if (!m.group(8).trim().isEmpty()) {
+                        rbCustom.setSelected(true);
+                        txtFormat.setText(m.group(8));
+                    } else {
+                        rbNumber.setSelected(true);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                mainPanel.addError(ex);
+            }
+        }
+        ckbAddSubActionPerformed(null);
+        rbNumberActionPerformed(null);
         cmbDataTypeItemStateChanged(null);
         if (value instanceof JSON) {
             try {
@@ -353,6 +443,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         Amphibia.setText(txtEditor, splEditor, null);
         Amphibia.resetUndoManager(txtEditor);
         lblError.setVisible(false);
+
         return dialog;
     }
 
@@ -364,27 +455,10 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
                 return NUMBER.parse(value);
             case "Boolean":
                 return "true".equals(value);
-            case "Timestamp":
-                Matcher m = TIMESTAMP.matcher(value);
-                if (m.find()) {
-                    Calendar cal = Calendar.getInstance();
-                    if (!m.group(1).startsWith("0")) {
-                        cal.set(Integer.parseInt(m.group(1)), //year
-                            Integer.parseInt(m.group(2)) - 1, //month
-                            Integer.parseInt(m.group(3)), //date
-                            Integer.parseInt(m.group(4)), //hrs
-                            Integer.parseInt(m.group(5)), //min
-                            Integer.parseInt(m.group(6))); //sec
-                    }
-                    if (!m.group(7).trim().isEmpty()) {
-                        cal.add(Calendar.MILLISECOND, Integer.parseInt(m.group(7)));
-                    }
-                    return cal.getTime();
-                }
             case "JSON":
-                return IO.prettyJson(value);  
+                return IO.prettyJson(value);
         }
-        return value;
+        return Properties.getValue(value);
     }
 
     public static String getType(Object value) {
@@ -400,7 +474,7 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         if (value instanceof JSON) {
             return "JSON";
         }
-        if (value instanceof String && TIMESTAMP.matcher(value.toString()).matches()) {
+        if (value instanceof String && Properties.TIMESTAMP.matcher(value.toString()).matches()) {
             return "Timestamp";
         }
         if (value instanceof String && ((String) value).startsWith("${#") && ((String) value).endsWith("}")) {
@@ -427,15 +501,42 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        GridBagConstraints gridBagConstraints;
 
         pnlNewProperty = new JPanel();
         lblTitle = new JLabel();
         cmbPropertyTypes = new JComboBox<>();
         ckbPropertyCreate = new JCheckBox();
         ckbPropertyCopy = new JCheckBox();
+        pnlTimestamp = new JPanel();
+        pnlTimestamp1 = new JPanel();
+        rbSetDate = new JRadioButton();
+        rbCurrDate = new JRadioButton();
+        pnlTimestamp2 = new JPanel();
+        lblDate = new JLabel();
+        spnDate = new JSpinner();
+        pnlTimestamp3 = new JPanel();
+        sprTimestamp = new JSeparator();
+        ckbAddSub = new JCheckBox();
+        lblDays = new JLabel();
+        spnDays = new JSpinner();
+        lblSeconds = new JLabel();
+        spnSeconds = new JSpinner();
+        pnlTimestamp4 = new JPanel();
+        sprFormat = new JSeparator();
+        lblOutFormat = new JLabel();
+        rbNumber = new JRadioButton();
+        rbCustom = new JRadioButton();
+        txtFormat = new JTextField();
+        lblJavaDocs = new JLabel();
+        rbDateGroup = new ButtonGroup();
+        rbFormatGroup = new ButtonGroup();
         pnlHeader = new JPanel();
         lblName = new JLabel();
         txtName = new JTextField();
+        pnlMiddle = new JPanel();
+        splEditor = new JScrollPane();
+        txtEditor = new JTextArea();
         pnlFooter = new JPanel();
         pnlDataType = new JPanel();
         lblDataType = new JLabel();
@@ -469,6 +570,170 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         ckbPropertyCopy.setText(bundle.getString("properties_copy")); // NOI18N
         pnlNewProperty.add(ckbPropertyCopy);
 
+        pnlTimestamp.setBorder(BorderFactory.createEmptyBorder(10, 1, 1, 10));
+        pnlTimestamp.setLayout(new BoxLayout(pnlTimestamp, BoxLayout.Y_AXIS));
+
+        pnlTimestamp1.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+        rbDateGroup.add(rbSetDate);
+        rbSetDate.setText(bundle.getString("setDate")); // NOI18N
+        rbSetDate.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                rbSetDateActionPerformed(evt);
+            }
+        });
+        pnlTimestamp1.add(rbSetDate);
+
+        rbDateGroup.add(rbCurrDate);
+        rbCurrDate.setSelected(true);
+        rbCurrDate.setText(bundle.getString("currentDate")); // NOI18N
+        rbCurrDate.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                rbCurrDateActionPerformed(evt);
+            }
+        });
+        pnlTimestamp1.add(rbCurrDate);
+
+        pnlTimestamp.add(pnlTimestamp1);
+
+        pnlTimestamp2.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+        lblDate.setText(bundle.getString("date")); // NOI18N
+        pnlTimestamp2.add(lblDate);
+
+        spnDate.setModel(new SpinnerDateModel(new Date(1525929190492L), null, null, Calendar.DAY_OF_MONTH));
+        spnDate.setPreferredSize(new Dimension(150, 20));
+        pnlTimestamp2.add(spnDate);
+
+        pnlTimestamp.add(pnlTimestamp2);
+
+        GridBagLayout jPanel2Layout = new GridBagLayout();
+        jPanel2Layout.columnWidths = new int[] {0, 5, 0};
+        jPanel2Layout.rowHeights = new int[] {0, 5, 0, 5, 0, 5, 0};
+        pnlTimestamp3.setLayout(jPanel2Layout);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        pnlTimestamp3.add(sprTimestamp, gridBagConstraints);
+
+        ckbAddSub.setText(bundle.getString("addSubtractTime")); // NOI18N
+        ckbAddSub.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                ckbAddSubActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp3.add(ckbAddSub, gridBagConstraints);
+
+        lblDays.setText(bundle.getString("days")); // NOI18N
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp3.add(lblDays, gridBagConstraints);
+
+        spnDays.setPreferredSize(new Dimension(100, 20));
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp3.add(spnDays, gridBagConstraints);
+
+        lblSeconds.setText(bundle.getString("seconds")); // NOI18N
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp3.add(lblSeconds, gridBagConstraints);
+
+        spnSeconds.setModel(new SpinnerNumberModel(0, -86400, 86400, 10));
+        spnSeconds.setPreferredSize(new Dimension(100, 20));
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp3.add(spnSeconds, gridBagConstraints);
+
+        pnlTimestamp.add(pnlTimestamp3);
+
+        GridBagLayout pnlTimestamp3Layout = new GridBagLayout();
+        pnlTimestamp3Layout.columnWidths = new int[] {0, 5, 0, 5, 0};
+        pnlTimestamp3Layout.rowHeights = new int[] {0, 5, 0, 5, 0, 5, 0, 5, 0};
+        pnlTimestamp4.setLayout(pnlTimestamp3Layout);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        pnlTimestamp4.add(sprFormat, gridBagConstraints);
+
+        lblOutFormat.setText(bundle.getString("outFormat")); // NOI18N
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        pnlTimestamp4.add(lblOutFormat, gridBagConstraints);
+
+        rbFormatGroup.add(rbNumber);
+        rbNumber.setSelected(true);
+        rbNumber.setText(bundle.getString("inMillSec")); // NOI18N
+        rbNumber.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                rbNumberActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        pnlTimestamp4.add(rbNumber, gridBagConstraints);
+
+        rbFormatGroup.add(rbCustom);
+        rbCustom.setText(bundle.getString("customize")); // NOI18N
+        rbCustom.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                rbCustomActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 4;
+        pnlTimestamp4.add(rbCustom, gridBagConstraints);
+
+        txtFormat.setText("EEE, d MMM yyyy HH:mm:ss a Z");
+        txtFormat.setToolTipText("");
+        txtFormat.setPreferredSize(new Dimension(200, 20));
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        pnlTimestamp4.add(txtFormat, gridBagConstraints);
+
+        lblJavaDocs.setForeground(new Color(0, 51, 255));
+        lblJavaDocs.setText("https://docs.oracle.com");
+        lblJavaDocs.setToolTipText("https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html");
+        lblJavaDocs.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblJavaDocs.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent evt) {
+                lblJavaDocsMouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        pnlTimestamp4.add(lblJavaDocs, gridBagConstraints);
+
+        pnlTimestamp.add(pnlTimestamp4);
+
         setBorder(BorderFactory.createEmptyBorder(5, 10, 0, 10));
         setLayout(new BorderLayout());
 
@@ -483,8 +748,18 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
 
         add(pnlHeader, BorderLayout.PAGE_START);
 
+        pnlMiddle.setLayout(new OverlayLayout(pnlMiddle));
+
+        txtEditor.setColumns(20);
+        txtEditor.setRows(5);
+        splEditor.setViewportView(txtEditor);
+
+        pnlMiddle.add(splEditor);
+
+        add(pnlMiddle, BorderLayout.CENTER);
+
         pnlFooter.setPreferredSize(new Dimension(603, 60));
-        pnlFooter.setLayout(new GridLayout(2, 0, 0, 5));
+        pnlFooter.setLayout(new GridLayout(2, 0));
 
         lblDataType.setText(bundle.getString("dataType")); // NOI18N
         pnlDataType.add(lblDataType);
@@ -512,12 +787,19 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void cmbDataTypeItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_cmbDataTypeItemStateChanged
-        txtEditor.setEnabled(!"NULL".equals(cmbDataType.getSelectedItem()));
+        txtEditor.setEnabled(!Types.NULL.name().equals(cmbDataType.getSelectedItem()));
         txtEditor.setBackground(UIManager.getColor(txtEditor.isEnabled() ? "TextArea.background" : "TextArea.disabledBackground"));
+        if (Types.Timestamp.name().equals(cmbDataType.getSelectedItem())) {
+            splEditor.setVisible(false);
+            pnlTimestamp.setVisible(true);
+        } else {
+            pnlTimestamp.setVisible(false);
+            splEditor.setVisible(true);
+        }
     }//GEN-LAST:event_cmbDataTypeItemStateChanged
 
     private void cmbDataTypeActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cmbDataTypeActionPerformed
-        if (dialog.isVisible() && "Properties".equals(cmbDataType.getSelectedItem())) {
+        if (dialog.isVisible() && Types.Properties.name().equals(cmbDataType.getSelectedItem())) {
             java.awt.EventQueue.invokeLater(() -> {
                 JButton btnOk = new JButton(UIManager.getString("OptionPane.okButtonText"));
                 JButton btnCancel = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
@@ -545,20 +827,77 @@ public final class ResourceEditDialog extends javax.swing.JPanel {
         ckbPropertyCopy.setEnabled(ckbPropertyCreate.isSelected());
     }//GEN-LAST:event_ckbPropertyCreateActionPerformed
 
+    private void ckbAddSubActionPerformed(ActionEvent evt) {//GEN-FIRST:event_ckbAddSubActionPerformed
+        ckbAddSub.setEnabled(rbCurrDate.isSelected());
+        spnDays.setEnabled(rbCurrDate.isSelected() && ckbAddSub.isSelected());
+        spnSeconds.setEnabled(rbCurrDate.isSelected() && ckbAddSub.isSelected());
+        spnDate.setEnabled(rbSetDate.isSelected());
+    }//GEN-LAST:event_ckbAddSubActionPerformed
+
+    private void rbCurrDateActionPerformed(ActionEvent evt) {//GEN-FIRST:event_rbCurrDateActionPerformed
+        ckbAddSubActionPerformed(null);
+    }//GEN-LAST:event_rbCurrDateActionPerformed
+
+    private void rbSetDateActionPerformed(ActionEvent evt) {//GEN-FIRST:event_rbSetDateActionPerformed
+        ckbAddSubActionPerformed(null);
+    }//GEN-LAST:event_rbSetDateActionPerformed
+
+    private void rbNumberActionPerformed(ActionEvent evt) {//GEN-FIRST:event_rbNumberActionPerformed
+        txtFormat.setEnabled(!rbNumber.isSelected());
+    }//GEN-LAST:event_rbNumberActionPerformed
+
+    private void rbCustomActionPerformed(ActionEvent evt) {//GEN-FIRST:event_rbCustomActionPerformed
+        txtFormat.setEnabled(rbCustom.isSelected());
+    }//GEN-LAST:event_rbCustomActionPerformed
+
+    private void lblJavaDocsMouseClicked(MouseEvent evt) {//GEN-FIRST:event_lblJavaDocsMouseClicked
+        try {
+            Desktop.getDesktop().browse(new URI("https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html"));
+        } catch (IOException | URISyntaxException ex) {
+            mainPanel.addError(ex);
+        }
+    }//GEN-LAST:event_lblJavaDocsMouseClicked
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private JCheckBox ckbAddSub;
     private JCheckBox ckbPropertyCopy;
     private JCheckBox ckbPropertyCreate;
-    JComboBox<String> cmbDataType;
+    private JComboBox<String> cmbDataType;
     private JComboBox<String> cmbPropertyTypes;
     private JLabel lblDataType;
+    private JLabel lblDate;
+    private JLabel lblDays;
     JLabel lblError;
+    private JLabel lblJavaDocs;
     private JLabel lblName;
+    private JLabel lblOutFormat;
+    private JLabel lblSeconds;
     private JLabel lblTitle;
     private JPanel pnlDataType;
     private JPanel pnlFooter;
     private JPanel pnlHeader;
+    private JPanel pnlMiddle;
     private JPanel pnlNewProperty;
+    private JPanel pnlTimestamp;
+    private JPanel pnlTimestamp1;
+    private JPanel pnlTimestamp2;
+    private JPanel pnlTimestamp3;
+    private JPanel pnlTimestamp4;
+    private JRadioButton rbCurrDate;
+    private JRadioButton rbCustom;
+    private ButtonGroup rbDateGroup;
+    private ButtonGroup rbFormatGroup;
+    private JRadioButton rbNumber;
+    private JRadioButton rbSetDate;
+    private JScrollPane splEditor;
+    private JSpinner spnDate;
+    private JSpinner spnDays;
+    private JSpinner spnSeconds;
+    private JSeparator sprFormat;
+    private JSeparator sprTimestamp;
+    private JTextArea txtEditor;
+    private JTextField txtFormat;
     private JTextField txtName;
     // End of variables declaration//GEN-END:variables
 
